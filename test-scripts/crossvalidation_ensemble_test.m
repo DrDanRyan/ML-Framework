@@ -47,7 +47,7 @@ for j = 1:ensembleSize
    lemeshow = Lemeshow(outputs(j,:), targets);
    scores(j,:) = [event1, lemeshow]; %#ok<SAGROW>
 
-   fprintf('\n\n Max Score: %.4f \t Lemeshow %.4f \n', ...
+   fprintf('\n Max Score: %.4f \t Lemeshow %.4f \n', ...
               event1, lemeshow);
 end
 

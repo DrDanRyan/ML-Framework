@@ -8,6 +8,8 @@ classdef Model < handle
       increment_params(obj, delta)
       gather(obj)
       push_to_GPU(obj)
+      objCopy = copy(obj)
+      reset(obj)
    end
    
 end

@@ -5,7 +5,7 @@ classdef RandomProjection < Preprocessor
    % orthogonal.
    
    properties
-      P % "projection" matrix
+      P % projection" matrix
    end
    
    methods
@@ -20,6 +20,14 @@ classdef RandomProjection < Preprocessor
       
       function data = transform(obj, data)
          data = obj.P*data;
+      end
+      
+      function gather(obj)
+         obj.P = gather(obj.P);
+      end
+      
+      function push_to_GPU(obj)
+         obj.P = single(gpuArray(obj.P));
       end
    end
    
