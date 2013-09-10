@@ -22,7 +22,7 @@ preprocessors = cell(1, ensembleSize);
 for i = 1:ensembleSize
    models{i} = FeedForwardNet();
    models{i}.hiddenLayers = {ReluHiddenLayer(nDims, Layer1), ...
-                               ReluHiddenLayer(Layer1, Layer2, 'initType', 'sparse', 'initScale', 15)};
+                             ReluHiddenLayer(Layer1, Layer2, 'initType', 'sparse', 'initScale', 15)};
    models{i}.outputLayer = LogisticOutputLayer(Layer2);
 
    preprocessors{i} = RandomProjection(187, nDims);
