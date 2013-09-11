@@ -2,34 +2,36 @@ clear all
 load Citi_data
 
 %% parameters
-N = 6;
-nDims = 100;
+N = 1;
+nDims = 187;
 Layer1 = 1000;
 Layer2 = 2000;
 nnets = cell(1, N);
 preprocessors = cell(1, N);
 nFolds = 4;
-batchSize = 600;
-sampleSize = 2400;
+batchSize = 3000;
+sampleSize = 3000;
 learnRate = .1;
 momentum = .95;
-nEpochs = 150;
+nEpochs = 100;
 lrDecay = .9931; 
  
 %% Initialize trainer
 trainer = GradientTrainer();
-trainer.stepCalculator = NAG();
+trainer.stepCalculator = Rprop(learnRate);
 trainer.reporter = ConsoleReporter();
 trainer.trainingSchedule = ExpDecaySchedule(learnRate, momentum, nEpochs, lrDecay);
 
 %% Initialize nnets and preprocessors
 for i = 1:N
-   nnets{i} = FeedForwardNet();
+   nnets{i} = FeedForwardNet('dropout', false);
    nnets{i}.hiddenLayers = {ReluHiddenLayer(nDims, Layer1), ...
-                               ReluHiddenLayer(Layer1, Layer2, 'initType', 'sparse', 'initScale', 15)};
+                               ReluHiddenLayer(Layer1, Layer2, 'initType', 'sparse', ...
+                                                               'initScale', 15)};
    nnets{i}.outputLayer = LogisticOutputLayer(Layer2);
 
-   preprocessors{i} = RandomProjection(187, nDims);
+   %preprocessors{i} = RandomProjection(187, nDims);
+   preprocessors{i} = Identity();
 end
 
 %% Train base learners on CV partition
@@ -52,12 +54,11 @@ for foldIdx = 1:nFolds
       sampleIdx = randsample(length(trainIdx), sampleSize)';
       tInputs = preprocessors{netIdx}.transform(trainInputs(:, sampleIdx));
       tTargets = trainTargets(:, sampleIdx);
-      vInputs = preprocessors{netIdx}.transform(validInputs);
-      
-      trainer.reset();
-      trainer.dataManager = BasicDataManager(tInputs, tTargets, vInputs, validTargets, batchSize);
-      nnets{netIdx}.reset();
+      vInputs = preprocessors{netIdx}.transform(validInputs); 
+      trainer.dataManager = BasicDataManager(batchSize, tInputs, tTargets, ...
+                                             vInputs, validTargets);
       trainer.model = nnets{netIdx};
+      trainer.reset();
       trainer.train();
       outputs(netIdx, validIdx) = nnets{netIdx}.output(vInputs);
       fprintf('\n');
@@ -76,6 +77,6 @@ for j = 1:N
               event1, lemeshow);
 end
 
-means = mean(outputs);
-means = max(.005, means);
+means = mean(outputs, 1);
+means = min(.99, max(.01, means));
 mean_scores = [Event1Score(means, targets), Lemeshow(means, targets)]

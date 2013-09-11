@@ -2,12 +2,14 @@ clear all
 
 %% Load Data and create DataManager
 load test_data
-dataManager = BasicDataManager(trainingInputs, trainingTargets, ...
-                               validationInputs, validationTargets, 100);
+batchSize = size(trainingInputs, 2);
+dataManager = BasicDataManager(batchSize, trainingInputs, trainingTargets, ...
+                               validationInputs, validationTargets);
 
 %% Initialize Model
-nnet = FeedForwardNet('dropout', false);
+nnet = FeedForwardNet('dropout', true);
 nnet.hiddenLayers = {ReluHiddenLayer(2, 100, 'initScale', 1), ...
+                     ReluHiddenLayer(100, 100, 'initType', 'sparse', 'initScale', 15), ...
                      ReluHiddenLayer(100, 100, 'initType', 'sparse', 'initScale', 15)};
 nnet.outputLayer = LogisticOutputLayer(100);
 
@@ -15,10 +17,10 @@ nnet.outputLayer = LogisticOutputLayer(100);
 reporter = ConsoleReporter();
 
 %% Initialize StepCalculator
-stepper = NAG();
+stepper = Rprop(.01);
 
 %% Initialize TrainingSchedule
-schedule = BasicMomentumSchedule(.01, .9, 50);
+schedule = BasicMomentumSchedule(.01, .9, 100);
 
 %% Initialize Trainer
 trainer = GradientTrainer();
@@ -37,7 +39,6 @@ x = reshape(x, 1, []);
 y = reshape(y, 1, []);
 z = gather(nnet.output([x; y]));
 [C, h] = contour(reshape(x, 241, []), reshape(y, 241, []), reshape(z, 241, []));
-colorbar()
 clabel(C, .5)
 hold on
 setA = gather([trainingInputs(:, 1:350), validationInputs(:, 1:150)]);

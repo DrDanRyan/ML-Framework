@@ -18,8 +18,8 @@ classdef Rprop < StepCalculator
          p = inputParser();
          p.addParamValue('upFactor', 1.2);
          p.addParamValue('downFactor', .5);
-         p.addParamValue('maxRate', 10);
-         p.addParamValue('minRate', 1e-5);
+         p.addParamValue('maxRate', 5);
+         p.addParamValue('minRate', 1e-4);
          parse(p, varargin{:});
          
          obj.initialRate = initialRate;
@@ -38,19 +38,23 @@ classdef Rprop < StepCalculator
          end
          steps = cellfun(@(rate, grad) rate.*sign(grad), obj.rates, grad, ...
                          'UniformOutput', false);
-         obj.model.increment_params(steps);
+         model.increment_params(steps);
          obj.update_rates(grad);
       end
       
       function update_rates(obj, grad)
-         % Multiply rates where gradient directions agree by upFactor
-         obj.rates = cellfun(@(grad, prevGrad, rates) obj.upFactor*rates(grad.*prevGrad > 0), ...
-                           grad, obj.prevGrad, obj.rates, 'UniformOutput', false);
-                        
-         % Multiply rates where gradient directions are opposite by
-         % downFactor
-         obj.rates = cellfun(@(grad, prevGrad, rates) obj.downFactor*rates(grad.*prevGrad < 0), ...
-                            grad, obj.prevGrad, obj.rates, 'UniformOutput', false);
+         if isempty(obj.prevGrad)
+            % pass
+         else
+            for i = 1:length(grad)
+               gradProduct = grad{i}.*obj.prevGrad{i};
+               upIdx = gradProduct > 0;
+               downIdx = gradProduct < 0;
+
+               obj.rates{i}(upIdx) = obj.upFactor*obj.rates{i}(upIdx);
+               obj.rates{i}(downIdx) = obj.downFactor*obj.rates{i}(downIdx);
+            end
+         end
                          
          obj.prevGrad = grad;
       end
