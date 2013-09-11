@@ -4,8 +4,8 @@ clear all
 load test_data
 trainingTargets(1:350) = -1;
 validationTargets(1:150) = -1;
-dataManager = BasicDataManager(trainingInputs, trainingTargets, ...
-                               validationInputs, validationTargets, 100);
+dataManager = BasicDataManager(100, trainingInputs, trainingTargets, ...
+                               validationInputs, validationTargets);
 
 
 %% Initialize Model
@@ -18,7 +18,7 @@ nnet.outputLayer = SVMOutputLayer(100, 'hingeExp', 1.5);
 reporter = ConsoleReporter();
 
 %% Initialize StepCalculator
-stepper = NAG();
+stepper = NesterovMomentum();
 
 %% Initialize TrainingSchedule
 schedule = BasicMomentumSchedule(.01, .9, 50);

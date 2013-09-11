@@ -53,6 +53,7 @@ classdef Rprop < StepCalculator
 
                obj.rates{i}(upIdx) = obj.upFactor*obj.rates{i}(upIdx);
                obj.rates{i}(downIdx) = obj.downFactor*obj.rates{i}(downIdx);
+               obj.rates{i} = min(obj.maxRate, max(obj.minRate, obj.rates{i}));
             end
          end
                          

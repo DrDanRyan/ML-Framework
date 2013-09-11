@@ -4,27 +4,29 @@ load Citi_data
 %% parameters
 N = 1;
 nDims = 187;
-Layer1 = 1000;
-Layer2 = 2000;
+Layer1 = 500;
+Layer2 = 1000;
 nnets = cell(1, N);
 preprocessors = cell(1, N);
-nFolds = 4;
-batchSize = 3000;
-sampleSize = 3000;
-learnRate = .1;
-momentum = .95;
-nEpochs = 100;
+nFolds = 5;
+batchSize = 3200;
+sampleSize = 3200;
+learnRate = 2.5;
+momentum = .9;
 lrDecay = .9931; 
+nEpochs = 120;
+
  
 %% Initialize trainer
 trainer = GradientTrainer();
-trainer.stepCalculator = Rprop(learnRate);
+trainer.stepCalculator = NesterovMomentum();
+%trainer.stepCalculator = Rprop(learnRate, 'maxRate', 4, 'minRate', 1e-6, 'upFactor', 1.2, 'downFactor', .5);
 trainer.reporter = ConsoleReporter();
 trainer.trainingSchedule = ExpDecaySchedule(learnRate, momentum, nEpochs, lrDecay);
 
 %% Initialize nnets and preprocessors
 for i = 1:N
-   nnets{i} = FeedForwardNet('dropout', false);
+   nnets{i} = FeedForwardNet('dropout', true, 'inputDropout', .25);
    nnets{i}.hiddenLayers = {ReluHiddenLayer(nDims, Layer1), ...
                                ReluHiddenLayer(Layer1, Layer2, 'initType', 'sparse', ...
                                                                'initScale', 15)};
