@@ -3,15 +3,15 @@ clear all
 %% Load Data and create DataManager
 load test_data
 batchSize = size(trainingInputs, 2);
+trainingTargets(trainingTargets==0) = -1;
+validaitonTargets(validationTargets==0) = -1;
 dataManager = BasicDataManager(batchSize, trainingInputs, trainingTargets, ...
                                validationInputs, validationTargets);
 
 %% Initialize Model
 nnet = FeedForwardNet('dropout', true);
-nnet.hiddenLayers = {ReluHiddenLayer(2, 100, 'initScale', 1), ...
-                     ReluHiddenLayer(100, 100, 'initType', 'sparse', 'initScale', 15), ...
-                     ReluHiddenLayer(100, 100, 'initType', 'sparse', 'initScale', 15)};
-nnet.outputLayer = LogisticOutputLayer(100);
+nnet.hiddenLayers = {MaxoutHiddenLayer(2, 500, 5), MaxoutHiddenLayer(500, 500, 5)};
+nnet.outputLayer = SVMOutputLayer(500);
 
 %% Initialize Reporter
 reporter = ConsoleReporter();
@@ -20,7 +20,7 @@ reporter = ConsoleReporter();
 stepper = Rprop(.01);
 
 %% Initialize TrainingSchedule
-schedule = BasicMomentumSchedule(.01, .9, 100);
+schedule = BasicMomentumSchedule(.05, .9, 200);
 
 %% Initialize Trainer
 trainer = GradientTrainer();
@@ -34,12 +34,12 @@ trainer.trainingSchedule = schedule;
 trainer.train();
 
 %% Visualize results
-[x, y] = meshgrid(-6:.05:6);
+[x, y] = meshgrid(-3:.05:3);
 x = reshape(x, 1, []);
 y = reshape(y, 1, []);
 z = gather(nnet.output([x; y]));
-[C, h] = contour(reshape(x, 241, []), reshape(y, 241, []), reshape(z, 241, []));
-clabel(C, .5)
+[C, h] = contour(reshape(x, 121, []), reshape(y, 121, []), reshape(z, 121, []));
+clabel(C, 0)
 hold on
 setA = gather([trainingInputs(:, 1:350), validationInputs(:, 1:150)]);
 setB = gather([trainingInputs(:, 351:end), validationInputs(:, 151:end)]);
