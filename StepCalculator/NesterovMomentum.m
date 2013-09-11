@@ -1,6 +1,5 @@
-classdef NAG < StepCalculator
-   % Uses Nesterov's Accelerated Gradient (NAG) method to calculate next
-   % step.
+classdef NesterovMomentum < StepCalculator
+   % Uses Nesterov's Accelerated Gradient method to calculate next step.
    
    properties
       velocity
