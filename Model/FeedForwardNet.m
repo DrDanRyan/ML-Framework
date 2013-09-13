@@ -60,7 +60,7 @@ classdef FeedForwardNet < Model
          obj.outputLayer.increment_params(delta_params(1:stopIdx));
       end
       
-      function grad = gradient(obj, x, t)
+      function [grad, output] = gradient(obj, x, t)
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(nHiddenLayers, 1); % output from each hiddenLayer
          dLdy = cell(nHiddenLayers, 1); % derivative of loss function wrt hiddenLayer output
@@ -81,7 +81,7 @@ classdef FeedForwardNet < Model
             end
          end
          
-         [grad, dLdy{end}] = obj.outputLayer.backprop(y{end}, t);
+         [grad, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t);
          if obj.isDropout
             dLdy{end} = dLdy{end}.*mask{end};
          end
@@ -129,8 +129,7 @@ classdef FeedForwardNet < Model
          y = obj.outputLayer.feed_forward(y);
       end
       
-      function loss = compute_loss(obj, x, t)
-         y = obj.output(x);
+      function loss = compute_loss(obj, y, t)
          loss = obj.outputLayer.compute_loss(y, t);
       end
       
