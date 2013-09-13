@@ -9,9 +9,9 @@ classdef SoftmaxOutputLayer < StandardOutputLayer
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
       end
       
-      function value = dLdz(obj, x, t)
+      function [dLdz, y] = dLdz(obj, x, t)
          y = obj.feed_forward(x);
-         value = y - t;
+         dLdz = y - t;
       end
    
       function loss = compute_loss(~, y, t)

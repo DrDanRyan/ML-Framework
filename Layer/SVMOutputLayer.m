@@ -17,12 +17,12 @@ classdef SVMOutputLayer < StandardOutputLayer
          obj.hingeExp = p.Results.hingeExp;
       end
          
-      function value = dLdz(obj, x, t)
+      function [dLdz, y] = dLdz(obj, x, t)
          y = obj.feed_forward(x);
          if obj.hingeExp > 1
-            value = -obj.hingeExp*t.*(max(1 - y.*t, 0).^(obj.hingeExp-1));
+            dLdz = -obj.hingeExp*t.*(max(1 - y.*t, 0).^(obj.hingeExp-1));
          else % hingeExp == 1
-            value = -t.*obj.gpuState.make_numeric(y.*t < 1);
+            dLdz = -t.*obj.gpuState.make_numeric(y.*t < 1);
          end
       end
       

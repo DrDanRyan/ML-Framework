@@ -25,7 +25,7 @@ classdef StandardOutputLayer < OutputLayer & StandardLayer
    end
    
    methods (Abstract)
-      value = dLdz(obj, x, t)
+      [dLdz, y] = dLdz(obj, x, t)
    end
    
 end
