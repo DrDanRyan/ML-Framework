@@ -8,9 +8,9 @@ classdef StandardOutputLayer < OutputLayer & StandardLayer
          obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
       end
       
-      function [grad, dLdx] = backprop(obj, x, t)
+      function [grad, dLdx, y] = backprop(obj, x, t)
          N = size(x, 2);
-         dLdz = obj.dLdz(x, t); 
+         [dLdz, y] = obj.dLdz(x, t); 
          dLdx = obj.params{1}'*dLdz;
 
          if obj.isPenalty

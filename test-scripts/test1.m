@@ -10,14 +10,14 @@ dataManager = BasicDataManager(batchSize, trainingInputs, trainingTargets, ...
 
 %% Initialize Model
 nnet = FeedForwardNet('dropout', true);
-nnet.hiddenLayers = {MaxoutHiddenLayer(2, 500, 5), MaxoutHiddenLayer(500, 500, 5)};
+nnet.hiddenLayers = {MaxoutHiddenLayer(2, 500, 5)};
 nnet.outputLayer = SVMOutputLayer(500);
 
 %% Initialize Reporter
 reporter = ConsoleReporter();
 
 %% Initialize StepCalculator
-stepper = Rprop(.01);
+stepper = IRprop(.01);
 
 %% Initialize TrainingSchedule
 schedule = BasicMomentumSchedule(.05, .9, 200);
