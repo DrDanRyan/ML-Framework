@@ -32,32 +32,31 @@ classdef Rprop < StepCalculator
       
       function take_step(obj, x, t, model, ~)
          grad = model.gradient(x, t);
-         if isempty(obj.prevGrad) % First step --> use initialRate
-            obj.rates = cellfun(@(x) obj.initialRate*model.gpuState.ones(size(x)), grad, ...
-                                'UniformOutput', false);
-         end
+         obj.update_rates(grad, model);
          steps = cellfun(@(rate, grad) rate.*sign(grad), obj.rates, grad, ...
-                         'UniformOutput', false);
+                          'UniformOutput', false);
          model.increment_params(steps);
-         obj.update_rates(grad);
+         obj.prevGrad = grad;
       end
       
-      function update_rates(obj, grad)
+      function update_rates(obj, grad, model)
          if isempty(obj.prevGrad)
-            % pass
+            obj.rates = cell(size(grad));
+            for i = 1:length(grad)
+               obj.rates{i} = obj.initialRate*model.gpuState.ones(size(grad));
+            end
          else
             for i = 1:length(grad)
                gradProduct = grad{i}.*obj.prevGrad{i};
                upIdx = gradProduct > 0;
                downIdx = gradProduct < 0;
 
-               obj.rates{i}(upIdx) = obj.upFactor*obj.rates{i}(upIdx);
-               obj.rates{i}(downIdx) = obj.downFactor*obj.rates{i}(downIdx);
-               obj.rates{i} = min(obj.maxRate, max(obj.minRate, obj.rates{i}));
+               obj.rates{i}(upIdx) = min(obj.maxRate, ...
+                                         obj.upFactor*obj.rates{i}(upIdx));
+               obj.rates{i}(downIdx) = max(obj.minRate, ...
+                                           obj.downFactor*obj.rates{i}(downIdx));
             end
          end
-                         
-         obj.prevGrad = grad;
       end
       
       function reset(obj)
