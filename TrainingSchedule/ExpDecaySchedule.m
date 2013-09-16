@@ -1,12 +1,13 @@
 classdef ExpDecaySchedule < TrainingSchedule
-   % Fixed learnRate and momentum. Fixed number of epochs.
+   % A schedule for a learning rate and momentum StepCalculator where learning rate 
+   % decays exponentially, momentum is fixed and a fixed number of epochs.
    
    properties
       params % {learnRate, momentum}
-      maxEpochs
-      lr0
-      lrDecay
-      epoch = 0;
+      maxEpochs % number of epochs to train before terminating
+      lr0 % initial learning rate
+      lrDecay % multiplies learnRate every epoch
+      epoch = 0; % current epoch
    end
    
    methods
@@ -24,12 +25,15 @@ classdef ExpDecaySchedule < TrainingSchedule
       end
       
       function isContinue = update(obj, ~, ~, ~)
+         % Multiply learnRate by decay constant and increment epoch.
+         % Terminate if maxEpochs reached.
          obj.epoch = obj.epoch + 1;
          isContinue = obj.epoch < obj.maxEpochs;
          obj.params{1} = obj.params{1}*obj.lrDecay;
       end
       
       function reset(obj)
+         % Set epoch = 0, learnRate = lr0.
          obj.epoch = 0;
          obj.params{1} = obj.lr0;
       end

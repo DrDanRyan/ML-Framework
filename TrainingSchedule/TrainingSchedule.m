@@ -1,5 +1,6 @@
 classdef TrainingSchedule < matlab.mixin.Copyable
-   % This defines the TrainingSchedule interface
+   % <Interface> Adjusts StepCalculator parameters and determines when 
+   % training should terminate.
     
    properties (Abstract)
       params
