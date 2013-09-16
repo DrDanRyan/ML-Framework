@@ -1,9 +1,13 @@
 classdef Momentum < StepCalculator
    % A basic gradient descent with momentum StepCalculator. Requires that 
-   % the owning GradientTrainer class' trainingSchedule has params = {learnRate, momentum}
+   % corresponding trainingSchedule has params = {learnRate, momentum}.
+   %
+   % Formula used to compute the step from current gradient and velocity:
+   % new_velocity = momenutm*old_velocity + learnRate*gradient
+   % step = new_velocity
    
    properties
-      velocity
+      velocity % current velocity
    end
    
    methods
@@ -21,6 +25,7 @@ classdef Momentum < StepCalculator
       end
       
       function reset(obj)
+         % Set velocity to be empty
          obj.velocity = [];
       end
    end

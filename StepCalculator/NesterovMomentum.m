@@ -1,5 +1,11 @@
 classdef NesterovMomentum < StepCalculator
    % Uses Nesterov's Accelerated Gradient method to calculate next step.
+   % Requires corresponding TrainingSchedule to use params = {learnRate, momentum}.
+   %
+   % Formula used for update:
+   % look_ahead_gradient = model.gradient at current model params PLUS velocity
+   % new_velocity = momentum*velocity + learnRate*look_ahead_gradient
+   % step = new_velocity
    
    properties
       velocity
@@ -23,6 +29,7 @@ classdef NesterovMomentum < StepCalculator
       end
       
       function reset(obj)
+         % Velocity is reset to empty
          obj.velocity = [];
       end
    end

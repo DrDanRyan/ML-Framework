@@ -1,6 +1,10 @@
 classdef IRprop < StepCalculator
    % "Improved Rprop" with weight backtracking. 
    % Should only be used in full batch mode (for mini-batches use RMSprop).
+   %
+   % Like Rprop except when a 'bad step' has been taken (gradient switched
+   % signs and overall batch error has increased) weights are reset to
+   % previous values
    
    properties
       upFactor
@@ -33,6 +37,12 @@ classdef IRprop < StepCalculator
       
       
       function take_step(obj, x, t, model, ~)
+         % Check each connection to see if gradient has changed sign from
+         % previous step. If so, check if error has increased or decreased.
+         % If error increase backtrack previous weight changes on those
+         % connections, if error decrease, only decrease learning rate on
+         % those connections. If gradient has not changed signs, increase
+         % learning rates on those connections.
          [grad, y] = model.gradient(x, t);
          loss = model.compute_loss(y, t);
          step = cell(size(grad));
@@ -70,6 +80,7 @@ classdef IRprop < StepCalculator
       end
       
       function reset(obj)
+         % Clear rates and previous step, gradient and loss information
          obj.rates = [];
          obj.prevGrad = [];
          obj.prevLoss = [];
