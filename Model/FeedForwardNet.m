@@ -21,7 +21,7 @@ classdef FeedForwardNet < Model
          parse(p, varargin{:});
          
          obj.isDropout = p.Results.isDropout;
-         obj.dropout = p.Results.hiddenDropout;
+         obj.hiddenDropout = p.Results.hiddenDropout;
          obj.inputDropout = p.Results.inputDropout;
          
          if isempty(p.Results.gpu)
