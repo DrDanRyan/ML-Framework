@@ -7,18 +7,21 @@ classdef FeedForwardNet < Model
       outputLayer % a single OutputLayer object
       gpuState % gpuState object used for array creation dependent on isGPU flag in object
       isDropout % boolean indicating wheter to use dropout
+      hiddenDropout % proportion of hidden units that are replaced with zero
       inputDropout % proportion of inputs that are replaced with zero (in [0, 1])
    end
    
    methods
       function obj = FeedForwardNet(varargin)
          p = inputParser;
-         p.addParamValue('dropout', true);
+         p.addParamValue('isDropout', true);
+         p.addParamValue('hiddenDropout', .5);
          p.addParamValue('inputDropout', 0);
          p.addParamValue('gpu', []);         
          parse(p, varargin{:});
          
-         obj.isDropout = p.Results.dropout;
+         obj.isDropout = p.Results.isDropout;
+         obj.dropout = p.Results.hiddenDropout;
          obj.inputDropout = p.Results.inputDropout;
          
          if isempty(p.Results.gpu)
@@ -108,7 +111,7 @@ classdef FeedForwardNet < Model
          N = size(x, 2);
          for i = 1:nHiddenLayers
             L = obj.hiddenLayers{i}.outputSize;
-            mask{i} = obj.gpuState.binary_mask([L, N], .5);
+            mask{i} = obj.gpuState.binary_mask([L, N], obj.hiddenDropout);
          end
       end
       
@@ -118,7 +121,7 @@ classdef FeedForwardNet < Model
          if obj.isDropout
             y = (1-obj.inputDropout)*x;
             for i = 1:nHiddenLayers
-               y = obj.hiddenLayers{i}.feed_forward(y)*.5;
+               y = (1-obj.hiddenDropout)*obj.hiddenLayers{i}.feed_forward(y);
             end
          else
             y = x;
