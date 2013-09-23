@@ -12,7 +12,7 @@ classdef EarlyStopping < TrainingSchedule
    end
    
    methods
-      function obj = StepDownMomentum(lr0, momentum, maxEpochs, varargin)
+      function obj = EarlyStopping(lr0, momentum, maxEpochs, varargin)
          obj.params{1} = lr0;
          obj.params{2} = momentum;
          obj.maxEpochs = maxEpochs;

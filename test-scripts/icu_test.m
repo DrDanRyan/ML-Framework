@@ -3,27 +3,34 @@ close all
 load Citi_data
 
 %% parameters
-Layer1 = 500;
-Layer2 = 300;
+Layer1 = 100;
+Layer2 = 100;
+Layer3 = 100;
 
 nFolds = 5;
 
-learnRate = .1;
+learnRate = .03;
+momentum = .85;
+
 minRate = 1e-7;
 maxRate = 50;
 upFactor = 1.2;
 downFactor = .5;
+
 L1Penalty = 0;
-L2Penalty = 1e-3;
+L2Penalty = 0;
 nEpochs = 1000;
 
-maxoutLayers = 2;
-inputDropout = .4;
+maxoutLayers = 3;
+hiddenDropout = .2;
+inputDropout = .1;
 
-momentum = .85;
+
 %lrDecay = .998; 
 
-
+% maxCuts = 0;
+% cutFactor = .25;
+% lookAhead = 40;
  
 %% Initialize trainer
 trainer = GradientTrainer();
@@ -33,24 +40,28 @@ trainer.stepCalculator = NesterovMomentum();
 %                                            'upFactor', upFactor, ...
 %                                            'downFactor', downFactor);
 trainer.reporter = ConsoleReporter();
-trainer.trainingSchedule = StepDownMomentum(learnRate, momentum, nEpochs);
+trainer.trainingSchedule = EarlyStopping(learnRate, momentum, nEpochs, ...
+                                                'burnIn', 100, ... 
+                                                'lookAhead', 20);
 
 %% Initialize nnets and preprocessors
-nnet = FeedForwardNet('inputDropout', inputDropout);
-nnet.hiddenLayers = {MaxoutHiddenLayer(187, Layer1, maxoutLayers, 'L2Penalty', L2Penalty), ...
+nnet = FeedForwardNet('inputDropout', inputDropout, 'hiddenDropout', hiddenDropout);
+nnet.hiddenLayers = {MaxoutHiddenLayer(187, Layer1, maxoutLayers), ...
                      MaxoutHiddenLayer(Layer1, Layer2, maxoutLayers, ...
                                                 'initType', 'sparse', ...
-                                                'initScale', 15, ...
-                                                'L2Penalty', L2Penalty)};
+                                                'initScale', 15), ...
+                     MaxoutHiddenLayer(Layer2, Layer3, maxoutLayers, ...
+                                                'initType', 'sparse', ...
+                                                'initScale', 15)};
 
-nnet.outputLayer = SVMOutputLayer(Layer2, 'hingeExp', 2, ...
+nnet.outputLayer = SVMOutputLayer(Layer3, 'hingeExp', 2, ...
                                           'L1Penalty', L1Penalty, ...
                                           'L2Penalty', L2Penalty, ...
-                                          'costRatio', 4);
+                                          'costRatio', 2);
 targets(targets == 0) = -1;
 
 %% Train base learners on CV partition
-hold_outs = cross_validate_partition(4000, nFolds);
+hold_outs = stratified_CV_partition(targets, nFolds);
 gpuState = GPUState();
 outputs = gpuState.zeros(1, 4000);
 
