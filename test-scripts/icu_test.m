@@ -8,7 +8,7 @@ Layer2 = 300;
 
 nFolds = 5;
 
-learnRate = .5;
+learnRate = .1;
 minRate = 1e-7;
 maxRate = 50;
 upFactor = 1.2;
@@ -45,7 +45,8 @@ nnet.hiddenLayers = {MaxoutHiddenLayer(187, Layer1, maxoutLayers, 'L2Penalty', L
 
 nnet.outputLayer = SVMOutputLayer(Layer2, 'hingeExp', 2, ...
                                           'L1Penalty', L1Penalty, ...
-                                          'L2Penalty', L2Penalty);
+                                          'L2Penalty', L2Penalty, ...
+                                          'costRatio', 4);
 targets(targets == 0) = -1;
 
 %% Train base learners on CV partition
@@ -74,7 +75,7 @@ end
 %% Determine threshold value that yields the best score
 outputs = gather(outputs);
 targets(targets == -1) = 0;
-event1 = Event1Score(outputs, targets);
+event1 = Event1Score(outputs, targets, true);
 lemeshow = Lemeshow(outputs, targets);
 fprintf('\n\n Max Score: %.4f \t Lemeshow %.4f \n', ...
               event1, lemeshow);

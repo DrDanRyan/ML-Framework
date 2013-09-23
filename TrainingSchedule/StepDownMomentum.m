@@ -32,8 +32,8 @@ classdef StepDownMomentum < TrainingSchedule
          obj.maxEpochs = maxEpochs;
          
          p = inputParser();
-         p.addParamValue('cutFactor', .1);
-         p.addParamValue('lookAhead', 30)
+         p.addParamValue('cutFactor', .5);
+         p.addParamValue('lookAhead', 20)
          p.addParamValue('maxCuts', 2)
          parse(p, varargin{:});
          
