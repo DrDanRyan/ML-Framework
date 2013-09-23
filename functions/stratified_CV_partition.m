@@ -1,4 +1,4 @@
-function hold_outs = stratified_cross_validate_partition(targets, nFolds)
+function hold_outs = stratified_CV_partition(targets, nFolds)
 % Creata a cross-validation partition where the ratio of positive to
 % negative examples is roughly equal in each fold. Assumes that targets is
 % either a binary vector (zeros and ones) or a vector of +1 and -1. Hold

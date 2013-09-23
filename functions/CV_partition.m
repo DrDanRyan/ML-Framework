@@ -1,4 +1,4 @@
-function hold_outs = cross_validate_partition(n, k)
+function hold_outs = CV_partition(n, k)
 
 hold_outs = cell(1, k);
 permvec = randperm(n);
