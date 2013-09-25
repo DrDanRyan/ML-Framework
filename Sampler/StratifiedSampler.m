@@ -23,8 +23,8 @@ classdef StratifiedSampler < Sampler
          negatives = fullIdx(targets ~= 1);
          negSize = length(negatives);
          
-         posSample = positives(randsample(posSize, obj.proportion*posSize));
-         negSample = negatives(randsample(negSize, obj.proportion*negSize));
+         posSample = positives(randsample(posSize, round(obj.proportion*posSize)));
+         negSample = negatives(randsample(negSize, round(obj.proportion*negSize)));
          sampleIdx = [posSample, negSample];
          sampleIdx = sampleIdx(randperm(length(sampleIdx)));
       end
