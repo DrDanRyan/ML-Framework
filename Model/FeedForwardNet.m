@@ -1,13 +1,14 @@
 classdef FeedForwardNet < Model
+% A concrete implementation of the Abstract Model class.Implements the Model interface.
 % A general base class for a feed-forward neural network that can utilize
-% dropout and gpu training. Implements the Model interface.
+% dropout and gpu training. 
 
    properties
       hiddenLayers % cell array of HiddenLayer objects
       outputLayer % a single OutputLayer object
       gpuState % gpuState object used for array creation dependent on isGPU flag in object
       isDropout % boolean indicating wheter to use dropout
-      hiddenDropout % proportion of hidden units that are replaced with zero
+      hiddenDropout % proportion of hidden units that are replaced with zero (in [0, 1])
       inputDropout % proportion of inputs that are replaced with zero (in [0, 1])
    end
    
@@ -64,6 +65,9 @@ classdef FeedForwardNet < Model
       end
       
       function [grad, output] = gradient(obj, x, t)
+         % Computes the gradient for batch input x and target t for all parameters in
+         % each hiddenLayer and outputLayer.
+         
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(nHiddenLayers, 1); % output from each hiddenLayer
          dLdy = cell(nHiddenLayers, 1); % derivative of loss function wrt hiddenLayer output
@@ -101,8 +105,10 @@ classdef FeedForwardNet < Model
       end
       
       function [x, mask] = dropout_mask(obj, x)   
+         % Computes a binary (0, 1) mask  for both the inputs, x, and each hidden
+         % layer. Zeros correspond to the units removed by dropout.
          
-         % Dropout inputs
+         % Apply dropout to the inputs
          x = x.*obj.gpuState.binary_mask(size(x), obj.inputDropout);
          
          % Mask for hidden layer outputs

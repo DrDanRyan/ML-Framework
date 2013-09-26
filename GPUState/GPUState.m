@@ -3,7 +3,7 @@ classdef GPUState
    % the isGPU flag
    
    properties
-      isGPU
+      isGPU % boolean flag indicating whether GPU is being used
    end
    
    methods
