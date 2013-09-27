@@ -62,7 +62,14 @@ classdef GPUState
             value = double(logicalMatrix);
          end
       end
-         
+      
+      function value = linspace(obj, varargin)
+         if obj.isGPU
+            value = single(gpuArray.linspace(varargin{:}));
+         else
+            value = linspace(varargin{:});
+         end
+      end
    end
 end
 

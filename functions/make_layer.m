@@ -13,6 +13,8 @@ switch typeString
       layer = LogisticOutputLayer(args{:});
    case 'SVMOutput'
       layer = SVMOutputLayer(args{:});
+   case 'PRBEPOutput'
+      layer = PRBEPOutputLayer(args{:});
 end
 
 
