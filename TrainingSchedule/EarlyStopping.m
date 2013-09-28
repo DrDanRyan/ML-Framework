@@ -44,7 +44,7 @@ classdef EarlyStopping < TrainingSchedule
       
       function isContinue = update(obj, ~, ~, validationLoss)
          obj.epoch = obj.epoch + 1;
-         if validationLoss <= obj.bestValidationLoss
+         if validationLoss < obj.bestValidationLoss
             obj.bestValidationLoss = validationLoss;
             obj.bestEpoch = obj.epoch;
          end
