@@ -13,7 +13,7 @@ classdef SVMOutputLayer < StandardOutputLayer
          obj = obj@StandardOutputLayer(inputSize, 1, varargin{:});
          p = inputParser();
          p.KeepUnmatched = true;
-         p.addParamValue('lossExponent', 2, @(x) x >= 1)
+         p.addParamValue('lossExponent', 2, @(x) x > 1)
          p.addParamValue('costRatio', 1);
          parse(p, varargin{:});
          obj.lossExponent = p.Results.lossExponent;
