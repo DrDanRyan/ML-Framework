@@ -13,14 +13,11 @@ classdef StratifiedSampler < Sampler
          obj.proportion = proportion;
       end
       
-      function sampleIdx = sample(obj, targets)
-         dataSize = size(targets, 2);
-         fullIdx = 1:dataSize;
-         
-         positives = fullIdx(targets==1);
+      function sampleIdx = sample(obj, idxs, targets)       
+         positives = idxs(targets==1);
          posSize = length(positives);
          
-         negatives = fullIdx(targets ~= 1);
+         negatives = idxs(targets ~= 1);
          negSize = length(negatives);
          
          posSample = positives(randsample(posSize, round(obj.proportion*posSize)));
