@@ -5,11 +5,17 @@ classdef PRBEPOutputLayer < StandardOutputLayer
 
    properties
       nonlinearity = @(x) x; % not actually used, need to define to inherit StandardOutputLayer
+      deltaWeight
    end
 
    methods
       function obj = PRBEPOutputLayer(inputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, 1, varargin{:});
+         p = inputParser;
+         p.KeepUnmatched = true;
+         p.addParamValue('deltaWeight', 1);
+         parse(p, varargin{:});
+         obj.deltaWeight = p.Results.deltaWeight;
       end
       
       function [dLdz, y] = dLdz(obj, x, t)
@@ -26,15 +32,20 @@ classdef PRBEPOutputLayer < StandardOutputLayer
       
       function loss = compute_loss(obj, y, t)
          [yStar, Delta] = obj.compute_yStar_and_Delta(y, t);
-         loss = Delta + (yStar - t)*y';
+         loss = obj.deltaWeight*Delta + (yStar - t)*y'/length(t);
       end
       
       function [yStar, Delta] = compute_yStar_and_Delta(obj, y, t)
-         [~, sortIdx] = sort(y);
+         % Sort y and store sorting indexes in sortIdx. Sort t in same
+         % order as y was sorted.
+         [y, sortIdx] = sort(y);
+         t = t(sortIdx);
+
          posIdx = sortIdx(t==1);
          negIdx = sortIdx(t~=1);
-         yPos = y(posIdx)';
-         yNeg = y(negIdx)';
+         yPos = y(t==1)';
+         yNeg = y(t~=1)';
+         
          nPos = length(posIdx); 
          nNeg = length(negIdx);    
          
@@ -46,7 +57,7 @@ classdef PRBEPOutputLayer < StandardOutputLayer
          d = -tril(obj.gpuState.ones(nPos+1, nNeg), nNeg - nPos -1);
          yPrimeNeg = b+d;
          
-         delta = 100*obj.gpuState.linspace(nPos, 0, nPos+1)'/nPos;
+         delta = obj.deltaWeight*obj.gpuState.linspace(nPos, 0, nPos+1)'/nPos;
          
          [~, bestIdx] = max(delta + yPrimePos*yPos + yPrimeNeg*yNeg);
          Delta = delta(bestIdx);

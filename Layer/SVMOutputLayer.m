@@ -23,11 +23,7 @@ classdef SVMOutputLayer < StandardOutputLayer
       function [dLdz, y] = dLdz(obj, x, t)
          y = obj.feed_forward(x);
          if obj.costRatio == 1
-            if obj.lossExponent > 1
-               dLdz = -obj.lossExponent*t.*(max(1 - y.*t, 0).^(obj.lossExponent-1));
-            else % lossExponent == 1
-               dLdz = -t.*obj.gpuState.make_numeric(y.*t < 1);
-            end
+            dLdz = -obj.lossExponent*t.*(max(1 - y.*t, 0).^(obj.lossExponent-1));
          else % obj.costRatio ~= 1
             posIdx = t==1;
             negIdx = t~=1;
@@ -36,14 +32,9 @@ classdef SVMOutputLayer < StandardOutputLayer
             tNeg = t(negIdx);
             yNeg = y(negIdx);
             dLdz = obj.gpuState.zeros(size(y));
-            if obj.lossExponent > 1
-               dLdz(:,posIdx) = -obj.lossExponent*obj.costRatio*...
-                                    tPos.*(max(1 - yPos.*tPos, 0).^(obj.lossExponent-1));
-               dLdz(:,negIdx) = -obj.lossExponent*tNeg.*(max(1 - yNeg.*tNeg, 0).^(obj.lossExponent-1));
-            else % lossExponent == 1
-               dLdz(:,posIdx) = -obj.costRatio*tPos.*obj.gpuState.make_numeric(yPos.*tPos < 1);
-               dLdz(:,negIdx) = -tNeg.*obj.gpuState.make_numeric(yNeg.*tNeg < 1);
-            end
+            dLdz(:,posIdx) = -obj.lossExponent*obj.costRatio*...
+                                 tPos.*(max(1 - yPos.*tPos, 0).^(obj.lossExponent-1));
+            dLdz(:,negIdx) = -obj.lossExponent*tNeg.*(max(1 - yNeg.*tNeg, 0).^(obj.lossExponent-1));
          end
       end
       
@@ -56,7 +47,7 @@ classdef SVMOutputLayer < StandardOutputLayer
       function loss = compute_loss(obj, y, t)
          if obj.costRatio == 1
             loss = mean(max(1 - y.*t, 0).^obj.lossExponent);
-         else
+         else % costRatio ~= 1
             posIdx = t==1;
             negIdx = t~=1;
             tPos = t(posIdx);
