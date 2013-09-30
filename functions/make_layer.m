@@ -9,12 +9,16 @@ switch typeString
       layer = ReluHiddenLayer(args{:});
    case 'MaxoutHidden'
       layer = MaxoutHiddenLayer(args{:});
+   case 'LinearHidden'
+      layer = LinearHiddenLayer(args{:});
    case 'LogisticOutput'
       layer = LogisticOutputLayer(args{:});
    case 'SVMOutput'
       layer = SVMOutputLayer(args{:});
    case 'PRBEPOutput'
       layer = PRBEPOutputLayer(args{:});
+   case 'ComboOutput'
+      layer = ComboOutputLayer(args{:});
 end
 
 
