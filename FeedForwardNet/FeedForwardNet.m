@@ -10,6 +10,8 @@ classdef FeedForwardNet < SupervisedModel
       isDropout % boolean indicating wheter to use dropout
       hiddenDropout % proportion of hidden units that are replaced with zero (in [0, 1])
       inputDropout % proportion of inputs that are replaced with zero (in [0, 1])
+      nestedGradShape % a row vector of integer values describing the nested gradient shape
+      flatGradLength % the length of the flattened gradient
    end
    
    methods
@@ -49,19 +51,15 @@ classdef FeedForwardNet < SupervisedModel
       end      
       
       function increment_params(obj, delta_params)
-         % delta_params is a single layer (non-nested) cell array of the
-         % same shape produced by gradient. Gradients are provided in
-         % reverse order (outputLayer first, followed by last hiddenLayer
-         % etc) as this is the order they were computed with backprop
+         % delta_params is a flat cell array; it must be rolled into proper
+         % shape (as originally produced during the layer by layer gradient
+         % computation) before updating each layer params.
          
-         stopIdx = length(delta_params); 
+         delta_params = obj.roll_gradient(delta_params);
          for i = 1:length(obj.hiddenLayers)
-            nParams = length(obj.hiddenLayers{i}.params);
-            startIdx = stopIdx - nParams + 1;
-            obj.hiddenLayers{i}.increment_params(delta_params(startIdx:stopIdx));
-            stopIdx = startIdx - 1;
+            obj.hiddenLayers{i}.increment_params(delta_params{i});
          end
-         obj.outputLayer.increment_params(delta_params(1:stopIdx));
+         obj.outputLayer.increment_params(delta_params(end));
       end
       
       function [grad, output] = gradient(obj, x, t)
@@ -71,7 +69,9 @@ classdef FeedForwardNet < SupervisedModel
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(nHiddenLayers, 1); % output from each hiddenLayer
          dLdy = cell(nHiddenLayers, 1); % derivative of loss function wrt hiddenLayer output
+         grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
          
+         % feed_forward through hiddenLayers
          if obj.isDropout
             [x, mask] = obj.dropout_mask(x);
          end
@@ -88,20 +88,20 @@ classdef FeedForwardNet < SupervisedModel
             end
          end
          
-         [grad, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t);
+         % get outputLayer output and begin backpropagation
+         [grad{end}, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t);
          if obj.isDropout
             dLdy{end} = dLdy{end}.*mask{end};
          end
          
          for i = nHiddenLayers:-1:2
-            [gradTEMP, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, dLdy{i});
-            grad = [grad, gradTEMP]; %#ok<AGROW>
+            [grad{i}, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, dLdy{i});
             if obj.isDropout
                dLdy{i-1} = dLdy{i-1}.*mask{i-1};
             end
          end
-         gradTEMP = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
-         grad = [grad, gradTEMP];
+         grad{1} = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
+         grad = obj.unroll_gradient(grad);
       end
       
       function [x, mask] = dropout_mask(obj, x)   
@@ -163,6 +163,42 @@ classdef FeedForwardNet < SupervisedModel
             obj.hiddenLayers{i}.init_params();
          end
          obj.outputLayer.init_params();
+      end
+      
+      function flatGrad = unroll_gradient(obj, nestedGrad)
+         if isempty(obj.nestedGradShape)
+            obj.compute_gradient_shapes(nestedGrad);
+         end
+         
+         flatGrad = cell(1, obj.flatGradLength);
+         startIdx = 1;
+         for i = 1:length(nestedGrad)
+            stopIdx = startIdx + obj.nestedGradShape(i) - 1;
+            flatGrad(startIdx:stopIdx) = nestedGrad{i};
+            startIdx = stopIdx + 1;
+         end
+      end
+      
+      function nestedGrad = roll_gradient(obj, flatGrad)
+         startIdx = 1;
+         nestedLength = length(obj.nestedGradShape);
+         nestedGrad = cell(1, nestedLength);
+         for i = 1:nestedLength
+            stopIdx = startIdx + obj.nestedGradShape(i) - 1;
+            nestedGrad{i} = flatGrad(startIdx:stopIdx);
+            startIdx = stopIdx + 1;
+         end
+      end
+      
+      function compute_gradient_shapes(obj, nestedGrad)
+         flatLength = 0;
+         nestedShape = zeros(1, length(nestedGrad));
+         for i = 1:length(nestedGrad)
+            nestedShape(i) = length(nestedGrad{i});
+            flatLength = flatLength + nestedShape(i);
+         end
+         obj.nestedGradShape = nestedShape;
+         obj.flatGradLength = flatLength;
       end
    end
 end
