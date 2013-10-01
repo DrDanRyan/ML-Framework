@@ -59,7 +59,7 @@ classdef FeedForwardNet < SupervisedModel
          for i = 1:length(obj.hiddenLayers)
             obj.hiddenLayers{i}.increment_params(delta_params{i});
          end
-         obj.outputLayer.increment_params(delta_params(end));
+         obj.outputLayer.increment_params(delta_params{end});
       end
       
       function [grad, output] = gradient(obj, x, t)
@@ -156,6 +156,8 @@ classdef FeedForwardNet < SupervisedModel
          objCopy.gpuState = obj.gpuState;
          objCopy.isDropout = obj.isDropout;
          objCopy.inputDropout = obj.inputDropout;
+         objCopy.nestedGradShape = obj.nestedGradShape;
+         objCopy.flatGradLength = obj.flatGradLength;
       end
       
       function reset(obj)
