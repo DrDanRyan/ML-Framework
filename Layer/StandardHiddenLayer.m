@@ -33,8 +33,8 @@ classdef StandardHiddenLayer < HiddenLayer & StandardLayer
          gradVariance{1} = (dLdz.^2)*(x.^2)'/N;
          gradVariance{2} = mean(dLdz.^2, 2);
          
-         nonZero_dLdz = gpuState.make_numeric(dLdz~=0);
-         nonZero_xTrans = gpuState.make_numeric(x'~=0);
+         nonZero_dLdz = obj.gpuState.make_numeric(dLdz~=0);
+         nonZero_xTrans = obj.gpuState.make_numeric(x'~=0);
          nonZeroTerms{1} = nonZero_dLdz*nonZero_xTrans;
          nonZeroTerms{2} = sum(nonZero_dLdz, 2);
       end
