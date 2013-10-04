@@ -3,10 +3,12 @@ classdef FullBatch < DataManager
    methods
       function obj = FullBatch(trainingInputs, trainingTargets, validationInputs, ...
                                        validationTargets)
-         obj.trainingInputs = trainingInputs;
-         obj.trainingTargets = trainingTargets;
-         obj.validationInputs = validationInputs;
-         obj.validationTargets = validationTargets;
+         if nargin > 0
+            obj.trainingInputs = trainingInputs;
+            obj.trainingTargets = trainingTargets;
+            obj.validationInputs = validationInputs;
+            obj.validationTargets = validationTargets;
+         end
       end
       
       function [x, t, endOfEpochFlag] = next_batch(obj)
