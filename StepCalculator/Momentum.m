@@ -16,9 +16,9 @@ classdef Momentum < StepCalculator
          [learnRate, momentum] = params{:};
          
          if isempty(obj.velocity)
-            obj.velocity = cellfun(@(grad) learnRate*grad, grad, 'UniformOutput', false);
+            obj.velocity = cellfun(@(grad) -learnRate*grad, grad, 'UniformOutput', false);
          else
-            obj.velocity = cellfun(@(grad, vel) momentum*vel + learnRate*grad, ...
+            obj.velocity = cellfun(@(grad, vel) momentum*vel - learnRate*grad, ...
                                     grad, obj.velocity, 'UniformOutput', false);
          end
          model.increment_params(obj.velocity);

@@ -49,7 +49,7 @@ classdef IRprop < StepCalculator
             obj.rates = cell(size(grad));
             for i = 1:length(grad)
                obj.rates{i} = params{1}*model.gpuState.ones(size(grad{i}));
-               step{i} = obj.rates{i}.*sign(grad{i});
+               step{i} = -obj.rates{i}.*sign(grad{i});
             end
          else
             isLossIncrease = loss > obj.prevLoss;
@@ -65,7 +65,7 @@ classdef IRprop < StepCalculator
                                            obj.downFactor*obj.rates{i}(downIdx));
                
                grad{i}(downIdx) = 0;                         
-               step{i} = obj.rates{i}.*sign(grad{i});
+               step{i} = -obj.rates{i}.*sign(grad{i});
                if isLossIncrease
                   step{i}(downIdx) = -obj.prevStep{i}(downIdx);
                end

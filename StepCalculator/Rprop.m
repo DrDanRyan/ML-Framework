@@ -47,7 +47,7 @@ classdef Rprop < StepCalculator
          % appropriately. Then step = learnRate*sign(gradient).
          grad = model.gradient(x, t);
          obj.update_rates(grad, model);
-         steps = cellfun(@(rate, grad) rate.*sign(grad), obj.rates, grad, ...
+         steps = cellfun(@(rate, grad) -rate.*sign(grad), obj.rates, grad, ...
                           'UniformOutput', false);
          model.increment_params(steps);
          obj.prevGrad = grad;
