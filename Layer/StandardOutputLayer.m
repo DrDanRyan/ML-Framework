@@ -9,6 +9,9 @@ classdef StandardOutputLayer < OutputLayer & StandardLayer
       end
       
       function [grad, dLdx, y] = backprop(obj, x, t, isAveraged)
+         if nargin < 4
+            isAveraged = true;
+         end
          [dLdz, y] = obj.dLdz(x, t); 
          dLdx = obj.params{1}'*dLdz;
          grad = obj.grad_from_dLdz(x, dLdz, isAveraged);

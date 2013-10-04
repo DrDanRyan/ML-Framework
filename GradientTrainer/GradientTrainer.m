@@ -76,10 +76,22 @@ classdef GradientTrainer < handle
          if ~isempty(obj.reporter)
             obj.reporter.reset();
          end
-         obj.stepCalculator.reset();
-         obj.trainingSchedule.reset();
-         obj.dataManager.reset();
-         obj.model.reset();
+         
+         if ~isempty(obj.stepCalculator)
+            obj.stepCalculator.reset();
+         end
+         
+         if ~isempty(obj.trainingSchedule)
+            obj.trainingSchedule.reset();
+         end
+         
+         if ~isempty(obj.dataManager)
+            obj.dataManager.reset();
+         end
+         
+         if ~isempty(obj.model)
+            obj.model.reset();
+         end
       end
    end      
 end

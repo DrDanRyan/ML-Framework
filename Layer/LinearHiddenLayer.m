@@ -7,7 +7,7 @@ classdef LinearHiddenLayer < StandardHiddenLayer
    
    methods
       function obj = LinearHiddenLayer(inputSize, outputSize, varargin)
-         obj = StandardHiddenLayer(inputSize, outputSize, varargin{:});
+         obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
       function y = feed_forward(obj, x)

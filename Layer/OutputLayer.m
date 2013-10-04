@@ -3,7 +3,7 @@ classdef OutputLayer < matlab.mixin.Copyable
    % the Layer superclass)
    
    methods (Abstract)
-      [grad, dLdx, output] = backprop(obj, x, t)
+      [grad, dLdx, output] = backprop(obj, x, t, isAveraged)
       loss = compute_loss(obj, y, t)
       y = feed_forward(x)
       push_to_GPU(obj)

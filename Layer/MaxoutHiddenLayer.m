@@ -27,7 +27,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          y = max(z, [], 3);
       end
       
-      function [grad, dLdx] = backprop(obj, x, y, dLdy)
+      function [grad, dLdx] = backprop(obj, x, y, dLdy, ~)
          N = size(x, 2);         
          z = obj.compute_z(x);
          mask = obj.gpuState.make_numeric((bsxfun(@eq, z, y)));

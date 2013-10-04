@@ -4,7 +4,7 @@ classdef NesterovMomentum < StepCalculator
    %
    % Formula used for update:
    % look_ahead_gradient = model.gradient at current model params PLUS velocity
-   % new_velocity = momentum*velocity + learnRate*look_ahead_gradient
+   % new_velocity = momentum*velocity - learnRate*look_ahead_gradient
    % step = new_velocity
    
    properties

@@ -13,17 +13,20 @@ classdef ComboOutputLayer < OutputLayer
          obj.lossFunction = lossFunction;
       end
       
-      function [grad, dLdx, y] = backprop(obj, x, t)
+      function [grad, dLdx, y] = backprop(obj, x, t, isAveraged)
+         if nargin < 4
+            isAveraged = true;
+         end
          y = obj.hiddenLayer.feed_forward(x);
          dLdy = obj.lossFunction.dLdy(y, t);
-         [grad, dLdx] = obj.hiddenLayer.backprop(x, y, dLdy);
+         [grad, dLdx] = obj.hiddenLayer.backprop(x, y, dLdy, isAveraged);
       end
       
       function loss = compute_loss(obj, y, t)
          loss = obj.lossFunction.compute_loss(y, t);
       end
       
-      function y = feed_forward(x)
+      function y = feed_forward(obj, x)
          y = obj.hiddenLayer.feed_forward(x);
       end
       

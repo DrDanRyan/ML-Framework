@@ -25,16 +25,16 @@ classdef AutoEncoder < handle
          obj.decodeLayer = p.Results.decodeLayer;
          obj.inputDropout = p.Results.inputDropout;
          obj.hiddenDropout = p.Results.hiddenDropout;
-         obj.isTiedWeights = p.Resutls.isTiedWeights;
+         obj.isTiedWeights = p.Results.isTiedWeights;
          obj.gpuState = GPUState(p.Results.gpu);
       end
       
-      function [grad, xRecon] = gradient(obj, x)
+      function [grad, xRecon] = gradient(obj, x, ~, ~)
          xCorrupt = x.*obj.gpuState.binary_mask(size(x), obj.inputDropout);
          xCode = obj.encodeLayer.feed_forward(xCorrupt);
          xCode = xCode.*obj.gpuState.binary_mask(size(xCode), obj.hiddenDropout);
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, x);
-         encodeGrad = obj.encodeLayer.backprop(xCorrupt, dLdxCode);
+         encodeGrad = obj.encodeLayer.backprop(xCorrupt, xCode, dLdxCode);
          
          if obj.isTiedWeights
             grad = cellfun(@(g1, g2) g1 + g2', encodeGrad, decodeGrad, ...
@@ -54,7 +54,7 @@ classdef AutoEncoder < handle
          xRecon = obj.decodeLayer.feed_forward(xCode);
       end
       
-      function update_params(obj, delta_params)
+      function increment_params(obj, delta_params)
          if obj.isTiedWeights
             obj.encodeLayer.increment_params(delta_params);
             obj.decodeLayer.params = obj.get_encode_params_transposed();
@@ -86,6 +86,16 @@ classdef AutoEncoder < handle
       
       function pTrans = get_encode_params_transposed(obj)
          pTrans = cellfun(@(p) p', obj.encodeLayer.params, 'UniformOutput', false);
+      end
+      
+      function objCopy = copy(obj)
+         objCopy = AutoEncoder();
+         objCopy.encodeLayer = obj.encodeLayer.copy();
+         objCopy.decodeLayer = obj.decodeLayer.copy();
+         objCopy.isTiedWeights = obj.isTiedWeights;
+         objCopy.inputDropout = obj.inputDropout;
+         objCopy.hiddenDropout = obj.hiddenDropout;
+         objCopy.gpuState = obj.gpuState;
       end
    end
    
