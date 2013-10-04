@@ -32,8 +32,8 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          z = obj.compute_z(x);
          mask = obj.gpuState.make_numeric((bsxfun(@eq, z, y)));
          dLdz = bsxfun(@times, dLdy, mask);
-         grad{1} = -pagefun(@mtimes, dLdz, x')/N;
-         grad{2} = -mean(dLdz, 2);
+         grad{1} = pagefun(@mtimes, dLdz, x')/N;
+         grad{2} = mean(dLdz, 2);
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
       end
       

@@ -64,26 +64,6 @@ classdef PRBEPOutputLayer < StandardOutputLayer
          yStar = obj.gpuState.zeros(size(t));
          yStar(posIdx) = yPrimePos(bestIdx, :);
          yStar(negIdx) = yPrimeNeg(bestIdx, :);
-         
-%          for a = 0:nPos
-%             b = nPos - a; % c = b at breakeven point
-%             d = nNeg - b;
-%             yPrime(posIdx(1:b)) = -1;
-%             if b < nPos
-%                yPrime(posIdx(b+1:end)) = 1;
-%             end
-%             yPrime(negIdx(1:d)) = -1;
-%             if d < nNeg
-%                yPrime(negIdx(d+1:end)) = 1;
-%             end
-%             DeltaPrime = 100*b/(a+b);
-%             loss = DeltaPrime + yPrime*y';
-%             if loss > maxLoss
-%                yStar = yPrime;
-%                Delta = DeltaPrime;
-%                maxLoss = loss;
-%             end
-%          end
       end
       
    end

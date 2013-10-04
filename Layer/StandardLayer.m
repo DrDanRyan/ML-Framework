@@ -98,6 +98,32 @@ classdef StandardLayer < handle
             penalties{2} = 2*obj.L2Penalty*obj.params{2};
          end
       end
+      
+      function grad = grad_from_dLdz(obj, x, dLdz, isAveraged)
+         [L1, N] = size(x, 2);
+         L2 = obj.outputSize;
+         if obj.isPenalty
+            penalties = obj.compute_penalties();
+            if isAveraged
+               grad{1} = dLdz*x'/N + penalties{1}; % dL/dW
+               grad{2} = mean(dLdz, 2) + penalties{2}; % dL/db
+            else
+               dLdz = reshape(dLdz, L2, 1, N);
+               grad{1} = bsxfun(@times, dLdz, reshape(x, 1, L1, N));
+               grad{1} = bsxfun(@plus, grad{1}, penalties{1});
+               grad{2} = bsxfun(@plus, dLdz, penalties{2});
+            end
+         else % No penalties
+            if isAveraged
+               grad{1} = dLdz*x'/N;
+               grad{2} = mean(dLdz, 2);
+            else
+               grad{2} = reshape(dLdz, L2, 1, N);
+               grad{1} = bsxfun(@times, grad{2}, reshape(x, 1, L1, N));
+            end
+         end
+      end
+      
    end
 end
 
