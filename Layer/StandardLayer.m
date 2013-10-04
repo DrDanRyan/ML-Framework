@@ -100,7 +100,7 @@ classdef StandardLayer < handle
       end
       
       function grad = grad_from_dLdz(obj, x, dLdz, isAveraged)
-         [L1, N] = size(x, 2);
+         [L1, N] = size(x);
          L2 = obj.outputSize;
          if obj.isPenalty
             penalties = obj.compute_penalties();

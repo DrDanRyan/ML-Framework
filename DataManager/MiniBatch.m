@@ -8,7 +8,7 @@ classdef MiniBatch < DataManager
    end
    
    methods
-      function obj = BasicDataManager(batchSize, trainingInputs, trainingTargets, validationInputs, ...
+      function obj = MiniBatch(batchSize, trainingInputs, trainingTargets, validationInputs, ...
                                        validationTargets)
          obj.batchSize = batchSize;
          
