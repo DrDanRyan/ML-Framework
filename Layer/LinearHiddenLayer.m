@@ -6,6 +6,10 @@ classdef LinearHiddenLayer < StandardHiddenLayer
    end
    
    methods
+      function obj = LinearHiddenLayer(inputSize, outputSize, varargin)
+         obj = StandardHiddenLayer(inputSize, outputSize, varargin{:});
+      end
+      
       function y = feed_forward(obj, x)
          y = bsxfun(@plus, obj.params{1}*x, obj.params{2});
       end
