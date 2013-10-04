@@ -4,7 +4,7 @@ classdef AdaptiveLearningRate < StepCalculator
    
    properties
       eps % small value used to prevent division by zero
-      C % constant (>= 1) used to initially overestimate variance and diagonal hessian values
+      C % constant (>= 1) used to initially overestimate gradSquared and hessSquared
          % in order to slow down learning until estimates are accurate.
       n0 % initial memory size
          
@@ -47,14 +47,14 @@ classdef AdaptiveLearningRate < StepCalculator
          
          for i = 1:length(raw_grad1)
             gradDim = ndims(raw_grad1{i});
-            grad_diff = abs(bsxfun(@rdivide, raw_grad1{i} - raw_grad2{i}, ...
-                              obj.gradAvg{i} + obj.eps));
+            grad_diff = bsxfun(@rdivide, abs(raw_grad1{i} - raw_grad2{i}), ...
+                              max(abs(obj.gradAvg{i}), obj.eps));
             hess = sum(grad_diff, gradDim)/N; % sum over last dimenion
             hessSquared = sum(grad_diff.^2, gradDim)/N;
             raw_grad2{i} = []; % clear room in GPU memory
             grad = sum(raw_grad1{i}, gradDim)/N;
             gradSquared = sum(raw_grad1{i}.^2, gradDim)/N;
-            nonZeroTerms = sum(raw_grad1{i}~=0, gradDim);
+            %nonZeroTerms = sum(raw_grad1{i}~=0, gradDim);
             raw_grad1{i} = []; % clear room in GPU memory
             
             % Detect outliers and increase memorySize by 1 when detected
@@ -66,21 +66,21 @@ classdef AdaptiveLearningRate < StepCalculator
             
             % Update moving averages
             obj.gradAvg{i} = (1 - 1./obj.memorySize{i}).*obj.gradAvg{i} + ...
-                                 bsxfun(@rdivide, grad, obj.memorySize{i});
+                                 grad./obj.memorySize{i};
             obj.gradSquaredAvg{i} = (1 - 1./obj.memorySize{i}).*obj.gradSquaredAvg{i} + ...
-                                 bsxfun(@rdivide, gradSquared, obj.memorySize{i});
+                                 gradSquared./obj.memorySize{i};
             obj.hessAvg{i} = (1 - 1./obj.memorySize{i}).*obj.hessAvg{i} + ...
-                                 bsxfun(@rdivide, hess, obj.memorySize{i});
+                                 hess./obj.memorySize{i};
             obj.hessSquaredAvg{i} = (1 - 1./obj.memorySize{i}).*obj.hessSquaredAvg{i} + ...
-                                 bsxfun(@rdivide, hessSquared, obj.memorySize{i});   
+                                 hessSquared./obj.memorySize{i};   
                               
             % Update Learning Rates
             obj.learnRates{i} = (N*obj.hessAvg{i}.*obj.gradAvg{i}.^2)./...
                                  (obj.eps + obj.hessSquaredAvg{i}.*...
-                                 (obj.gradSquaredAvg{i} + (nonZeroTerms-1).*obj.gradAvg{i}.^2));
+                                 (obj.gradSquaredAvg{i} + (N-1).*obj.gradAvg{i}.^2));
                               
             % Update memorySize
-            obj.memorySize{i} = (1 - (obj.gradAvg{i}.^2)./obj.gradSquaredAvg{i}).*...
+            obj.memorySize{i} = (1 - (obj.gradAvg{i}.^2)./(obj.gradSquaredAvg{i} + obj.eps)).*...
                                     obj.memorySize{i} + 1;
                               
             % Define model step
@@ -115,10 +115,11 @@ classdef AdaptiveLearningRate < StepCalculator
          
          for i = 1:gradLength
             gradDim = ndims(raw_grad1{i});
-            grad_diff = abs(bsxfun(@rdivide, raw_grad1{i} - raw_grad2{i}, ...
-                              obj.gradAvg{i} + obj.eps));
+            grad_diff = bsxfun(@rdivide, abs(raw_grad1{i} - raw_grad2{i}), ...
+                              max(abs(obj.gradAvg{i}), obj.eps));
             obj.hessAvg{i} = sum(grad_diff, gradDim)/N; % sum over last dimenion
             obj.hessSquaredAvg{i} = obj.C*sum(grad_diff.^2, gradDim)/N;
+            
             raw_grad2{i} = []; % clear room in GPU memory
             raw_grad1{i} = [];
          end
