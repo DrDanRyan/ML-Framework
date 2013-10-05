@@ -75,13 +75,13 @@ classdef AdaptiveLearningRate < StepCalculator
                                  hessSquared./obj.memorySize{i};   
                               
             % Update Learning Rates
-            obj.learnRates{i} = (N*obj.hessAvg{i}.*obj.gradAvg{i}.^2)./...
+            obj.learnRates{i} = (N*obj.hessAvg{i}.*obj.gradAvg{i}.^2 + obj.eps)./...
                                  (obj.eps + obj.hessSquaredAvg{i}.*...
                                  (obj.gradSquaredAvg{i} + (N-1).*obj.gradAvg{i}.^2));
                               
             % Update memorySize
-            obj.memorySize{i} = (1 - (obj.gradAvg{i}.^2)./(obj.gradSquaredAvg{i} + obj.eps)).*...
-                                    obj.memorySize{i} + 1;
+            obj.memorySize{i} = obj.memorySize{i}.*(1 - (obj.gradAvg{i}.^2 + obj.eps)./...
+                                    (obj.gradSquaredAvg{i} + obj.eps)) + 1;
                               
             % Define model step
             step{i} = model.gpuState.zeros(size(grad));
