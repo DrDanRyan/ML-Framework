@@ -21,7 +21,7 @@ classdef AdaptiveLearningRate < StepCalculator
       function obj = AdaptiveLearningRate(varargin)
          p = inputParser;
          p.addParamValue('eps', 1e-5);
-         p.addParamValue('C', 5);
+         p.addParamValue('C', 2);
          p.addParamValue('n0', 10);
          parse(p, varargin{:});
          
@@ -50,11 +50,14 @@ classdef AdaptiveLearningRate < StepCalculator
             grad_diff = bsxfun(@rdivide, abs(raw_grad1{i} - raw_grad2{i}), ...
                               max(abs(obj.gradAvg{i}), obj.eps));
             hess = sum(grad_diff, gradDim)/N; % sum over last dimenion
-            hessSquared = sum(grad_diff.^2, gradDim)/N;
+            grad_diff_squared = grad_diff.^2;
+            clear grad_diff
+            hessSquared = sum(grad_diff_squared, gradDim)/N;
+            clear grad_diff_squared
             raw_grad2{i} = []; % clear room in GPU memory
             grad = sum(raw_grad1{i}, gradDim)/N;
             gradSquared = sum(raw_grad1{i}.^2, gradDim)/N;
-            %nonZeroTerms = sum(raw_grad1{i}~=0, gradDim);
+            nonZeroTerms = sum(raw_grad1{i}~=0, gradDim);
             raw_grad1{i} = []; % clear room in GPU memory
             
             % Detect outliers and increase memorySize by 1 when detected
@@ -65,27 +68,23 @@ classdef AdaptiveLearningRate < StepCalculator
             obj.memorySize{i}(outlierIdx) = obj.memorySize{i}(outlierIdx) + 1;
             
             % Update moving averages
-            obj.gradAvg{i} = (1 - 1./obj.memorySize{i}).*obj.gradAvg{i} + ...
-                                 grad./obj.memorySize{i};
-            obj.gradSquaredAvg{i} = (1 - 1./obj.memorySize{i}).*obj.gradSquaredAvg{i} + ...
-                                 gradSquared./obj.memorySize{i};
-            obj.hessAvg{i} = (1 - 1./obj.memorySize{i}).*obj.hessAvg{i} + ...
-                                 hess./obj.memorySize{i};
-            obj.hessSquaredAvg{i} = (1 - 1./obj.memorySize{i}).*obj.hessSquaredAvg{i} + ...
-                                 hessSquared./obj.memorySize{i};   
+            memInv = 1./obj.memorySize{i};
+            obj.gradAvg{i} = (1 - memInv).*obj.gradAvg{i} + grad.*memInv;
+            obj.gradSquaredAvg{i} = (1 - memInv).*obj.gradSquaredAvg{i} + gradSquared.*memInv;
+            obj.hessAvg{i} = (1 - memInv).*obj.hessAvg{i} + hess.*memInv;
+            obj.hessSquaredAvg{i} = (1 - memInv).*obj.hessSquaredAvg{i} + hessSquared.*memInv;   
                               
             % Update Learning Rates
             obj.learnRates{i} = (N*obj.hessAvg{i}.*obj.gradAvg{i}.^2 + obj.eps)./...
                                  (obj.eps + obj.hessSquaredAvg{i}.*...
-                                 (obj.gradSquaredAvg{i} + (N-1).*obj.gradAvg{i}.^2));
+                                 (obj.gradSquaredAvg{i} + (nonZeroTerms-1).*obj.gradAvg{i}.^2));
                               
             % Update memorySize
             obj.memorySize{i} = obj.memorySize{i}.*(1 - (obj.gradAvg{i}.^2 + obj.eps)./...
                                     (obj.gradSquaredAvg{i} + obj.eps)) + 1;
                               
             % Define model step
-            step{i} = model.gpuState.zeros(size(grad));
-            step{i}(grad~=0) = -obj.learnRates{i}(grad~=0).*grad(grad~=0);
+            step{i} = -obj.learnRates{i}.*grad;
          end
          
          % Increment model params
