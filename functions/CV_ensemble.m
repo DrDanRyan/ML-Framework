@@ -1,16 +1,22 @@
-function outputs = CV_ensemble(nFolds, inputs, targets, models, ...
-                                             preprocessors, trainer, sampler)
+function [outputs, testLosses] = CV_ensemble(inputs, targets, nFolds, models, ...
+                                        trainer, sampler, preprocessors)
                                           
+if nargin < 7
+   preprocessors = [];
+end
 
-dataSize = size(inputs, 2);
+if isempty(targets)
+   targets = inputs;
+end
+
+[outputSize, dataSize] = size(targets);
 ensembleSize = length(models);
-outputSize = length(models{1}.output(preprocessors{1}.transform(inputs(:,1))));
 outputs = zeros(ensembleSize*outputSize, dataSize);
 hold_outs = cross_validate_partition(dataSize, nFolds);
 
 for foldIdx = 1:nFolds
-   validIdx = hold_outs{foldIdx};
-   trainIdx = setdiff(1:dataSize, validIdx);
+   testIdx = hold_outs{foldIdx};
+   trainSplit = setdiff(1:dataSize, testIdx);
    
    for i = 1:ensembleSize
       
@@ -19,10 +25,16 @@ for foldIdx = 1:nFolds
       trainer.model = models{i};
       
       % Sample from training data and apply preprocessor to set dataManager
-      sampleIdx = sampler.sample(trainIdx);
-      trainer.dataManager.trainingInputs = preprocessors{i}.transform(inputs(:, sampleIdx));
-      trainer.dataManager.trainingTargets = targets(:, sampleIdx);
-      trainer.dataManager.validationInputs = preprocessors{i}.transform(inputs(:, validIdx));
+      trainIdx = sampler.sample(trainSplit, targets(:,trainSplit));
+      validIdx = setdiff(trainSplit, trainIdx);
+      if isempty(preprocessors)
+         trainer.dataManager.trainingInputs = inputs(:, trainIdx);
+         trainer.dataManager.validationInputs = inputs(:, validIdx);
+      else
+         trainer.dataManager.trainingInputs = preprocessors{i}.transform(inputs(:, trainIdx));
+         trainer.dataManager.validationInputs = preprocessors{i}.transform(inputs(:, validIdx));
+      end
+      trainer.dataManager.trainingTargets = targets(:, trainIdx);
       trainer.dataManager.validationTargets = targets(:, validIdx);
       
       % Reset trainer and train model
@@ -32,9 +44,21 @@ for foldIdx = 1:nFolds
       % Make prediction for validation set
       startIdx = (i-1)*outputSize + 1;
       stopIdx = i*outputSize;
-      outputs(startIdx:stopIdx, validIdx) = ...
-         gather(trainer.model.output(trainer.dataManager.validationInputs));
+      
+      if isempty(preprocessors)
+         outputs(startIdx:stopIdx, testIdx) = gather(trainer.model.output(inputs(:,testIdx)));
+      else
+         outputs(startIdx:stopIdx, testIdx) = ...
+            gather(trainer.model.output(preprocessors{i}.transform(inputs(:,testIdx))));
+      end
    end
+end
+
+testLosses = zeros(ensembleSize, 1);
+for i = 1:ensembleSize
+   startIdx = (i-1)*outputSize + 1;
+   stopIdx = i*outputSize;
+   testLosses(i) = models{i}.compute_loss(outputs(startIdx:stopIdx, :), targets);
 end
 
 end
