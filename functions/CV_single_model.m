@@ -7,16 +7,12 @@ end
 [outputSize, dataSize] = size(targets);
 hold_outs = CV_partition(dataSize, nFolds);
 gpuState = GPUState();
-outputs = gpuState.zeros(outputSize, dataSize, 'single');
+outputs = gpuState.zeros(outputSize, dataSize);
 
 for i = 1:nFolds
    testSplit = hold_outs{i};
-   
    trainSplit = setdiff(1:dataSize, testSplit);
-   trainIdx = sampler.sample(trainSplit, targets(:, trainSplit));
-   validIdx = setdiff(trainSplit, trainIdx);
-   model = train_model_function(inputs(:,trainIdx), targets(:,trainIdx),...
-                                 inputs(:,validIdx), targets(:,validIdx));
+   model = train_model_function(inputs(:,trainSplit), targets(:,trainSplit));
    outputs(testSplit) = model.output(inputs(:, testSplit));
 end
 

@@ -48,6 +48,10 @@ classdef AutoEncoder < handle
          loss = obj.decodeLayer.compute_loss(xRecon, x);
       end
       
+      function xCode = encode(obj, x)
+         xCode = (1-obj.inputDropout)*obj.encodeLayer.feed_forward(x);
+      end
+      
       function xRecon = output(obj, x)
          x = (1-obj.inputDropout).*x;
          xCode = (1-obj.hiddenDropout).*obj.encodeLayer.feed_forward(x);
@@ -76,11 +80,11 @@ classdef AutoEncoder < handle
       end
       
       function reset(obj)
-         obj.encodeLayer.reset();
+         obj.encodeLayer.init_params();
          if obj.isTiedWeights
             obj.decodeLayer.params = obj.get_encode_params_transposed();
          else
-            obj.decodeLayer.reset();
+            obj.decodeLayer.init_params();
          end
       end
       
