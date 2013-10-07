@@ -27,14 +27,26 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          y = max(z, [], 3);
       end
       
-      function [grad, dLdx] = backprop(obj, x, y, dLdy, ~)
-         N = size(x, 2);         
+      function [grad, dLdx] = backprop(obj, x, y, dLdy, isAveraged)
+         if nargin < 5
+            isAveraged = true;
+         end
+         
+         [L1, N] = size(x);         
          z = obj.compute_z(x);
          mask = obj.gpuState.make_numeric((bsxfun(@eq, z, y)));
          dLdz = bsxfun(@times, dLdy, mask);
-         grad{1} = pagefun(@mtimes, dLdz, x')/N;
-         grad{2} = mean(dLdz, 2);
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
+         
+         if isAveraged         
+            grad{1} = pagefun(@mtimes, dLdz, x')/N;
+            grad{2} = mean(dLdz, 2);
+         else
+            L2 = obj.outputSize;
+            x4D = reshape(x, [1, L1, 1, N]);
+            grad{2} = reshape(dLdz, [L2, 1, obj.k, N]);
+            grad{1} = bsxfun(@times, grad{2}, x4D);            
+         end
       end
       
       function z = compute_z(obj, x)
