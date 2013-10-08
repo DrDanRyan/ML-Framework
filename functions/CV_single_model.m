@@ -1,22 +1,29 @@
-function [outputs, testLoss] = CV_single_model(inputs, targets, nFolds, train_model_function)
+function [outputs, testLoss, models, hold_outs] = ...
+            CV_single_model(inputs, targets, nFolds, train_model_function, hold_outs)
 
+         
+         
 if isempty(targets) % no targets => AutoEncoder training - use inputs as targets
    targets = inputs;
 end
 
 [outputSize, dataSize] = size(targets);
-hold_outs = CV_partition(dataSize, nFolds);
+models = cell(1, nFolds);
 gpuState = GPUState();
 outputs = gpuState.zeros(outputSize, dataSize);
+
+if nargin < 5
+   hold_outs = CV_partition(dataSize, nFolds);
+end
 
 for i = 1:nFolds
    testSplit = hold_outs{i};
    trainSplit = setdiff(1:dataSize, testSplit);
-   model = train_model_function(inputs(:,trainSplit), targets(:,trainSplit));
-   outputs(testSplit) = model.output(inputs(:, testSplit));
+   models{i} = train_model_function(inputs(:,trainSplit), targets(:,trainSplit));
+   outputs(:, testSplit) = models{i}.output(inputs(:, testSplit));
 end
 
-testLoss = model.compute_loss(outputs, targets);
+testLoss = models{1}.compute_loss(outputs, targets);
 
 end
 

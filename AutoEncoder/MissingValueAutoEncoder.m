@@ -3,9 +3,6 @@ classdef MissingValueAutoEncoder < AutoEncoder
    % values are replaced with zero for the encoding stage and the reconstruction
    % of these fields does not contribute to the loss.
    
-   properties
-   end
-   
    methods
       function obj = MissingValueAutoEncoder(varargin)
          obj = obj@AutoEncoder(varargin{:});
@@ -17,9 +14,10 @@ classdef MissingValueAutoEncoder < AutoEncoder
          xCorrupt = x.*obj.gpuState.binary_mask(size(x), obj.inputDropout);
          xCode = obj.encodeLayer.feed_forward(xCorrupt);
          xCode = xCode.*obj.gpuState.binary_mask(size(xCode), obj.hiddenDropout);
-         xRecon = obj.decodeLayer.feed_forward(xCode);
-         x(isNaN) = xRecon(isNaN); % This will cause zero loss where x == NaN
-         [decodeGrad, dLdxCode, ~] = obj.decodeLayer.backprop(xCode, x);
+
+         [dLdz, xRecon] = obj.decodeLayer.dLdz(xCode, x);
+         dLdz(isNaN) = 0;
+         [decodeGrad, dLdxCode] = obj.decodeLayer.backprop(xCode, [], true, dLdz);
          encodeGrad = obj.encodeLayer.backprop(xCorrupt, xCode, dLdxCode);
          
          if obj.isTiedWeights
