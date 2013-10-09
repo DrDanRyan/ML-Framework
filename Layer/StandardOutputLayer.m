@@ -8,15 +8,11 @@ classdef StandardOutputLayer < OutputLayer & StandardLayer
          obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
       end
       
-      function [grad, dLdx, y] = backprop(obj, x, t, isAveraged, dLdz)
+      function [grad, dLdx, y] = backprop(obj, x, t, isAveraged)
          if nargin < 4
             isAveraged = true;
          end
-         
-         if nargin < 5 % Useful to supply own dLdz if it needs to be modified by a mask
-            [dLdz, y] = obj.dLdz(x, t); 
-         end
-         
+         [dLdz, y] = obj.dLdz(x, t);
          dLdx = obj.params{1}'*dLdz;
          grad = obj.grad_from_dLdz(x, dLdz, isAveraged);
       end

@@ -19,7 +19,7 @@ end
 for i = 1:nFolds
    testSplit = hold_outs{i};
    trainSplit = setdiff(1:dataSize, testSplit);
-   models{i} = train_model_function(inputs(:,trainSplit), targets(:,trainSplit));
+   models{i} = train_model_function(inputs(:,trainSplit), targets(:,trainSplit), i);
    outputs(:, testSplit) = models{i}.output(inputs(:, testSplit));
 end
 
