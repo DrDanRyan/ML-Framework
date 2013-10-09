@@ -9,10 +9,15 @@ classdef ProportionSubsampler < Sampler
          obj.proportion = proportion;
       end
       
-      function sample = sample(obj, data)
+      function [sample, out_of_sample] = sample(obj, data)
          dataSize = size(data, 2);
          sampleSize = round(obj.proportion*dataSize);
-         sample = data(:, randsample(dataSize, sampleSize));
+         
+         sampleIdx = randsample(dataSize, sampleSize);
+         out_of_sampleIdx = setdiff(1:dataSize, sampleIdx);
+         
+         sample = data(:, sampleIdx);
+         out_of_sample = data(:, out_of_sampleIdx);
       end
    end
    
