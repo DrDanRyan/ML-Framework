@@ -169,7 +169,10 @@ classdef FeedForwardNet < SupervisedModel
          for idx = 1:length(obj.hiddenLayers)
             objCopy.hiddenLayers{idx} = copy(obj.hiddenLayers{idx});
          end
-         objCopy.outputLayer = copy(obj.outputLayer);
+         
+         if ~isempty(obj.outputLayer)
+            objCopy.outputLayer = copy(obj.outputLayer);
+         end
          
          % Value class properties
          objCopy.gpuState = obj.gpuState;
