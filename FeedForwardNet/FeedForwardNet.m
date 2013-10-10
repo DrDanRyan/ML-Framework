@@ -62,14 +62,9 @@ classdef FeedForwardNet < SupervisedModel
          obj.outputLayer.increment_params(delta_params{end});
       end
       
-      function [grad, output] = gradient(obj, x, t, varargin)
+      function [grad, output] = gradient(obj, x, t)
          % Computes the gradient for batch input x and target t for all parameters in
          % each hiddenLayer and outputLayer.
-         p = inputParser;
-         p.addParamValue('averaged', true);
-         parse(p, varargin{:});
-         isAveraged = p.Results.averaged; % whether or not gradient should be computed 
-                                          % as an average over the minibatch or not
          
          if obj.isDropout
             [x, mask] = obj.dropout_mask(x);
@@ -81,7 +76,7 @@ classdef FeedForwardNet < SupervisedModel
          y = obj.feed_forward(x, mask);
          
          % get outputLayer output and backpropagate loss
-         [grad, output,] = obj.backprop(x, y, t, mask, isAveraged);
+         [grad, output,] = obj.backprop(x, y, t, mask);
       end
       
       function y = feed_forward(obj, x, mask)
@@ -101,12 +96,12 @@ classdef FeedForwardNet < SupervisedModel
          end
       end
       
-      function [grad, output] = backprop(obj, x, y, t, mask, isAveraged)
+      function [grad, output] = backprop(obj, x, y, t, mask)
          nHiddenLayers = length(obj.hiddenLayers);
          dLdy = cell(1, nHiddenLayers); % derivative of loss function wrt hiddenLayer output
          grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
          
-         [grad{end}, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t, isAveraged);
+         [grad{end}, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t);
                      
          if obj.isDropout
             dLdy{end} = dLdy{end}.*mask{end};
@@ -114,12 +109,12 @@ classdef FeedForwardNet < SupervisedModel
          
          for i = nHiddenLayers:-1:2
             [grad{i}, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, ...
-               dLdy{i}, isAveraged);
+               dLdy{i});
             if obj.isDropout
                dLdy{i-1} = dLdy{i-1}.*mask{i-1};
             end
          end
-         grad{1} = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1}, isAveraged);
+         grad{1} = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
          grad = obj.unroll_gradient(grad);
       end
       
