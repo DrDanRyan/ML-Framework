@@ -10,6 +10,7 @@ classdef StandardLayer < handle
       L2Penalty   
       isPenalty % boolean indicating if any of the penalty terms are active
       maxFanIn % maximum allowable L2-norm of incoming connection weights to a single output node
+      gradType % {averaged, sparse, raw} default is averaged
    end
    
    properties (Abstract)
@@ -26,6 +27,7 @@ classdef StandardLayer < handle
          p.addParamValue('L2Penalty', []);
          p.addParamValue('maxFanIn', []);
          p.addParamValue('gpu', [], @(x) islogical(x));
+         p.addParamValue('gradType', 'averaged');
          parse(p, varargin{:});
          
          obj.inputSize = inputSize;
@@ -50,6 +52,7 @@ classdef StandardLayer < handle
          else
             obj.isPenalty = true;
          end
+         obj.gradType = p.Results.gradType;
       end
       
       function init_params(obj)
@@ -99,28 +102,37 @@ classdef StandardLayer < handle
          end
       end
       
-      function grad = grad_from_dLdz(obj, x, dLdz, isAveraged)
+      function grad = grad_from_dLdz(obj, x, dLdz)
          [L1, N] = size(x);
          L2 = obj.outputSize;
-         if obj.isPenalty
-            penalties = obj.compute_penalties();
-            if isAveraged
-               grad{1} = dLdz*x'/N + penalties{1}; % dL/dW
-               grad{2} = mean(dLdz, 2) + penalties{2}; % dL/db
-            else
-               dLdz = reshape(dLdz, L2, 1, N);
-               grad{1} = bsxfun(@times, dLdz, reshape(x, 1, L1, N));
-               grad{1} = bsxfun(@plus, grad{1}, penalties{1});
-               grad{2} = bsxfun(@plus, dLdz, penalties{2});
-            end
-         else % No penalties
-            if isAveraged
+         
+         switch obj.gradType
+            case 'averaged'
+               % Divide sum of gradient terms by batch size.
                grad{1} = dLdz*x'/N;
                grad{2} = mean(dLdz, 2);
-            else
+            case 'sparse'
+               % Divide sum by number of non-zero terms instead of
+               % batch size.
+               nonZero_dLdz = obj.gpuState.make_numeric(dLdz ~= 0);
+               nonZero_xTrans = obj.gpuState.make_numeric(x' ~= 0);
+               total_nonZero_dLdw = nonZero_dLdz*nonZero_xTrans;
+               total_nonZero_dLdz = sum(nonZero_dLdz, 2);
+
+               total_nonZero_dLdw(total_nonZero_dLdw == 0) = 1; % Prevents dividing by zero below
+               total_nonZero_dLdz(total_nonZero_dLdz == 0) = 1; % Prevents dividing by zero below
+               grad{1} = dLdz*x'./total_nonZero_dLdw;
+               grad{2} = sum(dLdz, 2)./total_nonZero_dLdz;
+            case 'raw'
+               % Do not consolidate terms at all
                grad{2} = reshape(dLdz, L2, 1, N);
                grad{1} = bsxfun(@times, grad{2}, reshape(x, 1, L1, N));
-            end
+         end
+         
+         if obj.isPenalty
+            penalties = obj.compute_penalties();
+            grad{1} = bsxfun(@plus, grad{1}, penalties{1});
+            grad{2} = bsxfun(@plus, grad{2}, penalties{2});
          end
       end
       
