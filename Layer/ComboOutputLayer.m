@@ -7,10 +7,18 @@ classdef ComboOutputLayer < OutputLayer
       lossFunction
    end
    
+   properties (Dependent)
+      params
+   end
+   
    methods
       function obj = ComboOutputLayer(hiddenLayer, lossFunction)
          obj.hiddenLayer = hiddenLayer;
          obj.lossFunction = lossFunction;
+      end
+      
+      function params = get.params(obj)
+         params = obj.hiddenLayer.params;
       end
       
       function [grad, dLdx, y] = backprop(obj, x, t, isAveraged)
