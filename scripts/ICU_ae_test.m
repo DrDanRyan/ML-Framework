@@ -1,42 +1,38 @@
 clear all
-load ICU_SVM_data_gpu
-targets(targets==-1) = 0;
+load good_ae1
+%inputs(isnan(inputs)) = 0;
+
+sampler = ProportionSubsampler(.8);
+trainIdx = sampler.sample(1:8000);
+validIdx = setdiff(1:8000, trainIdx);
+trainInputs  = inputs2(:, trainIdx);
+validInputs = inputs2(:, validIdx);
 
 ae = AutoEncoder('inputDropout', .3, 'hiddenDropout', .3);
-ae.encodeLayer = MaxoutHiddenLayer(187, 400, 5);
-ae.decodeLayer = ComboOutputLayer(LinearHiddenLayer(400, 187), MeanSquaredError());
+ae.encodeLayer = MaxoutHiddenLayer(400, 512, 5);
+ae.decodeLayer = ComboOutputLayer(MaxoutHiddenLayer(512, 400, 5), MeanSquaredError());
 
 trainer = GradientTrainer();
 trainer.reporter = ConsoleReporter();
 trainer.stepCalculator = NesterovMomentum();
 trainer.model = ae;
-trainer.trainingSchedule = EarlyStopping(2000, 'lr0', .05, ...
-                                               'momentum', .8, ...
-                                               'burnIn', 30, ...
-                                               'lookAhead', 20, ...
-                                               'lrDecay', 1);
-                                            
-sampler = StratifiedSampler(.8);
-trainIdx = sampler.sample(1:4000, targets);
-validIdx = setdiff(1:4000, trainIdx);
-trainInputs  = inputs(:, trainIdx);
-validInputs = inputs(:, validIdx);
-trainer.dataManager = FullBatch(trainInputs, trainInputs, validInputs, validInputs);
-trainer.train();
-
-%% 
-
-net = FeedForwardNet('inputDropout', .3, 'hiddenDropout', .3);
-net.hiddenLayers = {ae.encodeLayer};
-net.outputLayer = LogisticOutputLayer(400);
-trainer.model = net;
-trainer.stepCalculator.reset();
-trainer.dataManager = FullBatch(trainInputs, targets(trainIdx), validInputs, targets(validIdx));
 trainer.trainingSchedule = EarlyStopping(2000, 'lr0', .1, ...
                                                'momentum', .8, ...
                                                'burnIn', 30, ...
-                                               'lookAhead', 20, ...
-                                               'lrDecay', .998);
+                                               'lookAhead', 30, ...
+                                               'lrDecay', 1);
                                             
+
+trainer.dataManager = FullBatch(trainInputs, trainInputs, validInputs, validInputs);
 trainer.train();
+
+%% Begin supervised fine-tuning with cross-validation
+clear inputs
+load ICU_ffn_data
+ffn = FeedForwardNet('inputDropout', .2, 'hiddenDropout', .5);
+ffn.hiddenLayers = hiddenLayers;
+nFolds = 5;
+[outputs, testLoss] = CV_single_model(inputs, targets, nFolds, @ICU_fine_tune, ffn);
+event1 = compute_event1(outputs, targets)
+%lemeshow = compute_Lemeshow(outputs, targets, true)
                

@@ -5,7 +5,7 @@ classdef SVMOutputLayer < StandardOutputLayer
    properties
       costRatio % multiplies the loss for incorrectly classifying positive (rarer) examples
       lossExponent % exponent of the hinge loss function (>= 1)
-      nonlinearity = @(x) x; % not used; Abstract property in StandardLayer
+      nonlinearity % not used; Abstract property in StandardLayer
    end
    
    methods
