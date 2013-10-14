@@ -26,7 +26,11 @@ classdef AutoEncoder < handle
          obj.inputDropout = p.Results.inputDropout;
          obj.hiddenDropout = p.Results.hiddenDropout;
          obj.isTiedWeights = p.Results.isTiedWeights;
-         obj.gpuState = GPUState(p.Results.gpu);
+         if isempty(p.Results.gpu)
+            obj.gpuState = GPUState();
+         else
+            obj.gpuState = GPUState(p.Results.gpu);
+         end
       end
       
       function [grad, xRecon] = gradient(obj, x, ~, ~)
@@ -37,8 +41,12 @@ classdef AutoEncoder < handle
          encodeGrad = obj.encodeLayer.backprop(xCorrupt, xCode, dLdxCode);
          
          if obj.isTiedWeights
-            grad = cellfun(@(g1, g2) g1 + g2', encodeGrad, decodeGrad, ...
-                              'UniformOutput', false);
+            if ndims(encodeGrad{1}) <= 2
+               grad = {encodeGrad{1}+decodeGrad{1}', encodeGrad{2}, decodeGrad{2}};
+            else
+               grad = {encodeGrad{1}+permute(decodeGrad{1}, [2, 1, 3]), ...
+                        encodeGrad{2}, decodeGrad{2}};
+            end
          else
             grad = [encodeGrad, decodeGrad];
          end
@@ -53,15 +61,15 @@ classdef AutoEncoder < handle
       end
       
       function xRecon = output(obj, x)
-         x = (1-obj.inputDropout).*x;
-         xCode = (1-obj.hiddenDropout).*obj.encodeLayer.feed_forward(x);
-         xRecon = obj.decodeLayer.feed_forward(xCode);
+         xCode = obj.encodeLayer.feed_forward((1-obj.inputDropout)*x);
+         xRecon = obj.decodeLayer.feed_forward((1-obj.hiddenDropout)*xCode);
       end
       
       function increment_params(obj, delta_params)
          if obj.isTiedWeights
-            obj.encodeLayer.increment_params(delta_params);
-            obj.decodeLayer.params = obj.get_encode_params_transposed();
+            obj.encodeLayer.increment_params(delta_params(1:2));
+            obj.decodeLayer.increment_params({0, delta_params{3}});
+            obj.decodeLayer.params{1} = obj.get_encode_params_transposed();
          else
             splitIdx = length(obj.encodeLayer.params);
             obj.encodeLayer.increment_params(delta_params(1:splitIdx));
@@ -81,15 +89,18 @@ classdef AutoEncoder < handle
       
       function reset(obj)
          obj.encodeLayer.init_params();
-         if obj.isTiedWeights
-            obj.decodeLayer.params = obj.get_encode_params_transposed();
-         else
-            obj.decodeLayer.init_params();
+         obj.decodeLayer.init_params();
+         if obj.isTiedWeights 
+            obj.decodeLayer.params{1} = obj.get_encode_params_transposed();
          end
       end
       
       function pTrans = get_encode_params_transposed(obj)
-         pTrans = cellfun(@(p) p', obj.encodeLayer.params, 'UniformOutput', false);
+         if ndims(obj.encodeLayer.params{1}) <= 2
+            pTrans = obj.encodeLayer.params{1}';
+         else
+            pTrans = permute(obj.encodeLayer.params{1}, [2, 1, 3]);
+         end
       end
       
       function objCopy = copy(obj)

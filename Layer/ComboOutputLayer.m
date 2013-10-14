@@ -21,6 +21,10 @@ classdef ComboOutputLayer < OutputLayer
          params = obj.hiddenLayer.params;
       end
       
+      function set.params(obj, new_params)
+         obj.hiddenLayer.params = new_params;
+      end
+      
       function [grad, dLdx, y] = backprop(obj, x, t)
          y = obj.hiddenLayer.feed_forward(x);
          dLdy = obj.lossFunction.dLdy(y, t);
