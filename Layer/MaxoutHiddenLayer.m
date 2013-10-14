@@ -14,12 +14,13 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
       end
       
       function init_params(obj)
-         obj.params{1} = obj.gpuState.zeros(obj.outputSize, obj.inputSize, obj.k);
+         obj.params{1} = orthonorm(obj.outputSize, obj.inputSize, obj.k, ...
+                                    obj.initScale, obj.gpuState);
          obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1, obj.k);
-         for idx = 1:obj.k
-            obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
-                                                      obj.initScale, obj.gpuState);
-         end
+%          for idx = 1:obj.k
+%             obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
+%                                                       obj.initScale, obj.gpuState);
+%          end
       end
       
       function y = feed_forward(obj, x)
