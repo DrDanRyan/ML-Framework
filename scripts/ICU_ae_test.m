@@ -1,7 +1,7 @@
 clear all
 load good_ae1
 %inputs(isnan(inputs)) = 0;
-
+hiddenLayers = {ae.encodeLayer, []};
 sampler = ProportionSubsampler(.8);
 trainIdx = sampler.sample(1:8000);
 validIdx = setdiff(1:8000, trainIdx);
@@ -30,6 +30,7 @@ trainer.train();
 clear inputs
 load ICU_ffn_data
 ffn = FeedForwardNet('inputDropout', .2, 'hiddenDropout', .5);
+hiddenLayers{2} = ae.encodeLayer;
 ffn.hiddenLayers = hiddenLayers;
 nFolds = 5;
 [outputs, testLoss] = CV_single_model(inputs, targets, nFolds, @ICU_fine_tune, ffn);
