@@ -72,7 +72,8 @@ classdef FeedForwardNet < SupervisedModel
          % each hiddenLayer and outputLayer.
          
          if obj.isDropout
-            [x, mask] = obj.dropout_mask(x);
+            mask = obj.dropout_mask(x);
+            x = x.*mask{1};
          else
             mask = [];
          end
@@ -95,13 +96,13 @@ classdef FeedForwardNet < SupervisedModel
          y = cell(1, length(obj.hiddenLayers)); % output from each hiddenLayer
          y{1} = obj.hiddenLayers{1}.feed_forward(x);
          if obj.isDropout
-            y{1} = y{1}.*mask{1};
+            y{1} = y{1}.*mask{2};
          end
 
          for i = 2:nHiddenLayers
             y{i} = obj.hiddenLayers{i}.feed_forward(y{i-1});
             if obj.isDropout
-               y{i} = y{i}.*mask{i};
+               y{i} = y{i}.*mask{i+1};
             end
          end
       end
@@ -125,27 +126,31 @@ classdef FeedForwardNet < SupervisedModel
             [grad{i}, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, ...
                dLdy{i});
             if obj.isDropout
-               dLdy{i-1} = dLdy{i-1}.*mask{i-1};
+               dLdy{i-1} = dLdy{i-1}.*mask{i};
             end
          end
          [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
+         if obj.isDropout
+            dLdx = dLdx.*mask{1};
+         end
          grad = obj.unroll_gradient(grad);
       end
       
-      function [x, mask] = dropout_mask(obj, x)   
+      function mask = dropout_mask(obj, x)   
          % Computes a binary (0, 1) mask  for both the inputs, x, and each hidden
          % layer. Zeros correspond to the units removed by dropout.
-         
-         % Apply dropout to the inputs
-         x = x.*obj.gpuState.binary_mask(size(x), obj.inputDropout);
-         
-         % Mask for hidden layer outputs
+
          nHiddenLayers = length(obj.hiddenLayers);
-         mask = cell(nHiddenLayers, 1);
+         mask = cell(nHiddenLayers+1, 1);
+         
+         % Input mask
+         mask{1} = obj.gpuState.binary_mask(size(x), obj.inputDropout);
+         
+         % hiddenLayers masks
          N = size(x, 2);
          for i = 1:nHiddenLayers
             L = obj.hiddenLayers{i}.outputSize;
-            mask{i} = obj.gpuState.binary_mask([L, N], obj.hiddenDropout);
+            mask{i+1} = obj.gpuState.binary_mask([L, N], obj.hiddenDropout);
          end
       end
       

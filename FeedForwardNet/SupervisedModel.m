@@ -2,7 +2,7 @@ classdef SupervisedModel < handle
    % This defines the Model interface
    
    methods (Abstract)
-      [grad, output, dLdx] = gradient(obj, x, t) % obj: Model, x: input data, t: targets
+      [grad, output] = gradient(obj, x, t) % obj: Model, x: input data, t: targets
       y = output(obj, x)
       loss = compute_loss(obj, y, t) % y: output, t: target
       increment_params(obj, delta)
