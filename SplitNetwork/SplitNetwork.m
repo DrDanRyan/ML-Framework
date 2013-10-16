@@ -1,10 +1,10 @@
 classdef SplitNetwork < handle
    
    properties
-      bottomNet   % an outputLayer with MSE loss function
-      topNet      % an outputLayer that matches the problem loss function
-      h1          % the hidden layer values computed by bottomLayer
-      h1star      % the hidden layer values used by topLayer
+      bottomNet   % a FFN with MSE loss function
+      topNet      % a FFN with loss function that matches the problem
+      h1star      % the hidden layer values used by topNet as inputs
+      h1          % the hidden layer activations computed by the bottomNet
       u           % the scaled multiplier values for (h1star - h1) = 0 constraint
       rho         % the penalty coefficient for the Augmented Lagrangian
       modelState  % 'top' or 'bottom'
@@ -18,7 +18,6 @@ classdef SplitNetwork < handle
             obj.rho = rho;
 
             % also need to init h1star and u
-            % if beginning with topLayer update, need to compute h1
          end
       end
       
@@ -50,6 +49,10 @@ classdef SplitNetwork < handle
       
       function update_u(obj)
          obj.u = obj.u + obj.h1star - obj.h1;
+      end
+      
+      function set_h1(obj, x)
+         obj.h1 = obj.bottomNet.output(x);
       end
       
       function increment_params(obj, delta)
@@ -88,8 +91,7 @@ classdef SplitNetwork < handle
       end
       
       function loss = compute_bottom_loss(obj, y)
-         obj.h1 = y;
-         loss = obj.rho*obj.bottomNet.compute_loss(obj.h1, obj.h1star + obj.u);
+         loss = obj.rho*obj.bottomNet.compute_loss(y, obj.h1star + obj.u);
       end
       
       function loss = compute_top_loss(obj, y, t)
