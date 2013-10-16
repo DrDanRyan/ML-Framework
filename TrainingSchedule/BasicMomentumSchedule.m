@@ -8,7 +8,7 @@ classdef BasicMomentumSchedule < TrainingSchedule
    end
    
    methods
-      function obj = BasicMomentumSchedule(learnRate, momentum, maxEpochs)
+      function obj = BasicMomentumSchedule(maxEpochs, learnRate, momentum)
          obj.params{1} = learnRate;
          obj.params{2} = momentum;
          obj.maxEpochs = maxEpochs;
