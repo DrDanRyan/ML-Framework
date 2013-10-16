@@ -67,7 +67,7 @@ classdef FeedForwardNet < SupervisedModel
          obj.outputLayer.increment_params(delta_params{end});
       end
       
-      function [grad, output] = gradient(obj, x, t)
+      function [grad, output, dLdx] = gradient(obj, x, t)
          % Computes the gradient for batch input x and target t for all parameters in
          % each hiddenLayer and outputLayer.
          
@@ -81,7 +81,7 @@ classdef FeedForwardNet < SupervisedModel
          y = obj.feed_forward(x, mask);
          
          % get outputLayer output and backpropagate loss
-         [grad, output,] = obj.backprop(x, y, t, mask);
+         [grad, output, dLdx] = obj.backprop(x, y, t, mask);
       end
       
       function y = feed_forward(obj, x, mask)
@@ -106,9 +106,9 @@ classdef FeedForwardNet < SupervisedModel
          end
       end
       
-      function [grad, output] = backprop(obj, x, y, t, mask)
+      function [grad, output, dLdx] = backprop(obj, x, y, t, mask)
          if isempty(obj.hiddenLayers)
-            [grad, ~, output] = obj.outputLayer.backprop(x, t);
+            [grad, dLdx, output] = obj.outputLayer.backprop(x, t);
             return;
          end
          
@@ -128,7 +128,7 @@ classdef FeedForwardNet < SupervisedModel
                dLdy{i-1} = dLdy{i-1}.*mask{i-1};
             end
          end
-         grad{1} = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
+         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
          grad = obj.unroll_gradient(grad);
       end
       
