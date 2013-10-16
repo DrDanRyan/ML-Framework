@@ -4,7 +4,7 @@ classdef FeedForwardNet < SupervisedModel
 % dropout and gpu training. 
 
    properties
-      hiddenLayers % cell array of HiddenLayer objects
+      hiddenLayers % cell array of HiddenLayer objects (possibly empty)
       outputLayer % a single OutputLayer object
       gpuState % gpuState object used for array creation dependent on isGPU flag in object
       isDropout % boolean indicating wheter to use dropout
@@ -55,6 +55,11 @@ classdef FeedForwardNet < SupervisedModel
          % shape (as originally produced during the layer by layer gradient
          % computation) before updating each layer params.
          
+         if isempty(obj.hiddenLayers)
+            obj.outputLayer.increment_params(delta_params);
+            return;
+         end
+         
          delta_params = obj.roll_gradient(delta_params);
          for i = 1:length(obj.hiddenLayers)
             obj.hiddenLayers{i}.increment_params(delta_params{i});
@@ -80,6 +85,11 @@ classdef FeedForwardNet < SupervisedModel
       end
       
       function y = feed_forward(obj, x, mask)
+         if isempty(obj.hiddenLayers)
+            y = [];
+            return
+         end
+         
          % feed_forward through hiddenLayers
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(1, length(obj.hiddenLayers)); % output from each hiddenLayer
@@ -97,10 +107,14 @@ classdef FeedForwardNet < SupervisedModel
       end
       
       function [grad, output] = backprop(obj, x, y, t, mask)
+         if isempty(obj.hiddenLayers)
+            [grad, ~, output] = obj.outputLayer.backprop(x, t);
+            return;
+         end
+         
          nHiddenLayers = length(obj.hiddenLayers);
          dLdy = cell(1, nHiddenLayers); % derivative of loss function wrt hiddenLayer output
          grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
-         
          [grad{end}, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t);
                      
          if obj.isDropout
