@@ -1,8 +1,8 @@
 classdef SplitNetwork < handle
    
    properties
-      bottomLayer % an outputLayer with MSE loss function
-      topLayer    % an outputLayer that matches the problem loss function
+      bottomNet   % an outputLayer with MSE loss function
+      topNet      % an outputLayer that matches the problem loss function
       h1          % the hidden layer values computed by bottomLayer
       h1star      % the hidden layer values used by topLayer
       u           % the scaled multiplier values for (h1star - h1) = 0 constraint
@@ -11,10 +11,10 @@ classdef SplitNetwork < handle
    end
    
    methods
-      function obj = SplitNetwork(bottomLayer, topLayer, rho)
+      function obj = SplitNetwork(bottomNet, topNet, rho)
          if nargin > 0
-            obj.bottomLayer = bottomLayer;
-            obj.topLayer = topLayer;
+            obj.bottomNet = bottomNet;
+            obj.topNet = topNet;
             obj.rho = rho;
 
             % also need to init h1star and u
@@ -22,29 +22,30 @@ classdef SplitNetwork < handle
          end
       end
       
-      function grad = gradient(obj, x, t)
+      function [grad, output] = gradient(obj, x, t)
          % Used as a facade to implement Model interface
          switch obj.modelState
             case 'top'
-               grad = obj.topGrad(t);
+               [grad, output] = obj.topGrad(t);
             case 'bottom'
-               grad = obj.bottomGrad(x);
+               [grad, output] = obj.bottomGrad(x);
          end
       end
       
-      function grad = bottomGrad(obj, x)
-         % compute gradient of bottomLayer parameters
+      function [grad, output] = bottomGrad(obj, x)
+         % compute gradient of bottomNet parameters
          t = obj.u + obj.h1star;
-         grad = obj.bottomLayer.backprop(x, t);
+         [grad, output] = obj.bottomNet.gradient(x, t);
          grad = cellfun(@(g) obj.rho*g, grad, 'UniformOutput', false);
       end
       
-      function grad = topGrad(obj, t)
-         % compute gradient of topLayer parameters concatenated with gradient
+      function [grad, output] = topGrad(obj, t)
+         % compute gradient of topNet parameters concatenated with gradient
          % wrt h1star
-         [topLayerGrad, dLdx] = obj.topLayer.backprop(obj.h1star, t);
-         h1starGrad = dLdx + obj.rho*(obj.h1star - obj.h1 + obj.u);
-         grad = [topLayerGrad, {h1starGrad}];
+         [topNetGrad, output, dLdx] = obj.topNet.gradient(obj.h1star, t);
+         mask = single(dLdx~=0);
+         h1starGrad = dLdx + mask.*obj.rho.*(obj.h1star - obj.h1 + obj.u);
+         grad = [topNetGrad, {h1starGrad}];
       end
       
       function update_u(obj)
@@ -62,12 +63,12 @@ classdef SplitNetwork < handle
       end
       
       function increment_bottom_params(obj, delta)
-         obj.bottomLayer.increment_params(delta);
+         obj.bottomNet.increment_params(delta);
       end
       
       function increment_top_params(obj, delta)
-         obj.topLayer.increment_params(delta(1:2));
-         obj.h1star = obj.h1star + delta{3};
+         obj.topNet.increment_params(delta(1:end-1));
+         obj.h1star = obj.h1star + delta{end};
       end
       
       function loss = compute_loss(obj, y, t)
@@ -77,17 +78,23 @@ classdef SplitNetwork < handle
                loss = obj.compute_top_loss(y, t);
             case 'bottom'
                loss = obj.compute_bottom_loss(y);
+            case 'full'
+               loss = obj.compute_full_loss(y, t);
          end
+      end
+      
+      function loss = compute_full_loss(obj, y, t)
+         loss = obj.topNet.compute_loss(y, t);
       end
       
       function loss = compute_bottom_loss(obj, y)
          obj.h1 = y;
-         loss = obj.rho*obj.bottomLayer.compute_loss(obj.h1, obj.h1star + obj.u);
+         loss = obj.rho*obj.bottomNet.compute_loss(obj.h1, obj.h1star + obj.u);
       end
       
       function loss = compute_top_loss(obj, y, t)
-         loss = obj.topLayer.compute_loss(y, t) + ...
-                     obj.rho*obj.bottomLayer.compute_loss(obj.h1, obj.h1star + obj.u);
+         loss = obj.topNet.compute_loss(y, t) + ...
+                     obj.rho*obj.bottomNet.compute_loss(obj.h1, obj.h1star + obj.u);
       end
       
       function y = output(obj, x)
@@ -97,26 +104,37 @@ classdef SplitNetwork < handle
                y = obj.top_output();
             case 'bottom'
                y = obj.bottom_output(x);
+            case 'full'
+               y = obj.full_output(x);
          end
       end
       
+      function y = full_output(obj, x)
+         y = obj.bottomNet.output(x);
+         y = obj.topNet.output(y);
+      end
+      
       function y = bottom_output(obj, x)
-         y = obj.bottomLayer.feed_forward(x);
+         y = obj.bottomNet.output(x);
       end
       
       function y = top_output(obj)
-         y = obj.topLayer.feed_forward(obj.h1star);
+         y = obj.topNet.output(obj.h1star);
       end
       
       function reset(obj)
-         obj.bottomLayer.init_params();
-         obj.topLayer.init_params();
+         obj.bottomNet.reset();
+         obj.topNet.reset();
       end
       
       function objCopy = copy(obj)
          objCopy = SplitNetwork();
-         objCopy.topLayer = obj.topLayer.copy();
-         objCopy.bottomLayer = obj.bottomLayer.copy();
+         
+         % Handle properties
+         objCopy.topNet = obj.topNet.copy();
+         objCopy.bottomNet = obj.bottomNet.copy();
+         
+         % Value properties
          objCopy.h1 = obj.h1;
          objCopy.h1star = obj.h1star;
          objCopy.rho = obj.rho;
