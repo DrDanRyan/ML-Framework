@@ -18,11 +18,16 @@ classdef AutoEncoder < handle
          p.addParamValue('dropout', []);
          p.addParamValue('isTiedWeights', false);
          p.addParamValue('gpu', []);
+         p.addParamValue('noiseType', 'none');
+         p.addParamValue('noiseLevel', .1);
          parse(p, varargin{:});
          
          obj.dropout = p.Results.dropout;
          obj.isDropout = ~isempty(obj.dropout);
          obj.isTiedWeights = p.Results.isTiedWeights;
+         obj.noiseType = p.Results.noiseType;
+         obj.noiseLevel = p.Results.noiseLevel;
+         
          if isempty(p.Results.gpu)
             obj.gpuState = GPUState();
          else
