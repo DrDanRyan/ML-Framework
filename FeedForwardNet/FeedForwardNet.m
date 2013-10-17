@@ -17,15 +17,14 @@ classdef FeedForwardNet < SupervisedModel
    methods
       function obj = FeedForwardNet(varargin)
          p = inputParser;
-         p.addParamValue('isDropout', true);
-         p.addParamValue('hiddenDropout', .5);
+         p.addParamValue('hiddenDropout', 0);
          p.addParamValue('inputDropout', 0);
          p.addParamValue('gpu', []);         
          parse(p, varargin{:});
          
-         obj.isDropout = p.Results.isDropout;
          obj.hiddenDropout = p.Results.hiddenDropout;
          obj.inputDropout = p.Results.inputDropout;
+         obj.isDropout = obj.inputDropout > 0 || obj.hiddenDropout > 0;
          
          if isempty(p.Results.gpu)
             obj.gpuState = GPUState();
