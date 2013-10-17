@@ -45,8 +45,6 @@ classdef DataManager < matlab.mixin.Copyable
          end
       end
       
-      
-      
       function [x, t, endOfEpochFlag] = next_batch(obj)
          if isempty(obj.batchSize) % full batch
             x = obj.inject_noise(obj.trainingInputs);
