@@ -65,7 +65,7 @@ classdef AutoEncoder < handle
             case 'none'
                % do nothing
             case 'dropout'
-               x = obj.gpuState.binary_mask(size(x), obj.noiseLevel);
+               x = x.*obj.gpuState.binary_mask(size(x), obj.noiseLevel);
             case 'Gaussian'
                x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
          end
