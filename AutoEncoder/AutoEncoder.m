@@ -69,6 +69,7 @@ classdef AutoEncoder < handle
             case 'Gaussian'
                x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
          end
+         x(isnan(x)) = 0;
       end
       
       function loss = compute_loss(obj, xRecon, x)
@@ -76,10 +77,12 @@ classdef AutoEncoder < handle
       end
       
       function xCode = encode(obj, x)
+         x(isnan(x)) = 0;
          xCode = obj.encodeLayer.feed_forward(x);
       end
       
       function xRecon = output(obj, x)
+         x(isnan(x)) = 0;
          xCode = obj.encodeLayer.feed_forward(x);
          if obj.isDropout
             xCode = (1-obj.dropout)*xCode;
