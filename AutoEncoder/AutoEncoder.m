@@ -105,8 +105,11 @@ classdef AutoEncoder < handle
       
       function objCopy = copy(obj)
          objCopy = AutoEncoder();
+         % Handle properties
          objCopy.encodeLayer = obj.encodeLayer.copy();
          objCopy.decodeLayer = obj.decodeLayer.copy();
+         
+         % Value properties
          objCopy.isTiedWeights = obj.isTiedWeights;
          objCopy.inputDropout = obj.inputDropout;
          objCopy.hiddenDropout = obj.hiddenDropout;

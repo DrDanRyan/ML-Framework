@@ -10,11 +10,11 @@ topDropout = 0;
 rho = 1;
 targets(targets==-1) = 0;
 
-bottomEpochs = 100;
+bottomEpochs = 200;
 bottomLR = .05;
 bottomMomentum = .4;
 
-topEpochs = 100;
+topEpochs = 200;
 topLR = .05;
 topMomentum = .4;
 
