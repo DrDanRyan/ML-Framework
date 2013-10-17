@@ -5,26 +5,23 @@ classdef AutoEncoder < handle
       encodeLayer % a HiddenLayer object that functions as the encoding layer
       decodeLayer % a OutputLayer object that functions as the decoding layer and loss function
       isTiedWeights % a boolean indicating if the params in encodeLayer and decodeLayer are shared
-      inputDropout
-      hiddenDropout
       gpuState
+      dropout  % amount of dropout to apply to the hidden units (xCode)
+      isDropout % boolean indicating if dropout is used
+      noiseType % string indicating type of input noise to use: 'none', 'dropout', 'Gaussian'
+      noiseLevel % a scalar indicating the level of noise (i.e. dropout prob, or std_dev)
    end
    
    methods
       function obj = AutoEncoder(varargin)
          p = inputParser;
-         p.addParamValue('inputDropout', 0);
-         p.addParamValue('hiddenDropout', 0);
-         p.addParamValue('encodeLayer', []);
-         p.addParamValue('decodeLayer', []);
+         p.addParamValue('dropout', []);
          p.addParamValue('isTiedWeights', false);
          p.addParamValue('gpu', []);
          parse(p, varargin{:});
          
-         obj.encodeLayer = p.Results.encodeLayer;
-         obj.decodeLayer = p.Results.decodeLayer;
-         obj.inputDropout = p.Results.inputDropout;
-         obj.hiddenDropout = p.Results.hiddenDropout;
+         obj.dropout = p.Results.dropout;
+         obj.isDropout = ~isempty(obj.dropout);
          obj.isTiedWeights = p.Results.isTiedWeights;
          if isempty(p.Results.gpu)
             obj.gpuState = GPUState();
@@ -34,10 +31,16 @@ classdef AutoEncoder < handle
       end
       
       function [grad, xRecon] = gradient(obj, x, ~, ~)
-         xCorrupt = x.*obj.gpuState.binary_mask(size(x), obj.inputDropout);
+         xCorrupt = obj.inject_noise(x);
          xCode = obj.encodeLayer.feed_forward(xCorrupt);
-         xCode = xCode.*obj.gpuState.binary_mask(size(xCode), obj.hiddenDropout);
+         if obj.isDropout
+            mask = obj.gpuState.binary_mask(size(xCode), obj.dropout);
+            xCode = xCode.*mask;
+         end
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, x);
+         if obj.isDropout
+            dLdxCode = dLdxCode.*mask;
+         end
          encodeGrad = obj.encodeLayer.backprop(xCorrupt, xCode, dLdxCode);
          
          if obj.isTiedWeights
@@ -52,17 +55,31 @@ classdef AutoEncoder < handle
          end
       end
       
+      function x = inject_noise(obj, x)
+         switch obj.noiseType
+            case 'none'
+               % do nothing
+            case 'dropout'
+               x = obj.gpuState.binary_mask(size(x), obj.noiseLevel);
+            case 'Gaussian'
+               x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
+         end
+      end
+      
       function loss = compute_loss(obj, xRecon, x)
          loss = obj.decodeLayer.compute_loss(xRecon, x);
       end
       
       function xCode = encode(obj, x)
-         xCode = (1-obj.inputDropout)*obj.encodeLayer.feed_forward(x);
+         xCode = obj.encodeLayer.feed_forward(x);
       end
       
       function xRecon = output(obj, x)
-         xCode = obj.encodeLayer.feed_forward((1-obj.inputDropout)*x);
-         xRecon = obj.decodeLayer.feed_forward((1-obj.hiddenDropout)*xCode);
+         xCode = obj.encodeLayer.feed_forward(x);
+         if obj.isDropout
+            xCode = (1-obj.dropout)*xCode;
+         end
+         xRecon = obj.decodeLayer.feed_forward(xCode);
       end
       
       function increment_params(obj, delta_params)
@@ -111,8 +128,8 @@ classdef AutoEncoder < handle
          
          % Value properties
          objCopy.isTiedWeights = obj.isTiedWeights;
-         objCopy.inputDropout = obj.inputDropout;
-         objCopy.hiddenDropout = obj.hiddenDropout;
+         objCopy.dropout = obj.dropout;
+         objCopy.isDropout = obj.isDropout;
          objCopy.gpuState = obj.gpuState;
       end
    end
