@@ -15,11 +15,13 @@ classdef DataManager < matlab.mixin.Copyable
    methods
       function obj = DataManager(trainingInputs, trainingTargets, validationInputs, ...
                                        validationTargets, varargin)
-
-         obj.trainingInputs = trainingInputs;
-         obj.trainingTargets = trainingTargets;
-         obj.validationInputs = validationInputs;
-         obj.validationTargets = validationTargets;
+         
+         if nargin > 0
+            obj.trainingInputs = trainingInputs;
+            obj.trainingTargets = trainingTargets;
+            obj.validationInputs = validationInputs;
+            obj.validationTargets = validationTargets;
+         end
          
          p = inputParser();
          p.addParamValue('batchSize', []);

@@ -69,7 +69,7 @@ classdef FeedForwardNet < SupervisedModel
       function [grad, output, dLdx] = gradient(obj, x, t)
          % Computes the gradient for batch input x and target t for all parameters in
          % each hiddenLayer and outputLayer.
-         
+         x(isnan(x)) = 0;
          if obj.isDropout
             mask = obj.dropout_mask(x);
             x = x.*mask{1};
@@ -155,6 +155,7 @@ classdef FeedForwardNet < SupervisedModel
       
       function y = output(obj, x)
          nHiddenLayers = length(obj.hiddenLayers);
+         x(isnan(x)) = 0;
          
          if obj.isDropout
             y = (1-obj.inputDropout)*x;
