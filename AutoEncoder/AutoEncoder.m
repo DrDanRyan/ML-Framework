@@ -8,8 +8,11 @@ classdef AutoEncoder < handle
       gpuState
       dropout  % amount of dropout to apply to the hidden units (xCode)
       isDropout % boolean indicating if dropout is used
+      
       noiseType % string indicating type of input noise to use: 'none', 'dropout', 'Gaussian'
       noiseLevel % a scalar indicating the level of noise (i.e. dropout prob, or std_dev)
+     
+      lambda     % contraction penalty coefficient
    end
    
    methods
@@ -20,6 +23,7 @@ classdef AutoEncoder < handle
          p.addParamValue('gpu', []);
          p.addParamValue('noiseType', 'none');
          p.addParamValue('noiseLevel', .1);
+         p.addParamValue('lambda', []);
          parse(p, varargin{:});
          
          obj.dropout = p.Results.dropout;
@@ -27,6 +31,7 @@ classdef AutoEncoder < handle
          obj.isTiedWeights = p.Results.isTiedWeights;
          obj.noiseType = p.Results.noiseType;
          obj.noiseLevel = p.Results.noiseLevel;
+         obj.lambda = p.Results.lambda;
          
          if isempty(p.Results.gpu)
             obj.gpuState = GPUState();
@@ -37,6 +42,7 @@ classdef AutoEncoder < handle
       
       function [grad, xRecon] = gradient(obj, x, ~, ~)
          xCorrupt = obj.inject_noise(x);
+         xCorrupt(isnan(x)) = 0;
          xCode = obj.encodeLayer.feed_forward(xCorrupt);
          if obj.isDropout
             mask = obj.gpuState.binary_mask(size(xCode), obj.dropout);
@@ -46,7 +52,14 @@ classdef AutoEncoder < handle
          if obj.isDropout
             dLdxCode = dLdxCode.*mask;
          end
-         encodeGrad = obj.encodeLayer.backprop(xCorrupt, xCode, dLdxCode);
+         [encodeGrad, ~, dydz] = obj.encodeLayer.backprop(xCorrupt, xCode, dLdxCode);
+               
+         if ~isempty(obj.lambda)
+            if obj.isDropout
+               dydz = bsxfun(@times, dydz, mask);
+            end
+            encodeGrad{1} = encodeGrad{1} + obj.compute_contraction_penalty(dydz);
+         end
          
          if obj.isTiedWeights
             if ndims(encodeGrad{1}) <= 2
@@ -60,6 +73,11 @@ classdef AutoEncoder < handle
          end
       end
       
+      function penalty = compute_contraction_penalty(obj, dydz)
+         dydzSqMean = mean(dydz.*dydz, 2); % L2 x 1 (x k)
+         penalty = obj.lambda*bsxfun(@times, obj.encodeLayer.params{1}, dydzSqMean);
+      end
+      
       function x = inject_noise(obj, x)
          switch obj.noiseType
             case 'none'
@@ -69,7 +87,6 @@ classdef AutoEncoder < handle
             case 'Gaussian'
                x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
          end
-         x(isnan(x)) = 0;
       end
       
       function loss = compute_loss(obj, xRecon, x)

@@ -2,7 +2,7 @@ classdef HiddenLayer < matlab.mixin.Copyable
    % Defines the HiddenLayer interface 
 
    methods (Abstract)
-      [grad, dLdx] = backprop(obj, x, y, dLdy)
+      [grad, dLdx, dydz] = backprop(obj, x, y, dLdy)
       y = feed_forward(x)
       push_to_GPU(obj)
       gather(obj)

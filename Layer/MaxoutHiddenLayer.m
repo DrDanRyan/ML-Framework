@@ -28,12 +28,12 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          y = max(z, [], 3);
       end
       
-      function [grad, dLdx] = backprop(obj, x, y, dLdy)
+      function [grad, dLdx, dydz] = backprop(obj, x, y, dLdy)
          % L1 and L2 penalties are not implemented for MaxoutHiddenLayer
          [L1, N] = size(x);         
          z = obj.compute_z(x);
-         mask = obj.gpuState.make_numeric((bsxfun(@eq, z, y)));
-         dLdz = bsxfun(@times, dLdy, mask); % dimensions are L2 x N x k
+         dydz = obj.gpuState.make_numeric((bsxfun(@eq, z, y))); % L2 x N x k
+         dLdz = bsxfun(@times, dLdy, dydz); % dimensions are L2 x N x k
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
          
          switch obj.gradType
@@ -63,6 +63,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          z = pagefun(@mtimes, obj.params{1}, x);
          z = bsxfun(@plus, z, obj.params{2});
       end
+      
    end
    
 end
