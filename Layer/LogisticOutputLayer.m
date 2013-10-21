@@ -6,7 +6,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
    
    methods
       function obj = LogisticOutputLayer(inputSize, varargin)
-         obj = obj@StandardOutputLayer(inputSize, 1, varargin{:});
+         obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
       end
       
       function [dLdz, y] = dLdz(obj, x, t)
