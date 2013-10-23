@@ -11,7 +11,7 @@ classdef LinearOutputLayer < StandardOutputLayer
       end
       
       function value = feed_forward(obj, x)
-         value = bsxfun(@plus, obj.params{1}*x, obj.params{2});
+         value = obj.compute_z(x);
       end
       
       function [dLdz, y] = dLdz(obj, x, t)
