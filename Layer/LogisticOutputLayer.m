@@ -12,6 +12,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
       function [dLdz, y] = dLdz(obj, x, t)
          y = obj.feed_forward(x);
          dLdz = y - t;
+         dLdz(isnan(t)) = 0;
       end
    
       function loss = compute_loss(~, y, t)
