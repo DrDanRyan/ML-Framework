@@ -2,7 +2,7 @@ classdef LinearHiddenLayer < StandardHiddenLayer
    % A simple linear layer. Useful for constructing a MaxoutAutoEncoder.
    
    properties
-      nonlinearity = @(x) x; % not actually used, need to define to inherit from StandardHiddenLayer
+      nonlinearity
    end
    
    methods
@@ -10,16 +10,13 @@ classdef LinearHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function y = feed_forward(obj, x)
-         y = bsxfun(@plus, obj.params{1}*x, obj.params{2});
+      function y = feed_forward(obj, x) % overide to prevent unnecessary identity arrayfun
+         y = obj.compute_z(x);
       end
       
-      function value = dydz(obj, ~, y)
+      function value = compute_dydz(obj, ~, y)
          value = obj.gpuState.ones(size(y));
-      end
-      
-      
+      end     
    end
-   
 end
 

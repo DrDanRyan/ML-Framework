@@ -85,7 +85,12 @@ classdef StandardLayer < handle
       end 
       
       function y = feed_forward(obj, x)
-         y = arrayfun(obj.nonlinearity, bsxfun(@plus, obj.params{1}*x, obj.params{2}));
+         z = obj.compute_z(x);
+         y = arrayfun(obj.nonlinearity, z);
+      end
+      
+      function value = compute_z(obj, x)
+         value = bsxfun(@plus, obj.params{1}*x, obj.params{2});
       end
       
       function penalties = compute_penalties(obj)

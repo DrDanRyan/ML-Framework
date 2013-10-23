@@ -9,7 +9,7 @@ classdef ReluHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function value = dydz(~, ~, y)
+      function value = compute_dydz(~, ~, y)
          value = single(y >= 0);
       end
    end

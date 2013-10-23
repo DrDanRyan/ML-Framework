@@ -31,8 +31,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
       function [grad, dLdx, dydz] = backprop(obj, x, y, dLdy)
          % L1 and L2 penalties are not implemented for MaxoutHiddenLayer
          [L1, N] = size(x);         
-         z = obj.compute_z(x);
-         dydz = obj.dydz(z, y);
+         dydz = obj.compute_dydz(x, y);
          dLdz = bsxfun(@times, dLdy, dydz); % dimensions are L2 x N x k
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
          
@@ -58,14 +57,15 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          end
       end
       
-      function value = dydz(obj, z, y)
+      function value = compute_dydz(obj, x, y)
+         z = obj.compute_z(x);
          value = obj.gpuState.make_numeric((bsxfun(@eq, z, y))); % L2 x N x k
       end
       
-      function z = compute_z(obj, x)
+      function value = compute_z(obj, x)
          % z has dimensions L2 x N x k
-         z = pagefun(@mtimes, obj.params{1}, x);
-         z = bsxfun(@plus, z, obj.params{2});
+         value = pagefun(@mtimes, obj.params{1}, x);
+         value = bsxfun(@plus, value, obj.params{2});
       end
       
    end
