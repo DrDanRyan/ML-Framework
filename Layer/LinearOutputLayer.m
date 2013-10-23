@@ -2,7 +2,7 @@ classdef LinearOutputLayer < StandardOutputLayer
    % A linear layer with MeanSquaredError loss function
    
    properties
-      nonlinearity = @(x) x; % not actually used, need to define to inherit from StandardOutputLayer
+      nonlinearity % not actually used, need to define to inherit from StandardOutputLayer
    end
    
    methods
@@ -17,10 +17,11 @@ classdef LinearOutputLayer < StandardOutputLayer
       function [dLdz, y] = dLdz(obj, x, t)
          y = obj.feed_forward(x);
          dLdz = y - t;
+         dLdz(isnan(t)) = 0;
       end
       
       function loss = compute_loss(~, y, t)
-         loss = .5*mean(sum((y-t).*(y-t), 1));
+         loss = .5*nanmean(nansum((y-t).*(y-t), 1));
       end
    end
    
