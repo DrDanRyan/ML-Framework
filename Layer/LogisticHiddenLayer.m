@@ -9,7 +9,7 @@ classdef LogisticHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function value = dydz(~, y)
+      function value = dydz(~, ~, y)
          value = y.*(1-y);
       end
    end

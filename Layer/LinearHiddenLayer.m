@@ -14,7 +14,7 @@ classdef LinearHiddenLayer < StandardHiddenLayer
          y = bsxfun(@plus, obj.params{1}*x, obj.params{2});
       end
       
-      function value = dydz(obj, y)
+      function value = dydz(obj, ~, y)
          value = obj.gpuState.ones(size(y));
       end
       
