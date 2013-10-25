@@ -9,14 +9,14 @@ classdef StandardOutputLayer < OutputLayer & StandardLayer
       end
       
       function [grad, dLdx, y] = backprop(obj, x, t)
-         [dLdz, y] = obj.dLdz(x, t);
+         [dLdz, y] = obj.compute_dLdz(x, t);
          dLdx = obj.params{1}'*dLdz;
          grad = obj.grad_from_dLdz(x, dLdz);
       end
    end
    
    methods (Abstract)
-      [dLdz, y] = dLdz(obj, x, t)
+      [dLdz, y] = compute_dLdz(obj, x, t)
    end
    
 end

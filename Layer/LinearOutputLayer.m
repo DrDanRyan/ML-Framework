@@ -14,10 +14,14 @@ classdef LinearOutputLayer < StandardOutputLayer
          value = obj.compute_z(x);
       end
       
-      function [dLdz, y] = dLdz(obj, x, t)
+      function [dLdz, y] = compute_dLdz(obj, x, t)
          y = obj.feed_forward(x);
          dLdz = y - t;
          dLdz(isnan(t)) = 0;
+      end
+      
+      function value = compute_dydz(obj, ~, y)
+         value = obj.gpuState.ones(size(y));
       end
       
       function loss = compute_loss(~, y, t)

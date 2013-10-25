@@ -31,6 +31,10 @@ classdef ComboOutputLayer < OutputLayer
          [grad, dLdx] = obj.hiddenLayer.backprop(x, y, dLdy);
       end
       
+      function value = compute_dydz(obj, x, y)
+         value = obj.hiddenLayer.compute_dydz(x, y);
+      end
+      
       function loss = compute_loss(obj, y, t)
          loss = obj.lossFunction.compute_loss(y, t);
       end

@@ -20,7 +20,7 @@ classdef SVMOutputLayer < StandardOutputLayer
          obj.costRatio = p.Results.costRatio;
       end
          
-      function [dLdz, y] = dLdz(obj, x, t)
+      function [dLdz, y] = compute_dLdz(obj, x, t)
          y = obj.feed_forward(x);
          if obj.costRatio == 1
             dLdz = -obj.lossExponent*t.*(max(1 - y.*t, 0).^(obj.lossExponent-1));
@@ -36,6 +36,10 @@ classdef SVMOutputLayer < StandardOutputLayer
                                  tPos.*(max(1 - yPos.*tPos, 0).^(obj.lossExponent-1));
             dLdz(:,negIdx) = -obj.lossExponent*tNeg.*(max(1 - yNeg.*tNeg, 0).^(obj.lossExponent-1));
          end
+      end
+      
+      function value = compute_dydz(obj, ~, y)
+         value = obj.gpuState.ones(size(y));
       end
       
       function y = feed_forward(obj, x)
