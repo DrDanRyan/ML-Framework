@@ -1,17 +1,13 @@
 classdef LinearOutputLayer < StandardOutputLayer
    % A linear layer with MeanSquaredError loss function
    
-   properties
-      nonlinearity % not actually used, need to define to inherit from StandardOutputLayer
-   end
-   
    methods
       function obj = LinearOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
       end
       
-      function value = feed_forward(obj, x)
-         value = obj.compute_z(x);
+      function y = feed_forward(obj, x)
+         y = obj.compute_z(x);
       end
       
       function [dLdz, y] = compute_dLdz(obj, x, t)
@@ -20,7 +16,7 @@ classdef LinearOutputLayer < StandardOutputLayer
          dLdz(isnan(t)) = 0;
       end
       
-      function value = compute_dydz(obj, ~, y)
+      function value = compute_Dy(obj, ~, y)
          value = obj.gpuState.ones(size(y));
       end
       

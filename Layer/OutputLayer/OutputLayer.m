@@ -5,7 +5,7 @@ classdef OutputLayer < matlab.mixin.Copyable
    methods (Abstract)
       [grad, dLdx, output] = backprop(obj, x, t)
       loss = compute_loss(obj, y, t)
-      value = compute_dydz(obj, x, y)
+      value = compute_Dy(obj, x, y)
       value = compute_z(obj, x)
       y = feed_forward(x)
       push_to_GPU(obj)

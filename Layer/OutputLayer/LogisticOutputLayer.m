@@ -1,9 +1,5 @@
 classdef LogisticOutputLayer < StandardOutputLayer
    
-   properties
-      nonlinearity = @sigm;
-   end
-   
    methods
       function obj = LogisticOutputLayer(inputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
@@ -15,15 +11,19 @@ classdef LogisticOutputLayer < StandardOutputLayer
          dLdz(isnan(t)) = 0;
       end
       
-      function value = compute_dydz(~, ~, y)
+      function y = feed_forward(obj, x)
+         z = obj.compute_z(x);
+         y = 1./(1 + exp(-z));
+      end
+      
+      function value = compute_Dy(~, ~, y)
          value = y.*(1-y);
       end
    
       function loss = compute_loss(~, y, t)
-         % loss = mean(-t.*log(y) - (1-t).*log(1-y));
-         loss = (sum(-log(y(t==1))) + sum(-log(1-y(t==0))))/length(t(~isnan(t))); % more robust to NaN from
-                                                                       % 0*(-Inf) when t == y == 0
-                                                                       % or t == y == 1              
+         % Should be: loss = mean(-t.*log(y) - (1-t).*log(1-y))
+         % This is more robust to NaN from 0*(-Inf) when t == y == 0 or t == y == 1
+         loss = (sum(-log(y(t==1))) + sum(-log(1-y(t==0))))/length(t(~isnan(t)));               
       end
    end
    

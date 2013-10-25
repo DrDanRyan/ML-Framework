@@ -1,8 +1,5 @@
 classdef StandardOutputLayer < OutputLayer & StandardLayer
    
-   % abstract property "nonlinearity" from StandardLayer must also 
-   % be implemented to subclass this class
-   
    methods
       function obj = StandardOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardLayer(inputSize, outputSize, varargin{:});

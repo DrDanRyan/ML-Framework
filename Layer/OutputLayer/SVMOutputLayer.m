@@ -5,7 +5,6 @@ classdef SVMOutputLayer < StandardOutputLayer
    properties
       costRatio % multiplies the loss for incorrectly classifying positive (rarer) examples
       lossExponent % exponent of the hinge loss function (>= 1)
-      nonlinearity % not used; Abstract property in StandardLayer
    end
    
    methods
@@ -38,14 +37,12 @@ classdef SVMOutputLayer < StandardOutputLayer
          end
       end
       
-      function value = compute_dydz(obj, ~, y)
+      function value = compute_Dy(obj, ~, y)
          value = obj.gpuState.ones(size(y));
       end
       
       function y = feed_forward(obj, x)
-         % output layer is linear; redefine feedforward to save computation
-         % vs. using:   nonlinearity = @(x) x;
-         y = bsxfun(@plus, obj.params{1}*x, obj.params{2});
+         y = obj.compute_z(x);
       end
       
       function loss = compute_loss(obj, y, t)

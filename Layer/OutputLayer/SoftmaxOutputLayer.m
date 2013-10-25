@@ -1,9 +1,5 @@
 classdef SoftmaxOutputLayer < StandardOutputLayer
    
-   properties
-      nonlinearity = @softmax; % not actually used
-   end
-   
    methods
       function obj = SoftmaxOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
@@ -14,7 +10,7 @@ classdef SoftmaxOutputLayer < StandardOutputLayer
          dLdz = y - t;
       end
       
-      function value = compute_dydz(obj, x, y)
+      function value = compute_Dy(~, ~, ~)
          % Not implemented... need to return a matrix instead of a vector
          % because of cross-terms in the denominator sum of softmax?
          
@@ -22,11 +18,12 @@ classdef SoftmaxOutputLayer < StandardOutputLayer
       end
       
       function y = feed_forward(obj, x)
-         y = softmax(bsxfun(@plus, obj.params{1}*x, obj.params{2}));
+         z = obj.compute_z(x);
+         y = softmax(z);
       end
    
       function loss = compute_loss(~, y, t)
-         loss = mean(-t.*log(y));
+         loss = mean(sum(-t.*log(y), 1));
       end 
    end
    
