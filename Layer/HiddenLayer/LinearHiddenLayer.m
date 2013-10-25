@@ -1,16 +1,12 @@
 classdef LinearHiddenLayer < StandardHiddenLayer
    % A simple linear layer.
    
-   properties
-      nonlinearity
-   end
-   
    methods
       function obj = LinearHiddenLayer(inputSize, outputSize, varargin)
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function y = feed_forward(obj, x) % overide to prevent unnecessary identity arrayfun
+      function y = feed_forward(obj, x)
          y = obj.compute_z(x);
       end
       

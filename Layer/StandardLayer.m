@@ -13,10 +13,6 @@ classdef StandardLayer < handle
       gradType % {averaged, sparse, raw} default is averaged
    end
    
-   properties (Abstract)
-      nonlinearity % function handle for nonlinearity
-   end
-   
    methods
       function obj = StandardLayer(inputSize, outputSize, varargin)       
          p = inputParser;
@@ -83,11 +79,6 @@ classdef StandardLayer < handle
             obj.params{1} = bsxfun(@times, obj.params{1}, multiplier);
          end
       end 
-      
-      function y = feed_forward(obj, x)
-         z = obj.compute_z(x);
-         y = arrayfun(obj.nonlinearity, z);
-      end
       
       function value = compute_z(obj, x)
          value = bsxfun(@plus, obj.params{1}*x, obj.params{2});

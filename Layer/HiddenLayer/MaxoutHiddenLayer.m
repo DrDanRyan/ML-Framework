@@ -2,7 +2,6 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
    
    properties
       % params = {W, b} where W and b are 3-dimensional arrays
-      nonlinearity % dummy property that doesnt get used... needed to inherit from StandardLayer
       k % number of linear units per maxout units (size of 3rd dimension of W and b)
    end
    
