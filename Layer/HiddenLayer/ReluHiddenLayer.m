@@ -9,9 +9,14 @@ classdef ReluHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function value = compute_dydz(~, ~, y)
+      function value = compute_Dy(~, ~, y)
          value = single(y >= 0);
       end
+      
+      function value = compute_D2y(obj, ~, y)
+         value = obj.gpuState.zeros(size(y));
+      end
+         
    end
    
 end

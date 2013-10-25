@@ -9,8 +9,12 @@ classdef TanhHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function value = compute_dydz(~, ~, y)
+      function value = compute_Dy(~, ~, y)
          value = (1 + y).*(1 - y);
+      end
+      
+      function value = compute_D2y(~, ~, y)
+         value = -2*y.*(1+y).*(1-y);
       end
    end
    

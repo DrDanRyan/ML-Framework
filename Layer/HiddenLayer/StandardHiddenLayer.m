@@ -5,9 +5,9 @@ classdef StandardHiddenLayer < HiddenLayer & StandardLayer
          obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
       end
       
-      function [grad, dLdx, dydz] = backprop(obj, x, y, dLdy)
-         dydz = obj.compute_dydz([], y);
-         dLdz = dLdy.*dydz;
+      function [grad, dLdx, Dy] = backprop(obj, x, y, dLdy)
+         Dy = obj.compute_Dy([], y);
+         dLdz = dLdy.*Dy;
          dLdx = obj.params{1}'*dLdz;
          grad = obj.grad_from_dLdz(x, dLdz);
       end

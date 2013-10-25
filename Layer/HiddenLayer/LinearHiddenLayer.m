@@ -1,5 +1,5 @@
 classdef LinearHiddenLayer < StandardHiddenLayer
-   % A simple linear layer. Useful for constructing a MaxoutAutoEncoder.
+   % A simple linear layer.
    
    properties
       nonlinearity
@@ -14,9 +14,13 @@ classdef LinearHiddenLayer < StandardHiddenLayer
          y = obj.compute_z(x);
       end
       
-      function value = compute_dydz(obj, ~, y)
+      function value = compute_Dy(obj, ~, y)
          value = obj.gpuState.ones(size(y));
       end     
+      
+      function value = compute_D2y(obj, ~, y)
+         value = obj.gpuState.zeros(size(y));
+      end
    end
 end
 
