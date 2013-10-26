@@ -113,7 +113,15 @@ classdef CAE < AutoEncoder
       end
       
       function objCopy = copy(obj)
-         objCopy = copy@AutoEncoder(obj);
+         objCopy = CAE;
+         
+         % Handle properties
+         objCopy.encodeLayer = obj.encodeLayer.copy();
+         objCopy.decodeLayer = obj.decodeLayer.copy();
+         
+         % Value properties
+         objCopy.isTiedWeights = obj.isTiedWeights;
+         objCopy.gpuState = obj.gpuState;
          objCopy.JacCoeff = obj.JacCoeff;
          objCopy.HessCoeff = obj.HessCoeff;
          objCopy.HessNoise = obj.HessNoise;
