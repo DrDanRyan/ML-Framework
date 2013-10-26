@@ -1,7 +1,7 @@
 classdef LogisticOutputLayer < StandardOutputLayer
    
    methods
-      function obj = LogisticOutputLayer(inputSize, varargin)
+      function obj = LogisticOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
       end
       
