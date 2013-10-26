@@ -68,14 +68,29 @@ classdef CAE < AutoEncoder
 
          % Penalty from approximation to L2 norm of Hessian map
          if ~isempty(obj.HessCoeff)
-            xEps = bsxfun(@plus, xIn, ...
-                           obj.HessNoise*obj.gpuState.randn([size(xIn), obj.HessBatchSize]));
-            xEpsLong = reshape(xEps, L1, []);
-            xCodeEps = obj.encodeLayer.feed_forward(xEpsLong);
-            DyEps = obj.encodeLayer.compute_Dy(xEpsLong, xCodeEps);
-            clear xEpsLong
-            xCodeEps = reshape(xCodeEps, [L2, N, obj.HessBatchSize]);
-            DyEps = reshape(DyEps, L2, N, obj.HessBatchSize, []);
+            xIn = repmat(xIn, 1, obj.HessBatchSize);
+            Dy = repmat(Dy, 1, obj.HessBatchSize);
+            D2y = repmat(D2y, 1, obj.HessBatchSize);
+            
+            xEps = xIn + obj.HessNoise*obj.gpuState.randn([L1, N*obj.HessBatchSize]);
+            xCodeEps = obj.encodeLayer.feed_forward(xEps);
+            DyEps = obj.encodeLayer.compute_Dy(xEps, xCodeEps);
+            D2yEps = obj.encodeLayer.compute_D2y(xEps, xCodeEps);
+            clear xCodeEps
+            
+            hessPenalty = cell(1, 2);
+            Dy_diff = Dy - DyEps;
+            hessPenalty{2} = obj.HessCoeff*bsxfun(@times, W_RowL2, ...
+                                             mean(Dy_diff.*(D2y - D2yEps), 2));
+            if ndims(Dy) <= 2
+               temp1 = ((Dy_diff.*D2y)*xIn' - (Dy_diff.*D2yEps)*xEps')/(N*obj.HessBatchSize);
+            else % Maxout layer
+               temp1 = (pagefun(@mtimes, Dy_diff.*D2y, xIn') - ...
+                        pagefun(@mtimes, Dy_diff.*D2yEps, xEps'))/(N*obj.HessBatchSize);
+            end
+            hessPenalty{1} = obj.HessCoeff*(bsxfun(@times, W_RowL2, temp1) + ...
+                                             bsxfun(@times, W, mean(Dy_diff.*Dy_diff, 2)));
+            penalty = cellfun(@plus, penalty, hessPenalty, 'UniformOutput', false);
          end    
       end
       
