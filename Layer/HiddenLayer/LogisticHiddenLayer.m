@@ -1,5 +1,9 @@
 classdef LogisticHiddenLayer < StandardHiddenLayer
    
+   properties
+      isLocallyLinear = false;
+   end
+   
    methods
       function obj = LogisticHiddenLayer(inputSize, outputSize, varargin)
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});

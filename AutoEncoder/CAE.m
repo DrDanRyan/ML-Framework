@@ -50,47 +50,64 @@ classdef CAE < AutoEncoder
          [L1, N] = size(xIn);
          penalty = cell(1, 2);
          W = obj.encodeLayer.params{1};
+         isLocallyLinear = obj.encodeLayer.isLocallyLinear;
          
          % Penalty from L2 norm of Jacobian map
-         W_RowL2 = sum(W.*W, 2);
-         D2y = obj.encodeLayer.compute_D2y(xIn, xCode);
-         Dy_D2y_product = Dy.*D2y;
-         penalty{2} = obj.JacCoeff*W_RowL2.*mean(Dy_D2y_product, 2);
+         if isLocallyLinear
+            penalty{2} = 0;
+            penalty{1} = obj.JacCoeff*bsxfun(@times, W, mean(Dy.*Dy, 2));
+         else
+            W_RowL2 = sum(W.*W, 2);
+            D2y = obj.encodeLayer.compute_D2y(xIn, xCode);
+            Dy_D2y_product = Dy.*D2y;
+            penalty{2} = obj.JacCoeff*W_RowL2.*mean(Dy_D2y_product, 2);
          
-         if ndims(Dy) <= 2
-            x_outer_DyD2y = Dy_D2y_product*xIn'/N;
-         else % ndims == 3 => Maxout layer
-            x_outer_DyD2y = pagefun(@mtimes, Dy_D2y_product, x')/N;
+            if ndims(Dy) <= 2
+               x_outer_DyD2y = Dy_D2y_product*xIn'/N;
+            else % ndims == 3 => Maxout layer
+               x_outer_DyD2y = pagefun(@mtimes, Dy_D2y_product, x')/N;
+            end
+            penalty{1} = obj.JacCoeff*(bsxfun(@times, W_RowL2, x_outer_DyD2y) + ...
+                                       bsxfun(@times, W, mean(Dy.*Dy, 2)));
          end
-         penalty{1} = obj.JacCoeff*(bsxfun(@times, W_RowL2, x_outer_DyD2y) + ...
-                                    bsxfun(@times, W, mean(Dy.*Dy, 2)));
          
 
          % Penalty from approximation to L2 norm of Hessian map
          if ~isempty(obj.HessCoeff)
             xIn = repmat(xIn, 1, obj.HessBatchSize);
             Dy = repmat(Dy, 1, obj.HessBatchSize);
-            D2y = repmat(D2y, 1, obj.HessBatchSize);
+            
             
             xEps = xIn + obj.HessNoise*obj.gpuState.randn([L1, N*obj.HessBatchSize]);
             xCodeEps = obj.encodeLayer.feed_forward(xEps);
             DyEps = obj.encodeLayer.compute_Dy(xEps, xCodeEps);
-            D2yEps = obj.encodeLayer.compute_D2y(xEps, xCodeEps);
+            
+            if ~isLocallyLinear
+               D2y = repmat(D2y, 1, obj.HessBatchSize);
+               D2yEps = obj.encodeLayer.compute_D2y(xEps, xCodeEps);
+            end
             clear xCodeEps
             
             hessPenalty = cell(1, 2);
             Dy_diff = Dy - DyEps;
             clear Dy DyEps
-            hessPenalty{2} = obj.HessCoeff*bsxfun(@times, W_RowL2, ...
-                                             mean(Dy_diff.*(D2y - D2yEps), 2));
-            if ndims(D2y) <= 2
-               temp1 = ((Dy_diff.*D2y)*xIn' - (Dy_diff.*D2yEps)*xEps')/(N*obj.HessBatchSize);
-            else % Maxout layer
-               temp1 = (pagefun(@mtimes, Dy_diff.*D2y, xIn') - ...
-                        pagefun(@mtimes, Dy_diff.*D2yEps, xEps'))/(N*obj.HessBatchSize);
+            
+            if isLocallyLinear
+               hessPenalty{2} = 0;
+               hessPenalty{1} = obj.HessCoeff*bsxfun(@times, W, mean(Dy_diff.*Dy_diff, 2));
+            else
+               hessPenalty{2} = obj.HessCoeff*bsxfun(@times, W_RowL2, ...
+                                                mean(Dy_diff.*(D2y - D2yEps), 2));
+               if ndims(D2y) <= 2
+                  temp1 = ((Dy_diff.*D2y)*xIn' - (Dy_diff.*D2yEps)*xEps')/(N*obj.HessBatchSize);
+               else % Maxout layer
+                  temp1 = (pagefun(@mtimes, Dy_diff.*D2y, xIn') - ...
+                           pagefun(@mtimes, Dy_diff.*D2yEps, xEps'))/(N*obj.HessBatchSize);
+               end
+               hessPenalty{1} = obj.HessCoeff*(bsxfun(@times, W_RowL2, temp1) + ...
+                                                bsxfun(@times, W, mean(Dy_diff.*Dy_diff, 2)));
             end
-            hessPenalty{1} = obj.HessCoeff*(bsxfun(@times, W_RowL2, temp1) + ...
-                                             bsxfun(@times, W, mean(Dy_diff.*Dy_diff, 2)));
+            
             penalty = cellfun(@plus, penalty, hessPenalty, 'UniformOutput', false);
          end    
       end

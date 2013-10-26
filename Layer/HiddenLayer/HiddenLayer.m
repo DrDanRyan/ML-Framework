@@ -1,5 +1,9 @@
 classdef HiddenLayer < matlab.mixin.Copyable
    % Defines the HiddenLayer interface 
+   
+   properties (Abstract)
+      isLocallyLinear
+   end
 
    methods (Abstract)
       [grad, dLdx, Dy] = backprop(obj, x, y, dLdy)

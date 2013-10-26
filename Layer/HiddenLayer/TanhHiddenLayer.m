@@ -1,5 +1,9 @@
 classdef TanhHiddenLayer < StandardHiddenLayer
    
+   properties
+      isLocallyLinear = false;
+   end
+   
    methods
       function obj = TanhHiddenLayer(inputSize, outputSize, varargin)
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});

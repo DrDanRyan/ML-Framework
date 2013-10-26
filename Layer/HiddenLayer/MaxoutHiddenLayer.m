@@ -3,6 +3,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
    properties
       % params = {W, b} where W and b are 3-dimensional arrays
       k % number of linear units per maxout units (size of 3rd dimension of W and b)
+      isLocallyLinear = true;
    end
    
    methods

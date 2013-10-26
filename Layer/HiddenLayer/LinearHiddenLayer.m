@@ -1,6 +1,10 @@
 classdef LinearHiddenLayer < StandardHiddenLayer
    % A simple linear layer.
    
+   properties
+      isLocallyLinear = true;
+   end
+   
    methods
       function obj = LinearHiddenLayer(inputSize, outputSize, varargin)
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
