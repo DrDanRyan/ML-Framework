@@ -80,9 +80,10 @@ classdef CAE < AutoEncoder
             
             hessPenalty = cell(1, 2);
             Dy_diff = Dy - DyEps;
+            clear Dy DyEps
             hessPenalty{2} = obj.HessCoeff*bsxfun(@times, W_RowL2, ...
                                              mean(Dy_diff.*(D2y - D2yEps), 2));
-            if ndims(Dy) <= 2
+            if ndims(D2y) <= 2
                temp1 = ((Dy_diff.*D2y)*xIn' - (Dy_diff.*D2yEps)*xEps')/(N*obj.HessBatchSize);
             else % Maxout layer
                temp1 = (pagefun(@mtimes, Dy_diff.*D2y, xIn') - ...
