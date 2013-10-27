@@ -30,18 +30,18 @@ classdef AdaptiveLearningRate < StepCalculator
          obj.n0 = p.Results.n0;
       end
       
-      function take_step(obj, x, t, model, ~)
+      function take_step(obj, batch, model, ~)
          
          if isempty(obj.gradAvg)   
-            obj.initialize_averages(x, t, model)
+            obj.initialize_averages(batch, model)
             return;
          end
          
-         N = size(x, 2);
-         raw_grad1 = model.gradient(x, t);
+         N = size(batch{1}, 2);
+         raw_grad1 = model.gradient(batch);
          modelCopy = model.copy();
          modelCopy.increment_params(obj.gradAvg);
-         raw_grad2 = modelCopy.gradient(x, t);
+         raw_grad2 = modelCopy.gradient(batch);
          clear modelCopy
          step = cell(1, length(raw_grad1));
          
@@ -92,9 +92,9 @@ classdef AdaptiveLearningRate < StepCalculator
          model.increment_params(step);
       end
       
-      function initialize_averages(obj, x, t, model)
-         N = size(x, 2);
-         raw_grad1 = model.gradient(x, t);
+      function initialize_averages(obj, batch, model)
+         N = size(batch{1}, 2);
+         raw_grad1 = model.gradient(batch);
          gradLength = length(raw_grad1);
          obj.gradAvg = cell(1, gradLength);
          obj.gradSquaredAvg = cell(1, gradLength);
@@ -110,7 +110,7 @@ classdef AdaptiveLearningRate < StepCalculator
          
          modelCopy = model.copy();
          modelCopy.increment_params(obj.gradAvg);
-         raw_grad2 = modelCopy.gradient(x, t);
+         raw_grad2 = modelCopy.gradient(batch);
          clear modelCopy
          
          for i = 1:gradLength

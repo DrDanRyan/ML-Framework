@@ -1,8 +1,8 @@
 classdef DataManager < matlab.mixin.Copyable
    
    properties
-      trainingData
-      validationData
+      trainingData % cell array of data relevant for training; targets should be last entry if present
+      validationData % cell array of data relevant for validation; same shape as trainingData
       
       batchSize
       trainingSize

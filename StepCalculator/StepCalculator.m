@@ -4,7 +4,7 @@ classdef StepCalculator < matlab.mixin.Copyable
    % model accordingly.
    
    methods (Abstract)
-      take_step(obj, x, t, model, params)
+      take_step(obj, batch, model, params)
       reset(obj)
    end
    

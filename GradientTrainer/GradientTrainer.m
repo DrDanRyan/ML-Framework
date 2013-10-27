@@ -40,19 +40,17 @@ classdef GradientTrainer < handle
          
          isContinue = true;
          while isContinue
-            [x, t, isEndOfEpoch] = obj.dataManager.next_batch();
-            obj.stepCalculator.take_step(x, t, obj.model, obj.trainingSchedule.params);
+            [batch, isEndOfEpoch] = obj.dataManager.next_batch();
+            obj.stepCalculator.take_step(batch, obj.model, obj.trainingSchedule.params);
             
             if isEndOfEpoch
                trainingLoss = ...
-                  obj.model.compute_loss(obj.model.output(obj.dataManager.trainingInputs), ...
-                                         obj.dataManager.trainingTargets);
+                  obj.model.compute_loss(obj.dataManager.trainingData);
                
                validationLoss = [];
-               if ~isempty(obj.dataManager.validationTargets)
+               if ~isempty(obj.dataManager.validationData)
                   validationLoss = ...
-                  obj.model.compute_loss(obj.model.output(obj.dataManager.validationInputs), ...
-                                         obj.dataManager.validationTargets);
+                     obj.model.compute_loss(obj.dataManager.validationData);
                end
                                                     
                if ~isempty(obj.reporter)
@@ -63,20 +61,8 @@ classdef GradientTrainer < handle
          end
       end
       
-      function objCopy = copy(obj)
-         % Yields a deep copy of the GraidentTrainer object.
-         objCopy = GradientTrainer();
-         objCopy.dataManager = copy(obj.dataManager);
-         objCopy.model = copy(obj.model);
-         if ~isempty(obj.reporter)
-            objCopy.reporter = copy(obj.reporter);
-         end
-         objCopy.stepCalculator = copy(obj.stepCalculator);
-         objCopy.trainingSchedule = copy(obj.trainingSchedule);
-      end
-      
       function reset(obj)
-         % Calls reset() on all properties of the GradientTrainer object.
+         % Calls reset() on all properties of the GradientTrainer object that are not empty
          if ~isempty(obj.reporter)
             obj.reporter.reset();
          end

@@ -34,15 +34,17 @@ classdef IRprop < StepCalculator
       end
       
       
-      function take_step(obj, x, t, model, params)
+      function take_step(obj, batch, model, params)
          % Check each connection to see if gradient has changed sign from
          % previous step. If so, check if error has increased or decreased.
          % If error increase backtrack previous weight changes on those
          % connections, if error decrease, only decrease learning rate on
          % those connections. If gradient has not changed signs, increase
          % learning rates on those connections.
-         [grad, y] = model.gradient(x, t);
-         loss = model.compute_loss(y, t);
+         
+         t = batch{end};
+         [grad, y] = model.gradient(batch);
+         loss = model.compute_loss_from_output(y, t);
          step = cell(size(grad));
          
          if isempty(obj.prevGrad)

@@ -11,8 +11,8 @@ classdef Momentum < StepCalculator
    end
    
    methods
-      function take_step(obj, x, t, model, params)
-         grad = model.gradient(x, t);
+      function take_step(obj, batch, model, params)
+         grad = model.gradient(batch);
          [learnRate, momentum] = params{:};
          
          if isempty(obj.velocity)

@@ -19,7 +19,9 @@ classdef DAE < AutoEncoder
          obj.noiseLevel = p.Results.noiseLevel;
       end
       
-      function [grad, xRecon] = gradient(obj, xIn, xTarget, ~)
+      function [grad, xRecon] = gradient(obj, batch)
+         xTarget = batch{1}; % noise free, will keep NaN vals
+         xIn = batch{1}; % noise will be added and then NaNs replaced with 0
          xIn = obj.inject_noise(xIn);
          [grad, xRecon] = gradient@AutoEncoder(obj, xIn, xTarget, []);
       end
@@ -33,6 +35,7 @@ classdef DAE < AutoEncoder
             case 'Gaussian'
                x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
          end
+         x(isnan(x)) = 0;
       end
       
       function objCopy = copy(obj)

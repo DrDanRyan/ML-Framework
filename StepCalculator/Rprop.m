@@ -41,11 +41,11 @@ classdef Rprop < StepCalculator
       end
       
       
-      function take_step(obj, x, t, model, ~)
+      function take_step(obj, batch, model, ~)
          % Compares current model gradient with previous gradient and
          % independently adjusts learning rates for each model parameter
          % appropriately. Then step = learnRate*sign(gradient).
-         grad = model.gradient(x, t);
+         grad = model.gradient(batch);
          obj.update_rates(grad, model);
          steps = cellfun(@(rate, grad) -rate.*sign(grad), obj.rates, grad, ...
                           'UniformOutput', false);

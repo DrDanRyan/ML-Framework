@@ -25,7 +25,9 @@ classdef CAE < AutoEncoder
          obj.HessBatchSize = p.Results.HessBatchSize;
       end
       
-      function [grad, xRecon] = gradient(obj, xIn, xTarget, ~)
+      function [grad, xRecon] = gradient(obj, batch)
+         xTarget = batch{1};
+         xIn = batch{1};
          xIn(isnan(xIn)) = 0;
          xCode = obj.encodeLayer.feed_forward(xIn);
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, xTarget);

@@ -66,9 +66,11 @@ classdef FeedForwardNet < SupervisedModel
          obj.outputLayer.increment_params(delta_params{end});
       end
       
-      function [grad, output, dLdx] = gradient(obj, x, t)
+      function [grad, output, dLdx] = gradient(obj, batch)
          % Computes the gradient for batch input x and target t for all parameters in
          % each hiddenLayer and outputLayer.
+         x = batch{1};
+         t = batch{2};
          x(isnan(x)) = 0;
          if obj.isDropout
             mask = obj.dropout_mask(x);
@@ -171,7 +173,13 @@ classdef FeedForwardNet < SupervisedModel
          y = obj.outputLayer.feed_forward(y);
       end
       
-      function loss = compute_loss(obj, y, t)
+      function loss = compute_loss(obj, batch)
+         y = obj.output(batch{1});
+         t = batch{2};
+         loss = obj.compute_loss_from_output(y, t);
+      end
+      
+      function loss = compute_loss_from_output(obj, y, t)
          loss = obj.outputLayer.compute_loss(y, t);
       end
       

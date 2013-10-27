@@ -26,8 +26,10 @@ classdef AutoEncoder < handle
          end
       end
       
-      function [grad, xRecon] = gradient(obj, xIn, xTarget, ~)
-         xIn(isnan(xIn)) = 0;
+      function [grad, xRecon] = gradient(obj, batch)
+         xTarget = batch{1}; % keep any NaN values
+         xIn = batch{1}; % will replace NaN values by 0 if present
+         xIn(isnan(xIn)) = 0; 
          xCode = obj.encodeLayer.feed_forward(xIn);
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, xTarget);
          encodeGrad = obj.encodeLayer.backprop(xIn, xCode, dLdxCode);
@@ -44,7 +46,13 @@ classdef AutoEncoder < handle
          end
       end
       
-      function loss = compute_loss(obj, xRecon, x)
+      function loss = compute_loss(obj, batch)
+         x = batch{1};
+         xRecon = obj.output(x);
+         loss = obj.compute_loss(xRecon, x);
+      end
+      
+      function loss = compute_loss_from_output(obj, xRecon, x)
          loss = obj.decodeLayer.compute_loss(xRecon, x);
       end
       

@@ -12,16 +12,16 @@ classdef NesterovMomentum < StepCalculator
    end
    
    methods
-      function take_step(obj, x, t, model, params)
+      function take_step(obj, batch, model, params)
          [learnRate, momentum] = params{:};
          
          if isempty(obj.velocity)
-            grad = model.gradient(x, t);
+            grad = model.gradient(batch);
             obj.velocity = cellfun(@(grad) -learnRate*grad, grad, 'UniformOutput', false);
          else
             modelCopy = model.copy();
             modelCopy.increment_params(obj.velocity);
-            grad = model.gradient(x, t);
+            grad = model.gradient(batch);
             clear modelCopy
             obj.velocity = cellfun(@(grad, vel) momentum*vel - learnRate*grad, grad, ...
                                        obj.velocity, 'UniformOutput', false);   
