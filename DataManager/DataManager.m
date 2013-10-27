@@ -1,10 +1,8 @@
 classdef DataManager < matlab.mixin.Copyable
    
    properties
-      trainingInputs
-      trainingTargets
-      validationInputs
-      validationTargets
+      trainingData
+      validationData
       
       batchSize
       trainingSize
@@ -13,48 +11,32 @@ classdef DataManager < matlab.mixin.Copyable
    end
    
    methods
-      function obj = DataManager(trainingInputs, trainingTargets, validationInputs, ...
-                                       validationTargets, varargin)
+      function obj = DataManager(trainingData, validationData, varargin)
          
-         if nargin > 0
-            obj.trainingInputs = trainingInputs;
-            obj.trainingTargets = trainingTargets;
-            obj.validationInputs = validationInputs;
-            obj.validationTargets = validationTargets;
+         if nargin == 0
+            return
          end
+         
+         obj.trainingData = trainingData; 
+         obj.validationData = validationData;
          
          p = inputParser();
          p.addParamValue('batchSize', []);
          parse(p, varargin{:});
          
-         if ~isempty(p.Results.batchSize)
+         if ~isempty(p.Results.batchSize) % Use mini-batches; set batchsize and trainingSize
             p.batchSize = p.Results.batchSize;
-            if ~isempty(obj.trainingInputs)
-               obj.trainingSize = size(obj.trainingInputs, 2);
-            elseif ~isempty(obj.trainingTargets)
-               obj.trainingSize = size(obj.trainingInputs, 2);
-            end
+            obj.trainingSize = size(trainingData{1}, 2);
             obj.shuffle_training_data();
          end
       end
       
-      function [x, t, endOfEpochFlag] = next_batch(obj)
+      function [batch, endOfEpochFlag] = next_batch(obj)
          if isempty(obj.batchSize) % full batch
-            x = obj.trainingInputs;
-            t = obj.trainingTargets;
+            batch = obj.trainingData;
             endOfEpochFlag = true;
          else % mini-batch
-            if isempty(obj.trainingInputs)
-               x = [];
-            else
-               x = obj.trainingInputs(:, obj.startIdx:obj.stopIdx);
-            end
-            
-            if isempty(obj.trainingTargets)
-               t = [];
-            else
-               t = obj.trainingTargets(:, obj.startIdx:obj.stopIdx);
-            end
+            batch = cellfun(@(v) v(:,obj.startIdx:obj.stopIdx), 'UniformOutput', false);
             
             if obj.stopIdx == obj.trainingSize
                endOfEpochFlag = true;
@@ -68,19 +50,16 @@ classdef DataManager < matlab.mixin.Copyable
       end
       
       function shuffle_training_data(obj)
-         [obj.trainingInputs, obj.trainingTargets] = shuffle(obj.trainingInputs, ...
-                                                             obj.trainingTargets);
+         permvec = randperm(obj.trainingSize);
+         obj.trainingData = cellfun(@(v) v(:,permvec), obj.trainingData, ...
+                                                      'UniformOutput', false);
          obj.startIdx = 1;
          obj.stopIdx = min(obj.batchSize, obj.trainingSize);
       end
       
       function reset(obj)
          if ~isempty(obj.batchSize)
-            if ~isempty(obj.trainingInputs)
-               obj.trainingSize = size(obj.trainingInputs, 2);
-            elseif ~isempty(obj.trainingTargets)
-               obj.trainingSize = size(obj.trainingInputs, 2);
-            end
+            obj.trainingSize = size(obj.trainingData{1}, 2);
             obj.shuffle_training_data();
          end
       end
