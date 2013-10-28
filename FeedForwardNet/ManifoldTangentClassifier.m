@@ -29,78 +29,52 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          end
          
          % feed_forward through hiddenLayers
-         [y, dydx] = obj.feed_forward(x, mask); % dydx are the layer Jacobians
+         y = obj.feed_forward(x, mask); % dydx are the layer Jacobians
          
          % get outputLayer output and backpropagate loss
          [grad, output, dLdx] = obj.backprop(x, y, t, mask);
          
          % compute mainfold tangent penalty gradient and add it to grad
-         penalty = obj.compute_penalty_gradient(x, u, y, dydx, mask);
+         penalty = obj.compute_penalty_gradient(x, u, y, output, mask);
          penalty = obj.unroll_gradient(penalty);
          grad = cellfun(@plus, grad, penalty, 'UniformOutput', false);
       end
       
-      function [y, dydx] = feed_forward(obj, x, mask)
-         % feed_forward through hiddenLayers collecting Jacobians of each
-         % layer mapping along the way
-         
+      function penalty = compute_penalty_gradient(obj, x, u, y, output, mask)
          nHiddenLayers = length(obj.hiddenLayers);
-         y = cell(1, nHiddenLayers); % output from each hiddenLayer
-         dydx = cell(1, nHiddenLayers+1); % the Jacobians of each layer mapping
-         [y{1}, dydx{1}] = obj.feed_forward_layer(x, mask{1}, mask{2}, obj.hiddenLayers{1});
-         for i = 2:nHiddenLayers
-            [y{i}, dydx{i}] = ...
-               feed_forward_layer(y{i-1}, mask{i}, mask{i+1}, obj.hiddenLayers{i});
-         end
          
-         % compute Jacobian of outputLayer mapping
-         dummy_mask = obj.gpuState.ones([obj.outputLayer.outputSize, 1]);
-         [~, dydx{end}] = feed_forward_layer(y{end}, mask{end}, dummy_mask, obj.outputLayer);
-      end
-      
-      function [y, dydx] = feed_forward_layer(obj, x, xMask, yMask, layer)
-         y = layer.feed_forward(x);
-         [L2, N] = size(y);
-         W = layer.params{1};
-         dydz = layer.compute_Dy(x, y);
-         if ndims(dydz) <= 2
-            dydx = bsxfun(@times, reshape(dydz, L2, 1, N), W); % L2 x L1 x N
-         else % Maxout layer
-            [~, L1, k] = size(W);
-            dydx{1} = sum(bsxfun(@times, reshape(dydz, L2, 1, N, k), ...
-                                    reshape(W, L2, L1, 1, k)), 4); % L2 x L1 x N
-         end
-         
+         % Compute dydz for each layer (including output)
+         dydz = cell(1, nHiddenLayers+1);
+         dydz{1} = obj.hiddenLayers{1}.compute_Dy(x, y{1});
          if obj.isDropout
-            y{1} = y{1}.*yMask;
-            dydx{1} = bsxfun(@times, dydx{1}, yMask');
-            dydx{1} = bsxfun(@times, dydx{1}, xMask);
+            dydz{1} = dydz{1}.*mask{2};
          end
+         for i = 2:nHiddenLayers
+            dydz{i} = obj.hiddenLayers{i}.compute_Dy(y{i-1}, y{i});
+            if obj.isDropout
+               dydz{i} = dydz{i}.*mask{i+1};
+            end
+         end
+         dydz{end} = obj.outputLayer.compute_Dy(y{end}, output);       
+         
+         % Compute forward dhdx*u cumulative products
+         dhdx_u = obj.compute_forward_Jacobian_u_products(u, dydz);
+         
+         % Compute backward
+
       end
       
-      function penalty = compute_penalty_gradient(obj, x, u, y, dydx)
+      function dhdx_u = compute_forward_Jacobian_u_products(obj, u, dydz)
          nHiddenLayers = length(obj.hiddenLayers);
-         dodh = cell(1, nHiddenLayers);
-         dhdx = cell(1, nHiddenLayers);
-         
-         % Compute forward and backwards cummulative products of Jacobians
-         dodh{end} = dydx{end};
-         dhdx{1} = dydx{1};
+         dhdx_u = cell(1, nHiddenLayers+1);
+         dhdx_u{1} = pagefun(@mtimes, obj.hiddenLayers{1}.params{1}, u);
+         dhdx_u{1} = bsxfun(@times, dydz{1}, dhdx_u{1});
          for i = 2:nHiddenLayers
-            revIdx = nHiddenLayers - i +1;
-            dhdx{i} = pagefun(@mtimes, dydx{i}, dhdx{i-1});
-            dodh{revIdx} = pagefun(@mtimes, dodh{revIdx+1}, dydx{revIdx});
+            dhdx_u{i} = pagefun(@mtimes, obj.hiddenLayers{i}.params{1}, dhdx_u{i-1});
+            dhdx_u{i} = bsxfun(@times, dydz{i}, dhdx_u{i});
          end
-         totalJac = pagefun(@mtimes, dydx{end}, dhdx{end});
-         
-         
-         
-         
-              
-         
-         
-         
-         
+         dhdx_u{end} = pagefun(@mtimes, obj.outputLayer.params{1}, dhdx_u{end-1});
+         dhdx_u{end} = bsxfun(@times, dydz{end}, dhdx_u{end});
       end
    end   
 end

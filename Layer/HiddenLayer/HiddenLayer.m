@@ -6,7 +6,7 @@ classdef HiddenLayer < matlab.mixin.Copyable
    end
 
    methods (Abstract)
-      [grad, dLdx, Dy] = backprop(obj, x, y, dLdy)
+      [grad, dLdx, y] = backprop(obj, x, y, dLdy)
       y = feed_forward(obj, x)
       value = compute_z(obj, x)
       value = compute_Dy(obj, x, y) % derivative of transfer function
