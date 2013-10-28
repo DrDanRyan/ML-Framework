@@ -23,6 +23,7 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          if obj.isDropout
             mask = obj.dropout_mask(x);
             x = x.*mask{1};
+            u = u.*mask{1}; % not really advised to use input dropout with MTC
          else
             mask = [];
          end
@@ -45,19 +46,23 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(1, nHiddenLayers); % output from each hiddenLayer
-         dydx = cell(1, nHiddenLayers); % the Jacobians of each layer mapping
+         dydx = cell(1, nHiddenLayers+1); % the Jacobians of each layer mapping
          [y{1}, dydx{1}] = obj.feed_forward_layer(x, mask{1}, mask{2}, obj.hiddenLayers{1});
          for i = 2:nHiddenLayers
             [y{i}, dydx{i}] = ...
                feed_forward_layer(y{i-1}, mask{i}, mask{i+1}, obj.hiddenLayers{i});
          end
+         
+         % compute Jacobian of outputLayer mapping
+         dummy_mask = obj.gpuState.ones([obj.outputLayer.outputSize, 1]);
+         [~, dydx{end}] = feed_forward_layer(y{end}, mask{end}, dummy_mask, obj.outputLayer);
       end
       
-      function [y, dydx] = feed_forward_layer(obj, x, xMask, yMask, hiddenLayer)
-         y = hiddenLayer.feed_forward(x);
+      function [y, dydx] = feed_forward_layer(obj, x, xMask, yMask, layer)
+         y = layer.feed_forward(x);
          [L2, N] = size(y);
-         W = hiddenLayer.params{1};
-         dydz = hiddenLayer.compute_Dy(x, y);
+         W = layer.params{1};
+         dydz = layer.compute_Dy(x, y);
          if ndims(dydz) <= 2
             dydx = bsxfun(@times, reshape(dydz, L2, 1, N), W); % L2 x L1 x N
          else % Maxout layer
@@ -73,7 +78,7 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          end
       end
       
-      function penalty = compute_penalty_gradient(obj, x, u, y, dydx, mask)
+      function penalty = compute_penalty_gradient(obj, x, u, y, dydx)
          nHiddenLayers = length(obj.hiddenLayers);
          dodh = cell(1, nHiddenLayers);
          dhdx = cell(1, nHiddenLayers);
@@ -83,9 +88,16 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          dhdx{1} = dydx{1};
          for i = 2:nHiddenLayers
             revIdx = nHiddenLayers - i +1;
-            dhdx{i} = dydx{i}*dhdx{i-1};
-            dodh{revIdx} = dodh{revIdx+1}*dydx{revIdx};
+            dhdx{i} = pagefun(@mtimes, dydx{i}, dhdx{i-1});
+            dodh{revIdx} = pagefun(@mtimes, dodh{revIdx+1}, dydx{revIdx});
          end
+         totalJac = pagefun(@mtimes, dydx{end}, dhdx{end});
+         
+         
+         
+         
+              
+         
          
          
          
