@@ -84,20 +84,20 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          if ~layer.isLocallyLinear % Must include terms with D2y as a factor
             temp2 = bsxfun(@times, temp1, D2y{1});
             temp2 = bsxfun(@times, temp2, pagefun(@mtimes, layer.params{1}, u));
-            prod = pagefun(@mtimes, temp2, x'); % L2 x L1 x M x outputSize
+            prod = pagefun(@mtimes, temp2, x')/N; % L2 x L1 x M x outputSize
             sum1 = sum(sum(prod, 4), 3); % L2 x L1
+            
+            temp2 = mean(temp2, 2);
+            penalty{2} = obj.tangentCoeff*sum(sum(temp2, 4), 3);
          else
             sum1 = 0;
+            penalty{2} = 0;
          end
          
          temp2 = bsxfun(@times, temp1, Dy{1});
-         prod = pagefun(@mtimes, temp2, permute(u, [2, 1, 3])); % L2 x L1 x M x outputSize
+         prod = pagefun(@mtimes, temp2, permute(u, [2, 1, 3]))/N; % L2 x L1 x M x outputSize
          sum2 = sum(sum(prod, 4), 3);
-         penalty{1} = sum1 + sum2;
-         
-         penalty{2} = 
-         
-
+         penalty{1} = obj.tangentCoeff*(sum1 + sum2);
       end
       
       function Dy = compute_Dy(obj, x, y, mask, layer)
