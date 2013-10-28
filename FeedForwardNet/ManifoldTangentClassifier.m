@@ -41,30 +41,87 @@ classdef ManifoldTangentClassifier < FeedForwardNet
       end
       
       function penalty = compute_penalty_gradient(obj, x, u, y, output, mask)
+         % Need to modify for maxout networks
          nHiddenLayers = length(obj.hiddenLayers);
          
          % Compute dydz for each layer (including output)
-         dydz = cell(1, nHiddenLayers+1);
-         dydz{1} = obj.hiddenLayers{1}.compute_Dy(x, y{1});
-         if obj.isDropout
-            dydz{1} = dydz{1}.*mask{2};
-         end
+         Dy = cell(1, nHiddenLayers+1);
+         D2y = cell(1, nHiddenLayers+1);
+         layer = obj.hiddenLayers{1};
+         Dy{1} = obj.compute_Dy(x, y{1}, mask{2}, layer);
+         if ~layer.isLocallyLinear
+            D2y{1} = obj.compute_D2y(x, y{1}, mask{2}, layer);
+         end         
          for i = 2:nHiddenLayers
-            dydz{i} = obj.hiddenLayers{i}.compute_Dy(y{i-1}, y{i});
-            if obj.isDropout
-               dydz{i} = dydz{i}.*mask{i+1};
+            layer = obj.hiddenLayers{i};
+            Dy{i} = obj.compute_Dy(y{i-1}, y{i}, mask{i+1}, layer);
+            if ~layer.isLocallyLinear
+               D2y{i} = obj.compute_D2y(y{i-1}, y{i}, mask{i+1}, layer);
             end
          end
-         dydz{end} = obj.outputLayer.compute_Dy(y{end}, output);       
+         layer = obj.outputLayer;
+         Dy{end} = obj.compute_Dy(y{end}, output, 1, layer);       
+         if ~layer.isLocallyLinear
+            D2y{end} = obj.compute_D2y(y{end}, output, 1, layer);
+         end
          
          % Compute forward dhdx*u cumulative products
-         dhdx_u = obj.compute_forward_Jacobian_u_products(u, dydz);
+         dhdx_u = obj.compute_forward_Jacobian_u_products(u, Dy); % L2 x N x M (where M is nSingularVectors)
          
-         % Compute backward
+         % Compute backward Jacobian cumulative products
+         dodh = obj.compute_backwards_Jacobian_products(Dy); % L2 x N x outputSize
+         
+         % Compute penalty terms
+         penalty = cell(1, 2);
+         dodx_u = shiftdim(permute(dhdx_u{end}, [2, 3, 1]), -1); % 1 x N x M x outputSize
+         N = size(x, 2);
+         
+         % input layer
+         layer = obj.hiddenLayers{1};
+         L2 = layer.outputSize;
+         temp1 = bsxfun(@times, reshape(dodh{1}, [L2, N, 1, outputSize]), dodx_u); % L2 x N x M x outputSize
+         
+         if ~layer.isLocallyLinear % Must include terms with D2y as a factor
+            temp2 = bsxfun(@times, temp1, D2y{1});
+            temp2 = bsxfun(@times, temp2, pagefun(@mtimes, layer.params{1}, u));
+            prod = pagefun(@mtimes, temp2, x'); % L2 x L1 x M x outputSize
+            sum1 = sum(sum(prod, 4), 3); % L2 x L1
+         else
+            sum1 = 0;
+         end
+         
+         temp2 = bsxfun(@times, temp1, Dy{1});
+         prod = pagefun(@mtimes, temp2, permute(u, [2, 1, 3])); % L2 x L1 x M x outputSize
+         sum2 = sum(sum(prod, 4), 3);
+         penalty{1} = sum1 + sum2;
+         
+         penalty{2} = 
+         
 
       end
       
+      function Dy = compute_Dy(obj, x, y, mask, layer)
+         Dy = layer.compute_Dy(obj, x, y);
+         if obj.isDropout
+            Dy = Dy.*mask;
+         end
+      end
+      
+      function D2y = compute_D2y(obj, x, y, mask, layer)
+         if layer.isLocallyLinear
+            D2y = 0;
+            return
+         end
+         
+         D2y = layer.compute_D2y(obj, x, y);
+         if obj.isDropout
+            D2y = D2y.*mask;
+         end
+      end
+      
       function dhdx_u = compute_forward_Jacobian_u_products(obj, u, dydz)
+         % Need to modify for maxout networks (sum over k dimension after
+         % dydz b* dhdx_u)
          nHiddenLayers = length(obj.hiddenLayers);
          dhdx_u = cell(1, nHiddenLayers+1);
          dhdx_u{1} = pagefun(@mtimes, obj.hiddenLayers{1}.params{1}, u);
@@ -76,6 +133,19 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          dhdx_u{end} = pagefun(@mtimes, obj.outputLayer.params{1}, dhdx_u{end-1});
          dhdx_u{end} = bsxfun(@times, dydz{end}, dhdx_u{end});
       end
+      
+      function dodh = compute_backwards_Jacobian_products(obj, dydz)
+         % Need to modify for maxout networks
+         nHiddenLayers = length(obj.hiddenLayers);
+         dodh = cell(1, nHiddenLayers);
+         dodh{end} = bsxfun(@times, dydz{end}', outputLayer.params{1}');
+         for i = nHiddenLayers-1:-1:1
+            dodh{i} = bsxfun(@times, dydz{i}', dodh{i+1});
+            dodh{i} = pagefun(@mtimes, obj.hiddenLayers{i}.params{1}', dodh{i});
+         end
+      end
+      
+      
    end   
 end
 
