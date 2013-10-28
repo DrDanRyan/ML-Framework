@@ -1,7 +1,6 @@
 classdef ManifoldTangentClassifier < FeedForwardNet
    
    properties
-      nSingularVectors  % number of singular vectors stored per training example
       tangentCoeff      % coefficient for tangent penalty term
    end
    
@@ -72,32 +71,52 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          dodh = obj.compute_backwards_Jacobian_products(Dy); % L2 x N x outputSize
          
          % Compute penalty terms
-         penalty = cell(1, 2);
+         penalty = cell(1, nHiddenLayers+1);
          dodx_u = shiftdim(permute(dhdx_u{end}, [2, 3, 1]), -1); % 1 x N x M x outputSize
-         N = size(x, 2);
          
          % input layer
          layer = obj.hiddenLayers{1};
-         L2 = layer.outputSize;
-         temp1 = bsxfun(@times, reshape(dodh{1}, [L2, N, 1, outputSize]), dodx_u); % L2 x N x M x outputSize
+         [penalty{1}{1}, penalty{1}{2}] = obj.compute_layer_penalty(x, y{1}, dodx_u, dodh{1}, ...
+                                                                     u, Dy{1}, D2y{1}, layer);
+                                                                  
+         % other hiddenLayers                                                         
+         for i = 2:nHiddenLayers
+            layer = obj.hiddenLayers{i};
+            [penalty{i}{1}, penalty{i}{2}] = obj.compute_layer_penalty(y{i-1}, y{i}, dodx_u, dodh{i}, ...
+                                                                     dhdx_u{i-1}, Dy{i}, D2y{i}, layer);
+         end
+         
+         % outputLayer
+         layer = obj.outputLayer;
+         [penalty{end}{1}, penalty{end}{2}] = obj.compute_layer_penalty(y{end}, output, dodx_u, 1, ...
+                                                                     dhdx_u{nHiddenLayers}, Dy{end}, D2y{end}, layer);
+         
+      end
+      
+      function [W_pen, b_pen] = compute_layer_penalty(obj, x, y, dodx_u, dodh, ...
+                                                      dhdx_u, Dy, D2y, layer)
+         [L2, N] = size(y);
+         outputSize = layer.outputSize;
+         
+         temp1 = bsxfun(@times, reshape(dodh, [L2, N, 1, outputSize]), dodx_u); % L2 x N x M x outputSize
          
          if ~layer.isLocallyLinear % Must include terms with D2y as a factor
-            temp2 = bsxfun(@times, temp1, D2y{1});
-            temp2 = bsxfun(@times, temp2, pagefun(@mtimes, layer.params{1}, u));
+            temp2 = bsxfun(@times, temp1, D2y);
+            temp2 = bsxfun(@times, temp2, pagefun(@mtimes, layer.params{1}, dhdx_u));
             prod = pagefun(@mtimes, temp2, x')/N; % L2 x L1 x M x outputSize
             sum1 = sum(sum(prod, 4), 3); % L2 x L1
             
             temp2 = mean(temp2, 2);
-            penalty{2} = obj.tangentCoeff*sum(sum(temp2, 4), 3);
+            b_pen = obj.tangentCoeff*sum(sum(temp2, 4), 3);
          else
             sum1 = 0;
-            penalty{2} = 0;
+            b_pen = 0;
          end
          
-         temp2 = bsxfun(@times, temp1, Dy{1});
-         prod = pagefun(@mtimes, temp2, permute(u, [2, 1, 3]))/N; % L2 x L1 x M x outputSize
+         temp2 = bsxfun(@times, temp1, Dy);
+         prod = pagefun(@mtimes, temp2, permute(dhdx_u, [2, 1, 3]))/N; % L2 x L1 x M x outputSize
          sum2 = sum(sum(prod, 4), 3);
-         penalty{1} = obj.tangentCoeff*(sum1 + sum2);
+         W_pen = obj.tangentCoeff*(sum1 + sum2);                                                                                                  
       end
       
       function Dy = compute_Dy(obj, x, y, mask, layer)
