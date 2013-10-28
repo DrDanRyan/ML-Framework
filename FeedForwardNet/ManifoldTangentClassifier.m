@@ -46,23 +46,30 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(1, nHiddenLayers); % output from each hiddenLayer
          dydx = cell(1, nHiddenLayers); % the Jacobians of each layer mapping
-         y{1} = obj.hiddenLayers{1}.feed_forward(x);
-         dydz = obj.hiddenLayers{1}.compute_Dy(x, y{1}); % L2 x N (x k)
-         dydx{1} = bsxfun(@times, dydz, obj.hiddenLayers{1}.params{1}); % L2 x L1
-         if obj.isDropout
-            y{1} = y{1}.*mask{2};
-            dydx{1} = bsxfun(@times, dydx{1}, mask{2}');
-            dydx{1} = bsxfun(@times, dydx{1}, mask{1});
-         end
-
+         [y{1}, dydx{1}] = obj.feed_forward_layer(x, mask{1}, mask{2}, obj.hiddenLayers{1});
          for i = 2:nHiddenLayers
-            y{i} = obj.hiddenLayers{i}.feed_forward(y{i-1});
-            dydz = obj.hiddenLayers{i}.compute_Dy(y{i-1}, y{i});
-            dydx{i} = bsxfun(@times, dydz, obj.hiddenLayers{i}.params{1})*dydx{i-1};
-            if obj.isDropout
-               y{i} = y{i}.*mask{i+1};
-               dydx{i} = dydx{i}.*mask{i+1};
-            end
+            [y{i}, dydx{i}] = ...
+               feed_forward_layer(y{i-1}, mask{i}, mask{i+1}, obj.hiddenLayers{i});
+         end
+      end
+      
+      function [y, dydx] = feed_forward_layer(obj, x, xMask, yMask, hiddenLayer)
+         y = hiddenLayer.feed_forward(x);
+         [L2, N] = size(y);
+         W = hiddenLayer.params{1};
+         dydz = hiddenLayer.compute_Dy(x, y);
+         if ndims(dydz) <= 2
+            dydx = bsxfun(@times, reshape(dydz, L2, 1, N), W); % L2 x L1 x N
+         else % Maxout layer
+            [~, L1, k] = size(W);
+            dydx{1} = sum(bsxfun(@times, reshape(dydz, L2, 1, N, k), ...
+                                    reshape(W, L2, L1, 1, k)), 4); % L2 x L1 x N
+         end
+         
+         if obj.isDropout
+            y{1} = y{1}.*yMask;
+            dydx{1} = bsxfun(@times, dydx{1}, yMask');
+            dydx{1} = bsxfun(@times, dydx{1}, xMask);
          end
       end
       
