@@ -10,11 +10,15 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          obj = obj@FeedForwardNet(varargin{:});
       end
       
-      function [grad, output, dLdx] = gradient(obj, x, t, u)
+      function [grad, output, dLdx] = gradient(obj, batch)
          % Computes the gradient for batch input x and target t for all parameters in
          % each hiddenLayer and outputLayer. The 3D array, u, stores
          % singular vectors describing the data manifold near each training
          % exammple.
+         
+         x = batch{1};
+         u = batch{2};
+         t = batch{3};
          
          if obj.isDropout
             mask = obj.dropout_mask(x);
@@ -24,65 +28,61 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          end
          
          % feed_forward through hiddenLayers
-         [y, dhdx] = obj.feed_forward(x, mask);
+         [y, dydx] = obj.feed_forward(x, mask); % dydx are the layer Jacobians
          
          % get outputLayer output and backpropagate loss
-         [grad, output, dLdx] = obj.backprop(x, y, t, u, dhdx, mask);
+         [grad, output, dLdx] = obj.backprop(x, y, t, mask);
+         
+         % compute mainfold tangent penalty gradient and add it to grad
+         penalty = obj.compute_penalty_gradient(x, u, y, dydx, mask);
+         penalty = obj.unroll_gradient(penalty);
+         grad = cellfun(@plus, grad, penalty, 'UniformOutput', false);
       end
       
-      function [y, dhdx] = feed_forward(obj, x, mask)
-         % feed_forward through hiddenLayers
+      function [y, dydx] = feed_forward(obj, x, mask)
+         % feed_forward through hiddenLayers collecting Jacobians of each
+         % layer mapping along the way
+         
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(1, nHiddenLayers); % output from each hiddenLayer
-         dhdx = cell(1, nHiddenLayers);
+         dydx = cell(1, nHiddenLayers); % the Jacobians of each layer mapping
          y{1} = obj.hiddenLayers{1}.feed_forward(x);
-         dydz = obj.hiddenLayers{1}.compute_dydx(x, y{1});
-         dhdx{1} = bsxfun(@times, dydz, obj.hiddenLayers{1}.params{1});
+         dydz = obj.hiddenLayers{1}.compute_Dy(x, y{1}); % L2 x N (x k)
+         dydx{1} = bsxfun(@times, dydz, obj.hiddenLayers{1}.params{1}); % L2 x L1
          if obj.isDropout
             y{1} = y{1}.*mask{2};
-            dhdx{1} = dhdx{1}.*mask{2};
+            dydx{1} = bsxfun(@times, dydx{1}, mask{2}');
+            dydx{1} = bsxfun(@times, dydx{1}, mask{1});
          end
 
          for i = 2:nHiddenLayers
             y{i} = obj.hiddenLayers{i}.feed_forward(y{i-1});
-            dydz = obj.hiddenLayers{i}.compute_dydz(y{i-1}, y{i});
-            dhdx{i} = bsxfun(@times, dydz, obj.hiddenLayers{i}.params{1})*dhdx{i-1};
+            dydz = obj.hiddenLayers{i}.compute_Dy(y{i-1}, y{i});
+            dydx{i} = bsxfun(@times, dydz, obj.hiddenLayers{i}.params{1})*dydx{i-1};
             if obj.isDropout
                y{i} = y{i}.*mask{i+1};
-               dhdx{i} = dhdx{i}.*mask{i+1};
+               dydx{i} = dydx{i}.*mask{i+1};
             end
          end
       end
       
-      function [grad, output, dLdx] = backprop(obj, x, y, t, u, dhdx, mask)
-         if isempty(obj.hiddenLayers)
-            [grad, dLdx, output] = obj.outputLayer.backprop(x, t);
-            return;
-         end
-         
+      function penalty = compute_penalty_gradient(obj, x, u, y, dydx, mask)
          nHiddenLayers = length(obj.hiddenLayers);
-         dLdy = cell(1, nHiddenLayers); % derivative of loss function wrt hiddenLayer output
-         grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
-         [grad{end}, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t);
-                     
-         if obj.isDropout
-            dLdy{end} = dLdy{end}.*mask{end};
+         dodh = cell(1, nHiddenLayers);
+         dhdx = cell(1, nHiddenLayers);
+         
+         % Compute forward and backwards cummulative products of Jacobians
+         dodh{end} = dydx{end};
+         dhdx{1} = dydx{1};
+         for i = 2:nHiddenLayers
+            revIdx = nHiddenLayers - i +1;
+            dhdx{i} = dydx{i}*dhdx{i-1};
+            dodh{revIdx} = dodh{revIdx+1}*dydx{revIdx};
          end
          
-         for i = nHiddenLayers:-1:2
-            [grad{i}, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, ...
-               dLdy{i});
-            if obj.isDropout
-               dLdy{i-1} = dLdy{i-1}.*mask{i};
-            end
-         end
-         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
-         if obj.isDropout
-            dLdx = dLdx.*mask{1};
-         end
-         grad = obj.unroll_gradient(grad);
+         
+         
       end
-   end
-   
+   end   
 end
 
