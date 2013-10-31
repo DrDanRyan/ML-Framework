@@ -18,7 +18,7 @@ classdef LinearHiddenLayer < StandardHiddenLayer
          value = obj.gpuState.ones(size(y));
       end     
       
-      function value = compute_D2y(obj, ~, y)
+      function value = compute_D2y(obj, ~, y, ~)
          value = obj.gpuState.zeros(size(y));
       end
    end

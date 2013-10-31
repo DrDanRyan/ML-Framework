@@ -62,7 +62,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          value = obj.gpuState.make_numeric((bsxfun(@eq, z, y))); % L2 x N x k
       end
       
-      function value = compute_D2y(obj, ~, y)
+      function value = compute_D2y(obj, ~, y, ~)
          value = obj.gpuState.zeros([size(y), obj.k]);
       end
       

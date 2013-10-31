@@ -18,8 +18,8 @@ classdef LogisticHiddenLayer < StandardHiddenLayer
          value = y.*(1-y);
       end
       
-      function value = compute_D2y(~, ~, y)
-         value = y.*(1-y).*(1-2*y);
+      function value = compute_D2y(~, ~, y, Dy)
+         value = Dy.*(1-2*y);
       end
    end
 end

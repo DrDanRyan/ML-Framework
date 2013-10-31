@@ -18,7 +18,7 @@ classdef ReluHiddenLayer < StandardHiddenLayer
          value = obj.gpuState.make_numeric(y > 0);
       end
       
-      function value = compute_D2y(obj, ~, y)
+      function value = compute_D2y(obj, ~, y, ~)
          value = obj.gpuState.zeros(size(y));
       end
          

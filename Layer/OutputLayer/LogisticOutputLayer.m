@@ -1,5 +1,9 @@
 classdef LogisticOutputLayer < StandardOutputLayer
    
+   properties
+      isLocalllyLinear = false
+   end
+   
    methods
       function obj = LogisticOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
@@ -18,6 +22,10 @@ classdef LogisticOutputLayer < StandardOutputLayer
       
       function value = compute_Dy(~, ~, y)
          value = y.*(1-y);
+      end
+      
+      function value = compute_D2y(~, ~, y, Dy)
+         value = Dy.*(1-2*y);
       end
    
       function loss = compute_loss(~, y, t)

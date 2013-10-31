@@ -9,6 +9,7 @@ classdef ComboOutputLayer < OutputLayer
    
    properties (Dependent)
       params
+      isLocallyLinear
    end
    
    methods
@@ -19,6 +20,10 @@ classdef ComboOutputLayer < OutputLayer
       
       function params = get.params(obj)
          params = obj.hiddenLayer.params;
+      end
+      
+      function isLocallyLinear = get.isLocallyLinear(obj)
+         isLocallyLinear = obj.hiddenLayer.isLocallyLinear;
       end
       
       function set.params(obj, new_params)
@@ -33,6 +38,10 @@ classdef ComboOutputLayer < OutputLayer
       
       function value = compute_Dy(obj, x, y)
          value = obj.hiddenLayer.compute_Dy(x, y);
+      end
+      
+      function value = compute_D2y(obj, x, y, Dy)
+         value = obj.hiddenLayer.compute_D2y(x, y, Dy);
       end
       
       function value = compute_z(obj, x)

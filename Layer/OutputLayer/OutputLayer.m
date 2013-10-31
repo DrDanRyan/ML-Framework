@@ -2,10 +2,15 @@ classdef OutputLayer < matlab.mixin.Copyable
    % Defines the OutputLayer interface (note some methods are provided by
    % the Layer superclass)
    
+   properties (Abstract)
+      isLocallyLinear
+   end
+   
    methods (Abstract)
       [grad, dLdx, output] = backprop(obj, x, t)
       loss = compute_loss(obj, y, t)
       value = compute_Dy(obj, x, y)
+      value = compute_D2y(obj, x, y, Dy)
       value = compute_z(obj, x)
       y = feed_forward(x)
       push_to_GPU(obj)

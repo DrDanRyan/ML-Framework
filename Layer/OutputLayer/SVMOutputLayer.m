@@ -5,6 +5,7 @@ classdef SVMOutputLayer < StandardOutputLayer
    properties
       costRatio % multiplies the loss for incorrectly classifying positive (rarer) examples
       lossExponent % exponent of the hinge loss function (>= 1)
+      isLocallyLinear = true
    end
    
    methods
@@ -39,6 +40,10 @@ classdef SVMOutputLayer < StandardOutputLayer
       
       function value = compute_Dy(obj, ~, y)
          value = obj.gpuState.ones(size(y));
+      end
+      
+      function value = compute_D2y(obj, ~, y, ~)
+         value = obj.gpuState.zeros(size(y));
       end
       
       function y = feed_forward(obj, x)

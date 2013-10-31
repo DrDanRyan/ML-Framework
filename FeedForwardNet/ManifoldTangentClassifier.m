@@ -22,13 +22,15 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          if obj.isDropout
             mask = obj.dropout_mask(x);
             x = x.*mask{1};
-            u = u.*mask{1}; % not really advised to use input dropout with MTC
+            u = u.*mask{1}; % not advised to use input dropout with MTC
+                            % there would be different singular vectors for
+                            % different (sub)nets ... ?
          else
             mask = [];
          end
          
          % feed_forward through hiddenLayers
-         y = obj.feed_forward(x, mask); % dydx are the layer Jacobians
+         y = obj.feed_forward(x, mask);
          
          % get outputLayer output and backpropagate loss
          [grad, output, dLdx] = obj.backprop(x, y, t, mask);
@@ -49,19 +51,19 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          layer = obj.hiddenLayers{1};
          Dy{1} = obj.compute_Dy(x, y{1}, mask{2}, layer);
          if ~layer.isLocallyLinear
-            D2y{1} = obj.compute_D2y(x, y{1}, mask{2}, layer);
+            D2y{1} = obj.compute_D2y(x, y{1}, Dy{1}, mask{2}, layer);
          end         
          for i = 2:nHiddenLayers
             layer = obj.hiddenLayers{i};
             Dy{i} = obj.compute_Dy(y{i-1}, y{i}, mask{i+1}, layer);
             if ~layer.isLocallyLinear
-               D2y{i} = obj.compute_D2y(y{i-1}, y{i}, mask{i+1}, layer);
+               D2y{i} = obj.compute_D2y(y{i-1}, y{i}, Dy{i}, mask{i+1}, layer);
             end
          end
          layer = obj.outputLayer;
          Dy{end} = obj.compute_Dy(y{end}, output, 1, layer);       
          if ~layer.isLocallyLinear
-            D2y{end} = obj.compute_D2y(y{end}, output, 1, layer);
+            D2y{end} = obj.compute_D2y(y{end}, output, Dy{end}, 1, layer);
          end
          
          % Compute forward dhdx*u cumulative products
@@ -82,18 +84,18 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          % other hiddenLayers                                                         
          for i = 2:nHiddenLayers
             layer = obj.hiddenLayers{i};
-            [penalty{i}{1}, penalty{i}{2}] = obj.compute_layer_penalty(y{i-1}, y{i}, dodx_u, dodh{i}, ...
+            [penalty{i}{1}, penalty{i}{2}] = obj.compute_hiddenLayer_penalty(y{i-1}, y{i}, dodx_u, dodh{i}, ...
                                                                      dhdx_u{i-1}, Dy{i}, D2y{i}, layer);
          end
          
          % outputLayer
          layer = obj.outputLayer;
-         [penalty{end}{1}, penalty{end}{2}] = obj.compute_layer_penalty(y{end}, output, dodx_u, 1, ...
+         [penalty{end}{1}, penalty{end}{2}] = obj.compute_outputLayer_penalty(y{end}, output, dodx_u, 1, ...
                                                                      dhdx_u{nHiddenLayers}, Dy{end}, D2y{end}, layer);
          
       end
       
-      function [W_pen, b_pen] = compute_layer_penalty(obj, x, y, dodx_u, dodh, ...
+      function [W_pen, b_pen] = compute_hiddenLayer_penalty(obj, x, y, dodx_u, dodh, ...
                                                       dhdx_u, Dy, D2y, layer)
          [L2, N] = size(y);
          outputSize = layer.outputSize;
@@ -119,6 +121,10 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          W_pen = obj.tangentCoeff*(sum1 + sum2);                                                                                                  
       end
       
+      function [W_pen, b_pen] = compute_outputLayer_penalty(obj, x)
+         
+      end
+      
       function Dy = compute_Dy(obj, x, y, mask, layer)
          Dy = layer.compute_Dy(obj, x, y);
          if obj.isDropout
@@ -126,15 +132,15 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          end
       end
       
-      function D2y = compute_D2y(obj, x, y, mask, layer)
+      function D2y = compute_D2y(obj, x, y, Dy, mask, layer)
          if layer.isLocallyLinear
             D2y = 0;
             return
          end
          
-         D2y = layer.compute_D2y(obj, x, y);
+         D2y = layer.compute_D2y(obj, x, y, Dy);
          if obj.isDropout
-            D2y = D2y.*mask;
+            D2y = bsxfun(@times, D2y, mask);
          end
       end
       

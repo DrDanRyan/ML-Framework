@@ -1,6 +1,10 @@
 classdef LinearOutputLayer < StandardOutputLayer
    % A linear layer with MeanSquaredError loss function
    
+   properties
+      isLocallyLinear = true
+   end
+   
    methods
       function obj = LinearOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
@@ -18,6 +22,10 @@ classdef LinearOutputLayer < StandardOutputLayer
       
       function value = compute_Dy(obj, ~, y)
          value = obj.gpuState.ones(size(y));
+      end
+      
+      function value = compute_D2y(obj, ~, y, ~)
+         value = obj.gpuState.zeros(size(y));
       end
       
       function loss = compute_loss(~, y, t)

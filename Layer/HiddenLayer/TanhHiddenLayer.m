@@ -18,8 +18,8 @@ classdef TanhHiddenLayer < StandardHiddenLayer
          value = (1 + y).*(1 - y);
       end
       
-      function value = compute_D2y(~, ~, y)
-         value = -2*y.*(1+y).*(1-y);
+      function value = compute_D2y(~, ~, y, Dy)
+         value = -2*y.*Dy;
       end
    end
    
