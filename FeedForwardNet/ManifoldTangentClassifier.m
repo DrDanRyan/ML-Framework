@@ -167,15 +167,9 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          end
       end
       
-      function dodh = compute_backwards_Jacobian_products(obj, Dy)
-         % Need to modify for maxout networks
-         nHiddenLayers = length(obj.hiddenLayers);
-         dodh = cell(1, nHiddenLayers);
-         dodh{end} = bsxfun(@times, Dy{end}', outputLayer.params{1}');
-         for i = nHiddenLayers-1:-1:1
-            dodh{i} = bsxfun(@times, Dy{i}', dodh{i+1});
-            dodh{i} = pagefun(@mtimes, obj.hiddenLayers{i}.params{1}', dodh{i});
-         end
+      function dodh = compute_dodh(obj, prev_dodh, Dy, layer)
+         % like compute_dhdx_u except propagating output vector backwards
+         % (pagefun over output units
       end
       
       
