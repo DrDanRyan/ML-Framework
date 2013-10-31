@@ -3,6 +3,7 @@ classdef LinearOutputLayer < StandardOutputLayer
    
    properties
       isLocallyLinear = true
+      isDiagonalDy = true
    end
    
    methods

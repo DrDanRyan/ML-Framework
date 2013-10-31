@@ -1,7 +1,8 @@
 classdef ReluHiddenLayer < StandardHiddenLayer
    
    properties
-      isLocallyLinear = true;
+      isLocallyLinear = true
+      isDiagonalDy = true
    end
    
    methods

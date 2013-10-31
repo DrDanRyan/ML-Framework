@@ -2,6 +2,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
    
    properties
       isLocalllyLinear = false
+      isDiagonalDy = true
    end
    
    methods

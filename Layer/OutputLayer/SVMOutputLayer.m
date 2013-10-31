@@ -6,6 +6,7 @@ classdef SVMOutputLayer < StandardOutputLayer
       costRatio % multiplies the loss for incorrectly classifying positive (rarer) examples
       lossExponent % exponent of the hinge loss function (>= 1)
       isLocallyLinear = true
+      isDiagonalDy = true
    end
    
    methods

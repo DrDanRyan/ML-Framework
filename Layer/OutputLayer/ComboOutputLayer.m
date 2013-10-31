@@ -10,6 +10,7 @@ classdef ComboOutputLayer < OutputLayer
    properties (Dependent)
       params
       isLocallyLinear
+      isDiagonalDy
    end
    
    methods
@@ -24,6 +25,10 @@ classdef ComboOutputLayer < OutputLayer
       
       function isLocallyLinear = get.isLocallyLinear(obj)
          isLocallyLinear = obj.hiddenLayer.isLocallyLinear;
+      end
+      
+      function isDiagonalDy = get.isDiagonalDy(obj)
+         isDiagonalDy = obj.hiddenLayer.isDiagonalDy;
       end
       
       function set.params(obj, new_params)

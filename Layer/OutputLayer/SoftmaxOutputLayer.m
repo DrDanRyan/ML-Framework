@@ -1,7 +1,8 @@
 classdef SoftmaxOutputLayer < StandardOutputLayer
    
    properties 
-      isLocallyLinear = false;
+      isLocallyLinear = false
+      isDiagonalDy = false
    end
    
    methods

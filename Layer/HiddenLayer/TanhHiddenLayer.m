@@ -1,7 +1,8 @@
 classdef TanhHiddenLayer < StandardHiddenLayer
    
    properties
-      isLocallyLinear = false;
+      isLocallyLinear = false
+      isDiagonalDy = true
    end
    
    methods

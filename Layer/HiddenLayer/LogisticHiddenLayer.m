@@ -1,7 +1,8 @@
 classdef LogisticHiddenLayer < StandardHiddenLayer
    
    properties
-      isLocallyLinear = false;
+      isLocallyLinear = false
+      isDiagonalDy = true
    end
    
    methods

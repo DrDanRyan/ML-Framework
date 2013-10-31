@@ -2,7 +2,8 @@ classdef LinearHiddenLayer < StandardHiddenLayer
    % A simple linear layer.
    
    properties
-      isLocallyLinear = true;
+      isLocallyLinear = true
+      isDiagonalDy = true
    end
    
    methods

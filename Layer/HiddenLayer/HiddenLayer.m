@@ -3,6 +3,7 @@ classdef HiddenLayer < matlab.mixin.Copyable
    
    properties (Abstract)
       isLocallyLinear
+      isDiagonalDy
    end
 
    methods (Abstract)
