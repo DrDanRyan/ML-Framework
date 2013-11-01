@@ -2,18 +2,19 @@ clear all
 load ICU_ffn_data
 targets(targets == -1) = 0;
 
-nHidden = 256;
+nHidden1 = 64;
+nHidden2 = 128;
 maxEpochs = 2000;
-lr0 = .2;
-momentum = .95;
-lookAhead = 60;
+lr0 = 1.0;
+momentum = .75;
+lookAhead = 70;
 burnIn = 30;
 
 ffn = FeedForwardNet('inputDropout', 0, 'hiddenDropout', 0);
-ffn.hiddenLayers = {InterferenceLayer(187, nHidden)};
-ffn.outputLayer = LogisticOutputLayer(nHidden, 1);
+ffn.hiddenLayers = {InterferenceLayer(187, nHidden1), InterferenceLayer(nHidden1, nHidden2)};
+ffn.outputLayer = LogisticOutputLayer(nHidden2, 1);
 
-sampler = StratifiedSampler(.85);
+sampler = StratifiedSampler(.8);
 trainer = GradientTrainer();
 trainer.stepCalculator = NesterovMomentum();
 trainer.model = ffn;

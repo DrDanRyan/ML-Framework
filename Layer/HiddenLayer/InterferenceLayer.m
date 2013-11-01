@@ -13,10 +13,10 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
       
       function init_params(obj)
          init_params@StandardLayer(obj);
-         obj.params{3} = matrix_init(obj.outputSize, obj.outputSize, 'small positive', ...
+         obj.params{3} = matrix_init(obj.outputSize, obj.outputSize, 'symmetric positive', ...
                                           obj.initScale, obj.gpuState);
-         obj.params{4} = matrix_init(obj.outputSize, 1, 'dense', ...
-                                          obj.initScale, obj.gpuState);
+         obj.params{3}(logical(obj.gpuState.eye(obj.outputSize))) = 1;
+         obj.params{4} = log(1 - (sum(obj.params{3}, 2) - 1)/(obj.outputSize-1));
       end
       
       function y = feed_forward(obj, x)
@@ -44,6 +44,7 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
          t1 = permute(-y.*dLdy./interference, [1 3 2]); % i x 1 x n
          t2 = shiftdim(yHat, -1); % 1 x j x n
          grad{3} = mean(bsxfun(@times, t1, t2), 3);
+         grad{3} = grad{3} + grad{3}'; % forces symmetry on A
          grad{4} = mean(squeeze(t1).*exp(b), 2);
       end
       
@@ -71,7 +72,6 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
          obj.params{3} = obj.params{3} + delta{3};
          obj.params{3} = max(0, obj.params{3}); % keep A nonnegative
          obj.params{3}(logical(obj.gpuState.eye(obj.outputSize))) = 1; % make sure diagonal(A) = 1
-         
          obj.params{4} = obj.params{4} + delta{4};
       end     
       
