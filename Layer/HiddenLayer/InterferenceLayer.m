@@ -68,8 +68,11 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
          % everywhere else
          
          increment_params@StandardLayer(obj, delta);
-         obj.params{3} = max(0, obj.params{3});
-         obj.params{3}(logical(obj.gpuState.eye(obj.outputSize))) = 1;
+         obj.params{3} = obj.params{3} + delta{3};
+         obj.params{3} = max(0, obj.params{3}); % keep A nonnegative
+         obj.params{3}(logical(obj.gpuState.eye(obj.outputSize))) = 1; % make sure diagonal(A) = 1
+         
+         obj.params{4} = obj.params{4} + delta{4};
       end     
       
    end
