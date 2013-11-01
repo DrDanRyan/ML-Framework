@@ -4,14 +4,19 @@ function value = matrix_init(M, N, initType, initScale, gpuState)
       gpuState = GPUState();
    end
 
-   if strcmp(initType, 'dense')
-      value = dense_init(M, N, initScale, gpuState);
-   elseif strcmp(initType, 'sparse')
-      value = sparse_init(M, N, initScale, gpuState);
-   else
-      exception = MException('VerifyInput:UnsupportedOption', ...
-      sprintf('Unsupported initType: %s', initType));
-      throw(exception);
+   switch initType
+      case 'dense'
+         value = dense_init(M, N, initScale, gpuState);
+      case 'sparse'
+         value = sparse_init(M, N, initScale, gpuState);
+      case 'small positive'
+         value = initScale*gpuState.rand([M, N], 'single');
+      case 'near one'
+         value = 1 - initScale/2 + initScale*gpuState.ones([M,N], 'single');
+      otherwise
+         exception = MException('VerifyInput:UnsupportedOption', ...
+         sprintf('Unsupported initType: %s', initType));
+         throw(exception);
    end
 
 end
