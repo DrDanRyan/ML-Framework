@@ -31,6 +31,14 @@ classdef GPUState
          end
       end
       
+      function value = eye(obj, varargin)
+         if obj.isGPU
+            value = gpuArray.eye(varargin{:}, 'single');
+         else
+            value = eye(varargin{:});
+         end
+      end
+      
       function value = rand(obj, varargin)
          if obj.isGPU
             value = gpuArray.rand(varargin{:}, 'single');
