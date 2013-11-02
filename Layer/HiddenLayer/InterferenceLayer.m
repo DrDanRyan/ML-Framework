@@ -13,10 +13,12 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
       
       function init_params(obj)
          init_params@StandardLayer(obj);
-         obj.params{3} = matrix_init(obj.outputSize, obj.outputSize, 'symmetric positive', ...
-                                          obj.initScale, obj.gpuState);
-         obj.params{3}(logical(obj.gpuState.eye(obj.outputSize))) = 1;
-         obj.params{4} = log(1 - (sum(obj.params{3}, 2) - 1)/(obj.outputSize-1));
+         obj.params{3} = obj.gpuState.eye(obj.outputSize);
+         obj.params{4} = obj.gpuState.zeros([obj.outputSize, 1]);
+%          obj.params{3} = matrix_init(obj.outputSize, obj.outputSize, 'symmetric positive', ...
+%                                           obj.initScale, obj.gpuState);
+%          obj.params{3}(logical(obj.gpuState.eye(obj.outputSize))) = 1;
+%          obj.params{4} = log(1 - (sum(obj.params{3}, 2) - 1)/(obj.outputSize-1));
       end
       
       function y = feed_forward(obj, x)

@@ -62,10 +62,10 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          layer = obj.outputLayer;
          [Dy{end}, D2y{end}] = obj.compute_Dy_values(y{end}, output, 1, layer);
          dodx_u = obj.compute_dhdx_u(dhdx_u{end}, Dy{end}, layer);
-         dodx_u = shiftdim(permute(dodx_u, [2, 3, 1]), -1); % 1 x N x U x outputSize
+         dodx_u = shiftdim(permute(dodx_u, [2, 3, 1]), -1); % 1 x N x U x C
          
          % Compute backward Jacobian cumulative products
-         dodh = obj.compute_backwards_Jacobian_products(Dy); % L2 x N x outputSize
+         dodh = obj.compute_backwards_Jacobian_products(Dy); % L2 x N x C
          
          % Compute penalty terms
          penalty = cell(1, nHiddenLayers+1);
@@ -114,10 +114,21 @@ classdef ManifoldTangentClassifier < FeedForwardNet
       
       function [W_pen, b_pen] = compute_hiddenLayer_penalty(obj, x, y, dodx_u, dodh, ...
                                                       dhdx_u, Dy, D2y, layer)
-         [L2, N] = size(y);
-         outputSize = layer.outputSize;
+                                                   
+         % This is implemented under the assumption that layer.isDiagonalDy
+         % = true. However, the outputLayer version removes this assumption.
+         % Dimensions of the input:
+         % x ~ L1 x N
+         % y ~ L2 x N
+         % dodx_u ~ 1 x N x U x C
+         % dodh ~ L2 x N x C
+         % dhdx_u ~ L1 x N x U
+         % Dy ~ L2 x N
+         % D2y ~ L2 x N         
          
-         temp1 = bsxfun(@times, reshape(dodh, [L2, N, 1, outputSize]), dodx_u); % L2 x N x M x outputSize
+         N = size(x, 2);
+   
+         temp1 = bsxfun(@times, permute(dodh, [1 2 4 3]), dodx_u); % L2 x N x U x C
          
          if ~layer.isLocallyLinear % Must include terms with D2y as a factor
             temp2 = bsxfun(@times, temp1, D2y);
@@ -138,7 +149,8 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          W_pen = obj.tangentCoeff*(sum1 + sum2);                                                                                                  
       end
       
-      function [W_pen, b_pen] = compute_outputLayer_penalty(obj, x)
+      function [W_pen, b_pen] = compute_outputLayer_penalty(obj, x, y, dodx_u, dhdx_u, ...
+                                                               Dy, D2y, layer)
          
       end
       

@@ -10,8 +10,10 @@ classdef EarlyStopping < TrainingSchedule
 
       burnIn % minimum number of epochs before stopping based on validationLoss criteria
       lookAhead % stop if bestValidationLoss has not improved for this many epochs
-      bestValidationLoss = Inf; 
-      bestEpoch = 0;
+      bestValidationLoss = Inf
+      bestEpoch = 0
+      isStoreBestModel
+      bestModel
    end
    
    methods
@@ -24,10 +26,12 @@ classdef EarlyStopping < TrainingSchedule
          p.addParamValue('lr0', []);
          p.addParamValue('momentum', []);
          p.addParamValue('lrDecay', []);
+         p.addParamValue('isStoreBestModel', false);
          parse(p, varargin{:});
          
          obj.burnIn = p.Results.burnIn;
          obj.lookAhead = p.Results.lookAhead;
+         obj.isStoreBestModel = p.Results.isStoreBestModel;
          if ~isempty(p.Results.lr0)
             obj.params{1} = p.Results.lr0;
             obj.lr0 = p.Results.lr0;
@@ -42,11 +46,12 @@ classdef EarlyStopping < TrainingSchedule
          end
       end
       
-      function isContinue = update(obj, ~, ~, validationLoss)
+      function isContinue = update(obj, trainer, ~, validationLoss)
          obj.epoch = obj.epoch + 1;
          if validationLoss < obj.bestValidationLoss
             obj.bestValidationLoss = validationLoss;
             obj.bestEpoch = obj.epoch;
+            obj.bestModel = trainer.model.copy();
          end
          
          if obj.epoch <= obj.burnIn
@@ -65,6 +70,7 @@ classdef EarlyStopping < TrainingSchedule
          obj.epoch = 0;
          obj.bestValidationLoss = Inf;
          obj.bestEpoch = 0;
+         obj.bestModel = [];
          obj.params{1} = obj.lr0;
       end
    end

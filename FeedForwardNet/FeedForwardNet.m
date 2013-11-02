@@ -70,7 +70,7 @@ classdef FeedForwardNet < SupervisedModel
          % Computes the gradient for batch input x and target t for all parameters in
          % each hiddenLayer and outputLayer.
          x = batch{1};
-         t = batch{2};
+         t = batch{end};
          x(isnan(x)) = 0;
          if obj.isDropout
             mask = obj.dropout_mask(x);
@@ -175,7 +175,7 @@ classdef FeedForwardNet < SupervisedModel
       
       function loss = compute_loss(obj, batch)
          y = obj.output(batch{1});
-         t = batch{2};
+         t = batch{end};
          loss = obj.compute_loss_from_output(y, t);
       end
       
