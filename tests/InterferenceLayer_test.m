@@ -2,11 +2,15 @@ clear all
 load ICU_ffn_data
 targets(targets == -1) = 0;
 
-nHidden1 = 2048;
+nHidden1 = 512;
+
+lr0 = .05;
+maxMomentum = .95;
+C = 30;
+slowMomentum = .5;
 maxEpochs = 5000;
-lr0 = .20;
-momentum = .70;
-lookAhead = 100;
+lookAhead = 40;
+slowEpochs = 100;
 burnIn = 100;
 
 ffn = FeedForwardNet('inputDropout', .2, 'hiddenDropout', .5);
@@ -20,7 +24,9 @@ trainer.model = ffn;
 trainer.reporter = ConsoleReporter();
 trainer.lossFunction = @(y, t) -1*compute_event1(y, t);
 trainer.trainingSchedule = EarlyStopping(maxEpochs, 'lr0', lr0, ...
-                                                    'momentum', momentum, ...
+                                                    'maxMomentum', maxMomentum, ...
+                                                    'slowMomentum', slowMomentum, ...
+                                                    'C', C, ...
                                                     'lookAhead', lookAhead, ...
                                                     'burnIn', burnIn, ...
                                                     'isStoreBestMode', true);
