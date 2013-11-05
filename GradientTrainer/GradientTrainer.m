@@ -55,7 +55,7 @@ classdef GradientTrainer < handle
                   validTargets = obj.dataManager.validationData{end};
                   if isempty(obj.lossFunction) % use model loss function instead
                      validationLoss = ...
-                        obj.model.compute_loss(validInputs, validTargets);
+                        obj.model.compute_loss({validInputs, validTargets});
                   else
                      validationLoss = ...
                         obj.lossFunction(obj.model.output(validInputs), validTargets);
