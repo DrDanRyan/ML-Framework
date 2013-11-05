@@ -6,12 +6,12 @@ nHidden1 = 128;
 
 lr0 = .01;
 maxMomentum = .99;
-C = 10;
+C = 1;
 slowMomentum = .5;
 maxEpochs = 5000;
 lookAhead = 20;
 slowEpochs = 10;
-burnIn = 30;
+burnIn = 10;
 
 ffn = FeedForwardNet('inputDropout', .2, 'hiddenDropout', .5);
 ffn.hiddenLayers = {MaxoutHiddenLayer(187, nHidden1, 5)};
@@ -39,7 +39,8 @@ for i = 1:5
       trainSplit = setdiff(1:4000, testSplit);
       [trainIdx, validIdx] = sampler.sample(trainSplit, targets(trainSplit));
       trainer.dataManager = DataManager({inputs(:,trainIdx), targets(trainIdx)}, ...
-                                             {inputs(:,validIdx), targets(validIdx)});
+                                             {inputs(:,validIdx), targets(validIdx)}, ...
+                                             'batchSize', 64);
       trainer.reset();
       trainer.train();
       outputs(testSplit) = ffn.output(inputs(:,testSplit));

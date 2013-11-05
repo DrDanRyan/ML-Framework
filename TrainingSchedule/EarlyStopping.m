@@ -39,7 +39,7 @@ classdef EarlyStopping < TrainingSchedule
          p.addParamValue('slowMomentum', []);
          p.addParamValue('slowEpochs', []);
          p.addParamValue('lrDecay', []);
-         p.addParamValue('isStoreBestModel', false);
+         p.addParamValue('isStoreBestModel', true);
          parse(p, varargin{:});
          
          obj.burnIn = p.Results.burnIn;

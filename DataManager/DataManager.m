@@ -25,7 +25,7 @@ classdef DataManager < matlab.mixin.Copyable
          parse(p, varargin{:});
          
          if ~isempty(p.Results.batchSize) % Use mini-batches; set batchsize and trainingSize
-            p.batchSize = p.Results.batchSize;
+            obj.batchSize = p.Results.batchSize;
             obj.trainingSize = size(trainingData{1}, 2);
             obj.shuffle_training_data();
          end
@@ -36,7 +36,8 @@ classdef DataManager < matlab.mixin.Copyable
             batch = obj.trainingData;
             endOfEpochFlag = true;
          else % mini-batch
-            batch = cellfun(@(v) v(:,obj.startIdx:obj.stopIdx), 'UniformOutput', false);
+            batch = cellfun(@(v) v(:,obj.startIdx:obj.stopIdx), obj.trainingData, ...
+                              'UniformOutput', false);
             
             if obj.stopIdx == obj.trainingSize
                endOfEpochFlag = true;
