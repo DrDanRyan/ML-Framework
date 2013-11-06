@@ -55,7 +55,7 @@ classdef EarlyStopping < TrainingSchedule
          obj.params{1} = obj.lr0;
          if ~isempty(obj.maxMomentum)
             if ~isempty(obj.C)
-               obj.params{2} = min(obj.maxMomentum, (1 + obj.C)/(1 + 2*obj.C));
+               obj.params{2} = min(obj.maxMomentum, .5);
             else
                obj.params{2} = obj.maxMomentum;
             end

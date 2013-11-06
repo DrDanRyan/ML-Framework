@@ -2,28 +2,35 @@ clear all
 load ICU_ffn_data
 targets(targets == -1) = 0;
 
-nHidden1 = 128;
+nHidden = 128;
 
 lr0 = .01;
+lrDecay = [];
+
 maxMomentum = .99;
-C = 1;
-slowMomentum = .5;
+C = 25;
+slowMomentum = [];
+slowEpochs = 0;
+
 maxEpochs = 5000;
-lookAhead = 20;
-slowEpochs = 10;
-burnIn = 10;
+lookAhead = 100;
+burnIn = 0;
+batchSize = [];
 
-ffn = FeedForwardNet('inputDropout', .2, 'hiddenDropout', .5);
-ffn.hiddenLayers = {MaxoutHiddenLayer(187, nHidden1, 5)};
-ffn.outputLayer = LogisticOutputLayer(nHidden1, 1);
+ffn = FeedForwardNet('inputDropout', 0, 'hiddenDropout', .2);
+ffn.hiddenLayers = {MaxoutHiddenLayer(187, nHidden, 5, 'initScale', .005, 'maxFanIn', 2), ...
+                    MaxoutHiddenLayer(nHidden, nHidden, 5, 'initType', 'sparse', 'maxFanIn', 2), ...
+                    MaxoutHiddenLayer(nHidden, nHidden, 5, 'initType', 'sparse', 'maxFanIn', 2)};
+ffn.outputLayer = LogisticOutputLayer(nHidden, 1, 'initScale', .005);
 
-sampler = StratifiedSampler(.8);
+sampler = StratifiedSampler(.85);
 trainer = GradientTrainer();
 trainer.stepCalculator = NesterovMomentum();
 trainer.model = ffn;
 trainer.reporter = ConsoleReporter();
-%trainer.lossFunction = @(y, t) -1*compute_event1(y, t);
+trainer.lossFunction = @(y, t) compute_Lemeshow(y, t);
 trainer.trainingSchedule = EarlyStopping(maxEpochs, 'lr0', lr0, ...
+                                                    'lrDecay', lrDecay, ...
                                                     'maxMomentum', maxMomentum, ...
                                                     'slowMomentum', slowMomentum, ...
                                                     'C', C, ...
@@ -32,7 +39,6 @@ trainer.trainingSchedule = EarlyStopping(maxEpochs, 'lr0', lr0, ...
                                                     'slowEpochs', slowEpochs);
 
 outputs = gpuArray.zeros(1, 4000);     
-
 for i = 1:5
       bestValidationLoss = Inf;
       testSplit = hold_outs{i};
@@ -40,10 +46,10 @@ for i = 1:5
       [trainIdx, validIdx] = sampler.sample(trainSplit, targets(trainSplit));
       trainer.dataManager = DataManager({inputs(:,trainIdx), targets(trainIdx)}, ...
                                              {inputs(:,validIdx), targets(validIdx)}, ...
-                                             'batchSize', 64);
+                                             'batchSize', batchSize);
       trainer.reset();
       trainer.train();
-      outputs(testSplit) = ffn.output(inputs(:,testSplit));
+      outputs(testSplit) = trainer.trainingSchedule.bestModel.output(inputs(:,testSplit));
 %       for j = 1:4
 %          trainer.reset();
 %          trainer.train();

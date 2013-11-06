@@ -18,7 +18,7 @@ classdef StandardLayer < handle
          p = inputParser;
          p.KeepUnmatched = true;
          p.addParamValue('initType', 'dense');
-         p.addParamValue('initScale', .01);
+         p.addParamValue('initScale', []);
          p.addParamValue('L1Penalty', []);
          p.addParamValue('L2Penalty', []);
          p.addParamValue('maxFanIn', []);

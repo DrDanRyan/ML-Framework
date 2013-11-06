@@ -20,7 +20,7 @@ function value = matrix_init(M, N, initType, initScale, gpuState)
          end
          value = gpuState.zeros([M,N]);
          for i = 1:M
-            value(i, randperm(N, nConnections)) = gpuState.randn(1, nConnections);
+            value(i, randperm(N, nConnections)) = gpuState.randn([1, nConnections]);
          end
       case 'positive'
          if isempty(initScale)
