@@ -3,6 +3,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
    properties
       isLocallyLinear = false
       isDiagonalDy = true
+      isRobust = true
    end
    
    methods
@@ -11,8 +12,18 @@ classdef LogisticOutputLayer < StandardOutputLayer
       end
       
       function [dLdz, y] = compute_dLdz(obj, x, t)
-         y = obj.feed_forward(x);
-         dLdz = y - t;
+         if obj.isRobust
+            z = obj.compute_z(x);
+            y = 1./(1 + exp(-z));
+            one_minus_y = exp(-z)./(1 + exp(-z));
+            dLdz = obj.gpuState.zeros(size(y));
+            idx1 = y<.5;
+            dLdz(idx1) = y - t;
+            dLdz(~idx1) = 1 - t - one_minus_y;
+         else
+            y = obj.feed_forward(x);
+            dLdz = y - t;
+         end
          dLdz(isnan(t)) = 0;
       end
       
@@ -22,7 +33,13 @@ classdef LogisticOutputLayer < StandardOutputLayer
       end
       
       function value = compute_Dy(~, ~, y)
-         value = y.*(1-y);
+         if obj.isRobust
+            z = obj.compute_z(x);
+            one_minus_y = exp(-z)./(1 + exp(-z));
+            value = y.*one_minus_y;
+         else
+            value = y.*(1-y);
+         end
       end
       
       function value = compute_D2y(~, ~, y, Dy)
