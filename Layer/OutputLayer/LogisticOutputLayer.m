@@ -36,9 +36,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
       end
    
       function loss = compute_loss(~, y, t)       
-         idx = y < .5;
-         loss = t(:,idx).*log(y(:,idx)) + (1 - t(:,idx)).*log1p(-y(:,idx)) + ...  % could be improved by passing in z
-                  t(:,~idx).*log1p(y(:,~idx)-1) + (1 - t(:,~idx)).*log(1-y(:,~idx));
+         loss = t.*log(y) + (1 - t).*log(1 - y);
       end
    end
    
