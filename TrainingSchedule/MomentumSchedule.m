@@ -47,8 +47,19 @@ classdef MomentumSchedule < TrainingSchedule
          obj.params{2} = min(maxMomentum, (1+obj.C)/(1+2*obj.C));
       end
       
-      function isContinue = update(obj, trainer, trainingLoss, validationLoss)
-         
+      function isContinue = update(obj, ~, ~, ~)
+         obj.epoch = obj.epoch + 1;
+         if obj.epoch < obj.fastEpochs
+            isContinue = true;
+            obj.params{2} = min(obj.maxMomentum, (obj.epoch + obj.C)/(obj.epoch + 2*obj.C));
+            if obj.epoch >= obj.lrBurnIn && ~isempty(obj.lrDecay)
+               obj.params{1} = obj.params{1}*obj.lrDecay;
+            end
+         elseif obj.epoch < obj.fastEpochs + obj.slowEpochs
+            
+         else
+            isContinue = false;
+         end         
       end
       
       function reset(obj)
