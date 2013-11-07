@@ -21,7 +21,7 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
 %          obj.params{4} = log(1 - (sum(obj.params{3}, 2) - 1)/(obj.outputSize-1));
       end
       
-      function y = feed_forward(obj, x)
+      function [y, z] = feed_forward(obj, x)
          z = obj.compute_z(x);
          y = obj.compute_y(z);
       end
@@ -35,9 +35,9 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
          y = yHat./interference;
       end
       
-      function [grad, dLdx, y] = backprop(obj, x, y, dLdy)
+      function [grad, dLdx, y] = backprop(obj, x, y, z, dLdy)
          N = size(x, 2);
-         [Dy, yHat, b, interference] = obj.compute_Dy(x, y);
+         [Dy, yHat, b, interference] = obj.compute_Dy(z, y);
          dLdz = squeeze(pagefun(@mtimes, permute(Dy, [1 3 2]), permute(dLdy, [1 3 2]))); % L2 x N
          grad{1} = dLdz*x'/N;
          grad{2} = mean(dLdz, 2);
@@ -50,10 +50,9 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
          grad{4} = mean(squeeze(t1).*exp(b), 2);
       end
       
-      function [Dy, yHat, b, interference] = compute_Dy(obj, x, y)
+      function [Dy, yHat, b, interference] = compute_Dy(obj, z, y)
          % returns D^n_{ij} as shape like j x n x i (L2 x N x L2)
          L2 = size(y, 1);
-         z = obj.compute_z(x);
          [~, yHat, b, interference] = obj.compute_y(z);
          Dy = bsxfun(@times, permute(yHat, [1 2 3]), ...
                            permute(y./interference, [3 2 1]));
@@ -62,7 +61,7 @@ classdef InterferenceLayer < HiddenLayer & StandardLayer
          Dy = bsxfun(@times, y, id13) - Dy;
       end
       
-      function value = compute_D2y(obj, x, y, Dy)
+      function value = compute_D2y(obj, z, y, Dy)
          % pass (need to implement in order to use CAE and MTC)
       end
       

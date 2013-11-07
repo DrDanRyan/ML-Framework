@@ -4,7 +4,6 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
       % params = {W, b} where W and b are 3-dimensional arrays
       k % number of linear units per maxout units (size of 3rd dimension of W and b)
       isLocallyLinear = true
-      isDiagonalDy = true
    end
    
    methods
@@ -15,8 +14,6 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
       end
       
       function init_params(obj)
-%          obj.params{1} = orthonorm(obj.outputSize, obj.inputSize, obj.k, ...
-%                                     obj.initScale, obj.gpuState);
          obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1, obj.k);
          for idx = 1:obj.k
             obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
@@ -24,15 +21,15 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          end
       end
       
-      function y = feed_forward(obj, x)
+      function [y, z] = feed_forward(obj, x)
          z = obj.compute_z(x);
          y = max(z, [], 3);
       end
       
-      function [grad, dLdx, Dy] = backprop(obj, x, y, dLdy)
+      function [grad, dLdx, Dy] = backprop(obj, x, y, z, dLdy)
          % L1 and L2 penalties are not implemented for MaxoutHiddenLayer
-         [L1, N] = size(x);         
-         Dy = obj.compute_Dy(x, y);
+         N = size(x, 2);         
+         Dy = obj.compute_Dy(z, y);
          dLdz = bsxfun(@times, dLdy, Dy); % dimensions are L2 x N x k
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
          
@@ -51,15 +48,13 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
                grad{1} = pagefun(@mtimes, dLdz, x')./total_nonZero_dLdw;
                grad{2} = sum(dLdz, 2)./total_nonZero_dLdz;
             case 'raw'
-               L2 = obj.outputSize;
-               x4D = reshape(x, [1, L1, 1, N]);
-               grad{2} = reshape(dLdz, [L2, 1, obj.k, N]);
+               x4D = permute(x, [3, 1, 4, 2]);
+               grad{2} = permute(dLdz, [1, 4, 3, 2]);
                grad{1} = bsxfun(@times, grad{2}, x4D);            
          end
       end
       
-      function value = compute_Dy(obj, x, y)
-         z = obj.compute_z(x);
+      function value = compute_Dy(obj, z, y)
          value = obj.gpuState.make_numeric((bsxfun(@eq, z, y))); % L2 x N x k
       end
       

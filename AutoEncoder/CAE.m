@@ -49,6 +49,7 @@ classdef CAE < AutoEncoder
       end
       
       function penalty = compute_contraction_penalty_gradient(obj, xIn, xCode, Dy)
+         % NOTE: Currently, encodeLayer.isDiagonalDy = true is assumed
          [L1, N] = size(xIn);
          penalty = cell(1, 2);
          W = obj.encodeLayer.params{1};

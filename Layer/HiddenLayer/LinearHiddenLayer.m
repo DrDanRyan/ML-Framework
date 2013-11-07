@@ -3,7 +3,6 @@ classdef LinearHiddenLayer < StandardHiddenLayer
    
    properties
       isLocallyLinear = true
-      isDiagonalDy = true
    end
    
    methods
@@ -11,8 +10,9 @@ classdef LinearHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function y = feed_forward(obj, x)
-         y = obj.compute_z(x);
+      function [y, z] = feed_forward(obj, x)
+         z = obj.compute_z(x);
+         y = z;
       end
       
       function value = compute_Dy(obj, ~, y)

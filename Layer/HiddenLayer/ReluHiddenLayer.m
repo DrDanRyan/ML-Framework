@@ -2,7 +2,6 @@ classdef ReluHiddenLayer < StandardHiddenLayer
    
    properties
       isLocallyLinear = true
-      isDiagonalDy = true
    end
    
    methods
@@ -10,7 +9,7 @@ classdef ReluHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function y = feed_forward(obj, x)
+      function [y, z] = feed_forward(obj, x)
          z = obj.compute_z(x);
          y = max(0, z);
       end
