@@ -15,8 +15,8 @@ classdef LogisticHiddenLayer < StandardHiddenLayer
       end   
       
       function value = compute_Dy(~, z, y)
-         one_minus_y = exp(-z)./(1 + exp(-z));
-         value = y.*one_minus_y;
+         u = exp(-z)./(1 + exp(-z)); % u = 1-y
+         value = y.*u;
       end
       
       function value = compute_D2y(~, ~, y, Dy)
