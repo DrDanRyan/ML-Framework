@@ -29,9 +29,9 @@ classdef CAE < AutoEncoder
          xTarget = batch{1};
          xIn = batch{1};
          xIn(isnan(xIn)) = 0;
-         xCode = obj.encodeLayer.feed_forward(xIn);
+         [xCode, zCode] = obj.encodeLayer.feed_forward(xIn);
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, xTarget);
-         [encodeGrad, ~, Dy] = obj.encodeLayer.backprop(xIn, xCode, dLdxCode);
+         [encodeGrad, ~, Dy] = obj.encodeLayer.backprop(xIn, xCode, zCode, dLdxCode);
          penalty = obj.compute_contraction_penalty_gradient(xIn, xCode, Dy);
          encodeGrad = cellfun(@(grad, pen) grad + pen, encodeGrad, penalty, ...
                                  'UniformOutput', false);
@@ -48,7 +48,7 @@ classdef CAE < AutoEncoder
          end
       end
       
-      function penalty = compute_contraction_penalty_gradient(obj, xIn, xCode, Dy)
+      function penalty = compute_contraction_penalty_gradient(obj, xIn, xCode, zCode, Dy)
          % NOTE: Currently, encodeLayer.isDiagonalDy = true is assumed
          [L1, N] = size(xIn);
          penalty = cell(1, 2);
@@ -61,7 +61,7 @@ classdef CAE < AutoEncoder
             penalty{1} = obj.JacCoeff*bsxfun(@times, W, mean(Dy.*Dy, 2));
          else
             W_RowL2 = sum(W.*W, 2);
-            D2y = obj.encodeLayer.compute_D2y(xIn, xCode);
+            D2y = obj.encodeLayer.compute_D2y(zCode, xCode);
             Dy_D2y_product = Dy.*D2y;
             penalty{2} = obj.JacCoeff*W_RowL2.*mean(Dy_D2y_product, 2);
          
