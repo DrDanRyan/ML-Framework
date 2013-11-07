@@ -41,12 +41,12 @@ classdef ComboOutputLayer < OutputLayer
          [grad, dLdx] = obj.hiddenLayer.backprop(x, y, dLdy);
       end
       
-      function value = compute_Dy(obj, x, y)
-         value = obj.hiddenLayer.compute_Dy(x, y);
+      function value = compute_Dy(obj, z, y)
+         value = obj.hiddenLayer.compute_Dy(z, y);
       end
       
-      function value = compute_D2y(obj, x, y, Dy)
-         value = obj.hiddenLayer.compute_D2y(x, y, Dy);
+      function value = compute_D2y(obj, z, y, Dy)
+         value = obj.hiddenLayer.compute_D2y(z, y, Dy);
       end
       
       function value = compute_z(obj, x)

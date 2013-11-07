@@ -1,5 +1,6 @@
 classdef SoftmaxOutputLayer < StandardOutputLayer
-   
+   % TODO: improve robustness using "Tricks of the Trade" 2nd ed Ch 11
+   % tricks
    properties 
       isLocallyLinear = false
       isDiagonalDy = false
