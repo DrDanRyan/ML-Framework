@@ -39,7 +39,7 @@ classdef CAE < AutoEncoder
          if obj.isTiedWeights
             if ndims(encodeGrad{1}) <= 2
                grad = {encodeGrad{1}+decodeGrad{1}', encodeGrad{2}, decodeGrad{2}};
-            else
+            else % maxout layer
                grad = {encodeGrad{1}+permute(decodeGrad{1}, [2, 1, 3]), ...
                         encodeGrad{2}, decodeGrad{2}};
             end
