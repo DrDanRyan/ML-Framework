@@ -71,7 +71,6 @@ classdef FeedForwardNet < SupervisedModel
          % each hiddenLayer and outputLayer.
          x = batch{1};
          t = batch{end};
-         x(isnan(x)) = 0;
          if obj.isDropout
             mask = obj.dropout_mask(x);
             x = x.*mask{1};
@@ -80,35 +79,37 @@ classdef FeedForwardNet < SupervisedModel
          end
          
          % feed_forward through hiddenLayers
-         y = obj.feed_forward(x, mask);
+         [y, z] = obj.feed_forward(x, mask);
          
          % get outputLayer output and backpropagate loss
-         [grad, output, dLdx] = obj.backprop(x, y, t, mask);
+         [grad, output, dLdx] = obj.backprop(x, y, t, z, mask);
       end
       
-      function y = feed_forward(obj, x, mask)
+      function [y, z] = feed_forward(obj, x, mask)
          if isempty(obj.hiddenLayers)
             y = [];
+            z = [];
             return
          end
          
          % feed_forward through hiddenLayers
          nHiddenLayers = length(obj.hiddenLayers);
-         y = cell(1, length(obj.hiddenLayers)); % output from each hiddenLayer
-         y{1} = obj.hiddenLayers{1}.feed_forward(x);
+         y = cell(1, nHiddenLayers); % output from each hiddenLayer
+         z = cell(1, nHiddenLayers); % z = Wx + b from each hiddenLayer
+         [y{1}, z{1}] = obj.hiddenLayers{1}.feed_forward(x);
          if obj.isDropout
             y{1} = y{1}.*mask{2};
          end
 
          for i = 2:nHiddenLayers
-            y{i} = obj.hiddenLayers{i}.feed_forward(y{i-1});
+            [y{i}, z{i}] = obj.hiddenLayers{i}.feed_forward(y{i-1});
             if obj.isDropout
                y{i} = y{i}.*mask{i+1};
             end
          end
       end
       
-      function [grad, output, dLdx] = backprop(obj, x, y, t, mask)
+      function [grad, output, dLdx] = backprop(obj, x, y, t, z, mask)
          if isempty(obj.hiddenLayers)
             [grad, dLdx, output] = obj.outputLayer.backprop(x, t);
             return;
@@ -124,13 +125,13 @@ classdef FeedForwardNet < SupervisedModel
          end
          
          for i = nHiddenLayers:-1:2
-            [grad{i}, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, ...
+            [grad{i}, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, z{i}, ...
                dLdy{i});
             if obj.isDropout
                dLdy{i-1} = dLdy{i-1}.*mask{i};
             end
          end
-         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, dLdy{1});
+         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, z{1}, dLdy{1});
          if obj.isDropout
             dLdx = dLdx.*mask{1};
          end
