@@ -2,8 +2,7 @@ classdef HiddenLayer < matlab.mixin.Copyable
    % Defines the HiddenLayer interface 
    
    properties (Abstract)
-      % need to implement for CAE and ManifoldTangentClassifier
-      isLocallyLinear 
+      isLocallyLinear % need to implement for CAE and ManifoldTangentClassifier
    end
 
    methods (Abstract)
