@@ -41,7 +41,7 @@ classdef SoftmaxOutputLayer < StandardOutputLayer
       end
    
       function loss = compute_loss(~, y, t)
-         loss = mean(sum(-t.*log(y), 1));
+         loss = mean(sum(-t.*log(y)));
       end 
    end
    
