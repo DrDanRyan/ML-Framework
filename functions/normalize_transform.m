@@ -13,24 +13,23 @@ if nargin < 2
    isClipping = false;
 end
 
-gpuState = GPUState(isa(x, 'gpuArray'));
-
 % Compute the transforms
 [M, N] = size(x);
 q = (tiedrank(x') - .5)/N; % N x M
 y = norminv(q, 0, 1); % N x M
-%minVal = exp(min(y)); % 1 x M
-%x = bsxfun(@minus, x, min(x, [], 2) - minVal'); % shift x so that minvalue corresponds to expected min if lognormal(0,1)
 
 xClipped = x;
-xClipped(q' < .01) = NaN;
-xClipped(q' > .99) = NaN;
+xClipped(q' < .02) = NaN;
+xClipped(q' > .98) = NaN;
 
 transforms = zeros(3, M);
 for i = 1:M
-   R(:, 1) = xClipped(i,:)';
-   R(:, 2) = log(xClipped(i,:))';
-   transforms(:,i) = robustfit(R, y(:,i));
+   idxs = ~isnan(xClipped(i,:));
+   data = xClipped(i,idxs);
+   R = ones([length(data), 3]);
+   R(:, 2) = data'; 
+   R(:, 3) = log(data+1)';
+   transforms(:,i) = (R'*R)\(R'*y(idxs,i));
 end
 
 % Apply transforms to data
@@ -43,8 +42,8 @@ if isClipping
    xU = nanmax(xClipped, [], 2);
    x = bsxfun(@min, xU, bsxfun(@max, x, xL));
 end
-xNorm = bsxfun(@times, transforms(:,1), gpuState.ones([M,N])) + ...
+xNorm = bsxfun(@times, transforms(:,1), ones([M,N])) + ...
          bsxfun(@times, transforms(:,2), x) + ...
-         bsxfun(@times, transforms(:,3), log(x));
+         bsxfun(@times, transforms(:,3), log(x+1));
 end
 
