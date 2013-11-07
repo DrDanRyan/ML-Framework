@@ -31,18 +31,18 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          end
          
          % feed_forward through hiddenLayers
-         y = obj.feed_forward(x, mask);
+         [y, z] = obj.feed_forward(x, mask);
          
          % get outputLayer output and backpropagate loss
-         [grad, output, dLdx] = obj.backprop(x, y, t, mask);
+         [grad, output, dLdx] = obj.backprop(x, y, t, z, mask);
          
          % compute mainfold tangent penalty gradient and add it to grad
-         penalty = obj.compute_penalty_gradient(x, u, y, output, mask);
+         penalty = obj.compute_penalty_gradient(x, u, y, z, output, mask);
          penalty = obj.unroll_gradient(penalty);
          grad = cellfun(@plus, grad, penalty, 'UniformOutput', false);
       end
       
-      function penalty = compute_penalty_gradient(obj, x, u, y, output, mask)
+      function penalty = compute_penalty_gradient(obj, x, u, y, z, output, mask)
          % Need to modify for maxout networks
          nHiddenLayers = length(obj.hiddenLayers);
          
@@ -53,11 +53,11 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          dhdx_u = cell(1, nHiddenLayers);
          
          layer = obj.hiddenLayers{1};
-         [Dy{1}, D2y{1}] = obj.compute_Dy_values(x, y{1}, mask{2}, layer);
+         [Dy{1}, D2y{1}] = obj.compute_Dy_values(z{1}, y{1}, mask{2}, layer);
          dhdx_u{1} = obj.compute_dhdx_u(u, Dy{1}, layer);
          for i = 2:nHiddenLayers
             layer = obj.hiddenLayers{i};
-            [Dy{i}, D2y{i}] = obj.compute_Dy_values(y{i-1}, y{i}, mask{i+1}, layer);
+            [Dy{i}, D2y{i}] = obj.compute_Dy_values(z{i}, y{i}, mask{i+1}, layer);
             dhdx_u{i} = obj.compute_dhdx_u(dhdx_u{i-1}, Dy{i}, layer);
          end
          layer = obj.outputLayer;
@@ -93,8 +93,8 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          
       end
       
-      function [Dy, D2y] = compute_Dy_values(obj, x, y, mask, layer)
-         Dy = layer.compute_Dy(obj, x, y);
+      function [Dy, D2y] = compute_Dy_values(obj, z, y, mask, layer)
+         Dy = layer.compute_Dy(obj, z, y);
          if obj.isDropout
             if layer.isDiagonalDy
                Dy = Dy.*mask;
@@ -105,7 +105,7 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          
          D2y = [];
          if ~layer.isLocallyLinear
-            D2y = layer.compute_D2y(x, y, Dy);
+            D2y = layer.compute_D2y(z, y, Dy);
             if obj.isDropout
                if layer.isDiagonalDy
                   D2y = D2y.*mask;
