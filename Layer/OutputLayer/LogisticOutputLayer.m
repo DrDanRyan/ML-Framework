@@ -16,8 +16,8 @@ classdef LogisticOutputLayer < StandardOutputLayer
          u = exp(-z)./(1 + exp(-z)); % u = 1 - y
          dLdz = obj.gpuState.zeros(size(y));
          idx = y<.5;
-         dLdz(idx) = y - t;
-         dLdz(~idx) = 1 - t - u;
+         dLdz(:,idx) = y(:,idx) - t(:,idx);
+         dLdz(:,~idx) = 1 - t(:,~idx) - u(:,~idx);
          dLdz(isnan(t)) = 0;
       end
       

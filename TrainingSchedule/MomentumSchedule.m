@@ -35,7 +35,7 @@ classdef MomentumSchedule < TrainingSchedule
          
          obj.lr0 = lr0;
          obj.lrDecay = p.Results.lrDecay;
-         obj.lrBurnIn = p.Restuls.lrBurnIn;
+         obj.lrBurnIn = p.Results.lrBurnIn;
          obj.C = p.Results.C;
          obj.maxMomentum = maxMomentum;
          obj.fastEpochs = fastEpochs;
