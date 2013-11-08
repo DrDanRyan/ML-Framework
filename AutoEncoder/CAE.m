@@ -32,7 +32,7 @@ classdef CAE < AutoEncoder
          [xCode, zCode] = obj.encodeLayer.feed_forward(xIn);
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, xTarget);
          [encodeGrad, ~, Dy] = obj.encodeLayer.backprop(xIn, xCode, zCode, dLdxCode);
-         penalty = obj.compute_contraction_penalty_gradient(xIn, xCode, Dy);
+         penalty = obj.compute_contraction_penalty_gradient(xIn, xCode, zCode, Dy);
          encodeGrad = cellfun(@(grad, pen) grad + pen, encodeGrad, penalty, ...
                                  'UniformOutput', false);
          
