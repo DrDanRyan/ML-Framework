@@ -82,11 +82,13 @@ classdef AutoEncoder < handle
       function gather(obj)
          obj.encodeLayer.gather();
          obj.decodeLayer.gather();
+         obj.gpuState.isGPU = false;
       end
       
       function push_to_GPU(obj)
          obj.encodeLayer.push_to_GPU();
          obj.decodeLayer.push_to_GPU();
+         obj.gpuState.isGPU = true;
       end
       
       function reset(obj)

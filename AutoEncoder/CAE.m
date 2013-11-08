@@ -61,7 +61,7 @@ classdef CAE < AutoEncoder
             penalty{1} = obj.JacCoeff*bsxfun(@times, W, mean(Dy.*Dy, 2));
          else
             W_RowL2 = sum(W.*W, 2);
-            D2y = obj.encodeLayer.compute_D2y(zCode, xCode);
+            D2y = obj.encodeLayer.compute_D2y(zCode, xCode, Dy);
             Dy_D2y_product = Dy.*D2y;
             penalty{2} = obj.JacCoeff*W_RowL2.*mean(Dy_D2y_product, 2);
          
@@ -87,7 +87,7 @@ classdef CAE < AutoEncoder
             
             if ~isLocallyLinear
                D2y = repmat(D2y, 1, obj.HessBatchSize);
-               D2yEps = obj.encodeLayer.compute_D2y(xEps, xCodeEps);
+               D2yEps = obj.encodeLayer.compute_D2y(xEps, xCodeEps, DyEps);
             end
             clear xCodeEps
             
