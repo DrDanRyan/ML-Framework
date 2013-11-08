@@ -30,8 +30,11 @@ classdef GradientTrainer < handle
       reporter % an object that implements the Reporter interface
       stepCalculator % an object that implements the StepCalculator interface
       trainingSchedule % an object that implements the TrainingSchedule interface
-      lossFunction % function handle used to compute validationLoss (does not have to be same as training
-                   % lossFunction that is used to generate gradients on training data.
+      
+      % Function handle used to compute validationLoss (does not have to be same as training
+      % lossFunction that is used to generate gradients on training data).
+      % lossFunction should take the model and validationData as inputs.
+      lossFunction 
    end
    
    methods
@@ -58,7 +61,7 @@ classdef GradientTrainer < handle
                         obj.model.compute_loss({validInputs, validTargets});
                   else
                      validationLoss = ...
-                        obj.lossFunction(obj.model.output(validInputs), validTargets);
+                        obj.lossFunction(obj.model, obj.dataManager.validationData);
                   end
                end
                                                     

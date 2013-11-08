@@ -12,7 +12,6 @@ classdef AutoEncoder < handle
       function obj = AutoEncoder(varargin)
          p = inputParser;
          p.KeepUnmatched = true;
-         p.addParamValue('dropout', []);
          p.addParamValue('isTiedWeights', false);
          p.addParamValue('gpu', []);
          parse(p, varargin{:});

@@ -35,7 +35,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
       end
    
       function loss = compute_loss(~, y, t)       
-         loss = mean(sum(-t.*log(y) - (1 - t).*log(1 - y), 1), 2);
+         loss = mean(nansum(-t.*log(y) - (1 - t).*log(1 - y), 1), 2);
       end
    end
    
