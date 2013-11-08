@@ -82,12 +82,12 @@ classdef CAE < AutoEncoder
             
             
             xEps = xIn + obj.HessNoise*obj.gpuState.randn([L1, N*obj.HessBatchSize]);
-            xCodeEps = obj.encodeLayer.feed_forward(xEps);
-            DyEps = obj.encodeLayer.compute_Dy(xEps, xCodeEps);
+            [xCodeEps, zCodeEps] = obj.encodeLayer.feed_forward(xEps);
+            DyEps = obj.encodeLayer.compute_Dy(zCodeEps, xCodeEps);
             
             if ~isLocallyLinear
                D2y = repmat(D2y, 1, obj.HessBatchSize);
-               D2yEps = obj.encodeLayer.compute_D2y(xEps, xCodeEps, DyEps);
+               D2yEps = obj.encodeLayer.compute_D2y(zCodeEps, xCodeEps, DyEps);
             end
             clear xCodeEps
             
