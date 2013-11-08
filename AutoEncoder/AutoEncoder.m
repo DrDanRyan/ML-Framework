@@ -49,7 +49,7 @@ classdef AutoEncoder < handle
       function loss = compute_loss(obj, batch)
          x = batch{1};
          xRecon = obj.output(x);
-         loss = obj.compute_loss(xRecon, x);
+         loss = obj.compute_loss_from_output(xRecon, x);
       end
       
       function loss = compute_loss_from_output(obj, xRecon, x)
