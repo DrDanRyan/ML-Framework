@@ -11,8 +11,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
       end
       
       function [dLdz, y] = compute_dLdz(obj, x, t)
-         z = obj.compute_z(x);
-         y = 1./(1 + exp(-z));
+         [y, z] = obj.feed_forward(x);
          u = exp(-z)./(1 + exp(-z)); % u = 1 - y
          dLdz = obj.gpuState.zeros(size(y));
          idx = y<.5;
@@ -21,7 +20,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
          dLdz(isnan(t)) = 0;
       end
       
-      function y = feed_forward(obj, x)
+      function [y, z] = feed_forward(obj, x)
          z = obj.compute_z(x);
          y = 1./(1 + exp(-z));
       end
@@ -36,7 +35,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
       end
    
       function loss = compute_loss(~, y, t)       
-         loss = -t.*log(y) - (1 - t).*log(1 - y);
+         loss = mean(sum(-t.*log(y) - (1 - t).*log(1 - y), 1), 2);
       end
    end
    
