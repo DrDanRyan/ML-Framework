@@ -10,8 +10,8 @@ classdef SVMOutputLayer < StandardOutputLayer
    end
    
    methods
-      function obj = SVMOutputLayer(inputSize, varargin)
-         obj = obj@StandardOutputLayer(inputSize, 1, varargin{:});
+      function obj = SVMOutputLayer(inputSize, outputSize, varargin)
+         obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
          p = inputParser();
          p.KeepUnmatched = true;
          p.addParamValue('lossExponent', 2, @(x) x > 1)
@@ -25,7 +25,7 @@ classdef SVMOutputLayer < StandardOutputLayer
          y = obj.feed_forward(x);
          if obj.costRatio == 1
             dLdz = -obj.lossExponent*t.*(max(1 - y.*t, 0).^(obj.lossExponent-1));
-         else % obj.costRatio ~= 1
+         else % obj.costRatio ~= 1 (costRatio should not be used if outputSize > 1)
             posIdx = t==1;
             negIdx = t~=1;
             tPos = t(posIdx);
@@ -53,8 +53,8 @@ classdef SVMOutputLayer < StandardOutputLayer
       
       function loss = compute_loss(obj, y, t)
          if obj.costRatio == 1
-            loss = mean(max(1 - y.*t, 0).^obj.lossExponent);
-         else % costRatio ~= 1
+            loss = mean(sum(max(1 - y.*t, 0).^obj.lossExponent, 1));
+         else % costRatio ~= 1 (costRatio should not be used if outputSize > 1)
             posIdx = t==1;
             negIdx = t~=1;
             tPos = t(posIdx);
