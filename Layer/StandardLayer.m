@@ -127,8 +127,8 @@ classdef StandardLayer < handle
          
          if obj.isPenalty
             penalties = obj.compute_penalties();
-            grad{1} = bsxfun(@plus, grad{1}, penalties{1});
-            grad{2} = bsxfun(@plus, grad{2}, penalties{2});
+            grad{1} = grad{1} + penalties{1};
+            grad{2} = grad{2} + penalties{2};
          end
       end
       
