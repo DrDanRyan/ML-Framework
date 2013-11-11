@@ -32,8 +32,8 @@ classdef GradientTrainer < handle
          isContinue = true;
          while isContinue
             batch = obj.dataManager.next_batch();
-            obj.stepCalculator.take_step(batch, obj.model, obj.parameterSchedule.params);
-            obj.parameterSchedule.update();
+            params = obj.parameterSchedule.update();
+            obj.stepCalculator.take_step(batch, obj.model, params);
             isContinue = obj.progressMonitor.update(obj.model, obj.dataManager);         
          end
       end
