@@ -17,6 +17,9 @@ classdef MomentumSchedule < ParameterSchedule
    methods
       function obj = MomentumSchedule(lr0, maxMomentum, varargin)
          obj.params = {lr0, maxMomentum};
+         obj.lr0 = lr0;
+         obj.maxMomentum = maxMomentum;
+         
          p = inputParser();
          p.addParamValue('lrDecay', []);
          p.addParamValue('lrBurnIn', 0);

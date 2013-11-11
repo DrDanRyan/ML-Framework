@@ -19,10 +19,10 @@ clear inputs targets
 trainer = GradientTrainer();
 trainer.dataManager = DataManager({trainInputs, trainTargets}, {validInputs, validTargets}, ...
                                     'batchSize', 256);
-trainer.reporter = ConsoleReporter();
 trainer.stepCalculator = NesterovMomentum();
 trainer.model = ffn;
-trainer.trainingSchedule = MomentumSchedule(100, .01, .99, 'lrDecay', .995, 'C', 1);
+trainer.parameterSchedule = MomentumSchedule(.01, .99, 'lrDecay', .9999, 'C', 500);
+trainer.progressMonitor = FixedUpdates(20000, 'validationInterval', 1000, 'isComputeTrainLoss', false);
 trainer.train();
 
 %% Evaluate on test set

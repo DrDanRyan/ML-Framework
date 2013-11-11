@@ -41,8 +41,8 @@ classdef FixedUpdates < ProgressMonitor
          p.addParamValue('validLossFunction', @default_validLossFunction);
          p.addParamValue('isComputeTrainLoss', true);
          p.addParamValue('trainLossFunction', @default_trainLossFunction);
-         p.addParamValue('isStoreModels', false);
-         p.addParamValue('isPlotTrainingCurves', false);
+         p.addParamValue('isStoreModels', 'best');
+         p.addParamValue('isPlotTrainingCurves', true);
          
          parse(p, varargin{:});
          obj.validationInterval = p.Results.validationInterval;
@@ -50,11 +50,12 @@ classdef FixedUpdates < ProgressMonitor
          obj.isComputeTrainLoss = p.Results.isComputeTrainLoss;
          obj.trainLossFunction = p.Results.trainLossFunction;
          obj.isStoreModels = p.Results.isStoreModels;
+         obj.isPlotTrainingCurves = p.Results.isPlotTrainingCurves;
       end
       
       function isContinue = update(obj, model, dataManager)
          obj.nUpdates = obj.nUpdates + 1;
-         if mod(obj.nUpdates, obj.validationInterval)
+         if mod(obj.nUpdates, obj.validationInterval) == 0
             obj.compute_loss_values(model, dataManager);
          end
          isContinue = obj.nUpdates < obj.maxUpdates;
@@ -92,11 +93,13 @@ classdef FixedUpdates < ProgressMonitor
       function plot_training_curves(obj)
          x = 1:obj.validationInterval:obj.nUpdates;
          figure()
-         plot(x, obj.trainLoss, 'r')
-         hold on
          plot(x, obj.validLoss, 'b')
+         hold on
          YLim = get(gca, 'YLim');
          plot([obj.bestUpdate, obj.bestUpdate], YLim, 'g-')
+         if ~isempty(obj.trainLoss)
+            plot(x, obj.trainLoss, 'r')
+         end
          hold off
       end      
       
