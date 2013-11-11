@@ -91,7 +91,7 @@ classdef FixedUpdates < ProgressMonitor
       end
       
       function plot_training_curves(obj)
-         x = 1:obj.validationInterval:obj.nUpdates;
+         x = obj.validationInterval:obj.validationInterval:obj.nUpdates;
          figure()
          plot(x, obj.validLoss, 'b')
          hold on

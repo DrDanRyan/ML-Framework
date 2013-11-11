@@ -22,19 +22,24 @@ classdef GradientTrainer < handle
    properties
       dataManager % an object that implements the DataManager interface
       model % an object that implements the Model interface
-      progressMonitor % computes performance metrics and decides when to stop training
+      progressMonitor % computes performance metrics and can send stop signal to terminate training
       parameterSchedule % computes the training parameters used in stepCalculator
       stepCalculator % an object that implements the StepCalculator interface
    end
    
    methods
-      function train(obj)         
+      function train(obj, maxUpdates)         
          isContinue = true;
+         nUpdates = 0;
          while isContinue
+            nUpdates = nUpdates + 1;
             batch = obj.dataManager.next_batch();
             params = obj.parameterSchedule.update();
             obj.stepCalculator.take_step(batch, obj.model, params);
-            isContinue = obj.progressMonitor.update(obj.model, obj.dataManager);         
+            isContinue = obj.progressMonitor.update(obj.model, obj.dataManager); 
+            if nUpdates >= maxUpdates
+               break;
+            end
          end
       end
       
