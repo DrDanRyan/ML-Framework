@@ -9,6 +9,8 @@ classdef BasicMonitor < ProgressMonitor
       validLoss = [] 
       trainLoss = []
       
+      isReport % boolean indicating whether to call report function after losses are computed
+      
       isStoreModels % whether or not to store copies of model at each validation point: {'all', 'best', false}
       models = {} % cell array of stored models if isStoreModels is 'all', or only best model if 'best'
       
@@ -37,6 +39,7 @@ classdef BasicMonitor < ProgressMonitor
          p.addParamValue('isComputeTrainLoss', true);
          p.addParamValue('trainLossFunction', @default_trainLossFunction);
          p.addParamValue('isStoreModels', 'best');
+         p.addParamValue('isReport', true);
          
          parse(p, varargin{:});
          obj.validationInterval = p.Results.validationInterval;
@@ -44,6 +47,7 @@ classdef BasicMonitor < ProgressMonitor
          obj.isComputeTrainLoss = p.Results.isComputeTrainLoss;
          obj.trainLossFunction = p.Results.trainLossFunction;
          obj.isStoreModels = p.Results.isStoreModels;
+         obj.isReport = p.Results.isReport;
       end
       
       function isContinue = update(obj, model, dataManager)
@@ -60,7 +64,7 @@ classdef BasicMonitor < ProgressMonitor
       
       function compute_loss_values(obj, model, dataManager)
          obj.validLoss = [obj.validLoss, obj.validLossFunction(model, dataManager)];
-         if obj.validLoss(end) <= obj.bestValidLoss % count equality for EarlyStopping robustness
+         if obj.validLoss(end) < obj.bestValidLoss
             obj.bestValidLoss = obj.validLoss(end);
             obj.bestUpdate = obj.nUpdates;
          end
@@ -79,7 +83,9 @@ classdef BasicMonitor < ProgressMonitor
             obj.trainLoss = [obj.trainLoss, obj.trainLossFunction(model, dataManager)];
          end
          
-         obj.report();
+         if obj.isReport
+            obj.report();
+         end
       end
       
       function report(obj)
