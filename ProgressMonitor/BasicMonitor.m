@@ -32,7 +32,7 @@ classdef BasicMonitor < ProgressMonitor
          end
          
          p = inputParser();
-         p.addParamValue('validationInterval', maxUpdates);
+         p.addParamValue('validationInterval', 100);
          p.addParamValue('validLossFunction', @default_validLossFunction);
          p.addParamValue('isComputeTrainLoss', true);
          p.addParamValue('trainLossFunction', @default_trainLossFunction);
@@ -60,7 +60,7 @@ classdef BasicMonitor < ProgressMonitor
       
       function compute_loss_values(obj, model, dataManager)
          obj.validLoss = [obj.validLoss, obj.validLossFunction(model, dataManager)];
-         if obj.validLoss(end) < obj.bestValidLoss
+         if obj.validLoss(end) <= obj.bestValidLoss % count equality for EarlyStopping robustness
             obj.bestValidLoss = obj.validLoss(end);
             obj.bestUpdate = obj.nUpdates;
          end
