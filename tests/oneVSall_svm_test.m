@@ -24,7 +24,7 @@ trainer.model = ffn;
 trainer.parameterSchedule = MomentumSchedule(.03, .99, 'lrDecay', .9999, 'C', 500);
 trainer.progressMonitor = EarlyStopping(3, 1.2, 'validationInterval', 500, ...
                                               'isComputeTrainLoss', false, ...
-                                              'validLossFunction', @MNIST_validLossFunction);
+                                              'validLossFunction', @compute_validation_error_rate);
 trainer.train(30000);
 
 %% Fine-tune with smaller learning rate and momentum
