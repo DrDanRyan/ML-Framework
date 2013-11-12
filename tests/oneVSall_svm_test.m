@@ -27,6 +27,11 @@ trainer.progressMonitor = FixedUpdates(10000, 'validationInterval', 1000, ...
                                               'validLossFunction', @compute_MNIST_errors);
 trainer.train();
 
+%% Fine-tune with smaller learning rate and momentum
+trainer.parameterSchedule = MomentumSchedule(.001, .5);
+trainer.progressMonitor.maxUpdates = 13000;
+trainer.train();
+
 %% Evaluate on test set
 dummy = struct();
 dummy.validationData = {testInputs, testTargets};

@@ -1,5 +1,5 @@
-classdef FixedUpdates < ProgressMonitor
-   % Gives stop training signal after a fixed number of updates.
+classdef BasicMonitor < ProgressMonitor
+   % Provides core functionality of ProgressMonitor. Should subclass and 
    
    properties
       validationInterval % number of updates between computing validation error scores
@@ -8,22 +8,17 @@ classdef FixedUpdates < ProgressMonitor
       trainLossFunction % function handle for training error computation
       validLoss = [] 
       trainLoss = []
-      isPlotTrainingCurves % whether or not to plot the trainLoss and validLoss training curves
-                           % after training terminates
       
-      isStoreModels % whether or not to store copies of model at each validation point
+      isStoreModels % whether or not to store copies of model at each validation point: {'all', 'best', false}
       models = {} % cell array of stored models if isStoreModels is 'all', or only best model if 'best'
       
       bestUpdate = 0 % update where best validationLoss was achieved
       bestValidLoss = Inf % value of best validationLoss
-      
-      maxUpdates % number of updates to perform in total before terminating
       nUpdates = 0 % number of updates performed thus far
    end
    
    methods
-      function obj = FixedUpdates(maxUpdates, varargin)
-         obj.maxUpdates = maxUpdates;
+      function obj = BasicMonitor(varargin)
          
          function validationLoss = default_validLossFunction(model, dataManager)
             validationLoss = [];
@@ -42,7 +37,6 @@ classdef FixedUpdates < ProgressMonitor
          p.addParamValue('isComputeTrainLoss', true);
          p.addParamValue('trainLossFunction', @default_trainLossFunction);
          p.addParamValue('isStoreModels', 'best');
-         p.addParamValue('isPlotTrainingCurves', true);
          
          parse(p, varargin{:});
          obj.validationInterval = p.Results.validationInterval;
@@ -50,7 +44,6 @@ classdef FixedUpdates < ProgressMonitor
          obj.isComputeTrainLoss = p.Results.isComputeTrainLoss;
          obj.trainLossFunction = p.Results.trainLossFunction;
          obj.isStoreModels = p.Results.isStoreModels;
-         obj.isPlotTrainingCurves = p.Results.isPlotTrainingCurves;
       end
       
       function isContinue = update(obj, model, dataManager)
@@ -58,10 +51,11 @@ classdef FixedUpdates < ProgressMonitor
          if mod(obj.nUpdates, obj.validationInterval) == 0
             obj.compute_loss_values(model, dataManager);
          end
-         isContinue = obj.nUpdates < obj.maxUpdates;
-         if ~isContinue && obj.isPlotTrainingCurves
-            obj.plot_training_curves()
-         end
+         isContinue = obj.should_continue();
+      end
+      
+      function isContinue = should_continue(~)
+         isContinue = true;
       end
       
       function compute_loss_values(obj, model, dataManager)
@@ -83,10 +77,17 @@ classdef FixedUpdates < ProgressMonitor
 
          if obj.isComputeTrainLoss
             obj.trainLoss = [obj.trainLoss, obj.trainLossFunction(model, dataManager)];
-            fprintf('\nupdate %d:  train: %.4f   valid: %.4f', obj.nUpdates, ...
-                        obj.trainLoss(end), obj.validLoss(end));
-         else
+         end
+         
+         obj.report();
+      end
+      
+      function report(obj)
+         if isempty(obj.trainLoss)
             fprintf('\nupdate %d:  valid: %.4f', obj.nUpdates, obj.validLoss(end));
+         else
+            fprintf('\nupdate %d:  train: %.4f  valid: %.4f', obj.nUpdates, ...
+                     obj.trainLoss(end), obj.validLoss(end));
          end
       end
       
