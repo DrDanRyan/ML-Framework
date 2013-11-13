@@ -8,6 +8,6 @@ else % logistic targets
 end
 
 predictions = y > threshold;
-error_rate = sum(predictions ~= t)/N;
+error_rate = sum(predictions ~= t)/size(y, 2);
 end
 
