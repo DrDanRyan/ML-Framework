@@ -40,6 +40,11 @@ classdef ChebyshevHiddenLayer < StandardLayer & HiddenLayer
                                        yHat_minus_xCheb), 3);
          denominator = sum(bsxfun(@rdivide, obj.wCheb, yHat_minus_xCheb), 3);
          y = numerator./denominator;
+         if any(any(isnan(y)))
+            mask = obj.gpuState.make_numeric(yHat_minus_xCheb == 0);
+            replacementValues = sum(bsxfun(@times, obj.params{3}, mask), 3); % L2 x N
+            y(isnan(y)) = replacementValues(isnan(y));            
+         end
       end
       
       function [Dy, dydf] = compute_Dy(obj, z, ~)
@@ -55,8 +60,14 @@ classdef ChebyshevHiddenLayer < StandardLayer & HiddenLayer
                                        yHat_minus_xCheb), 3);
          w_over_yHat_minus_xCheb = bsxfun(@rdivide, obj.wCheb, yHat_minus_xCheb);
          denominator = sum(w_over_yHat_minus_xCheb, 3);
-         Dy = (numerator./denominator).*dyHatdz;
-         dydf = bsxfun(@rdivide, w_over_yHat_minus_xCheb, denominator);
+         Dy = (numerator./denominator).*dyHatdz; % L2 x N
+         dydf = bsxfun(@rdivide, w_over_yHat_minus_xCheb, denominator); % L2 x N x C
+         if any(any(isnan(Dy)))
+            mask = obj.gpuState.make_numeric(yHat_minus_xCheb == 0);
+            Dy_replace = sum(bsxfun(@times, Df, mask), 3); % L2 x N
+            Dy(isnan(Dy)) = Dy_replace(isnan(Dy)); 
+            dydf(yHat_minus_xCheb == 0) = 1;
+         end
       end
       
       function value = compute_D2y(obj, z, y)
