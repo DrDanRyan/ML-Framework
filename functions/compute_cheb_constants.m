@@ -4,7 +4,7 @@ if nargin < 2
    gpuState = GPUState();
 end
 
-j = 0:N-1;
+j = gpuState.linspace(0, N-1, N);
 
 % Chebyshev points
 x = cos(pi*j/(N-1))';
