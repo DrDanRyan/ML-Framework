@@ -25,12 +25,7 @@ classdef FeedForwardNet < SupervisedModel
          obj.hiddenDropout = p.Results.hiddenDropout;
          obj.inputDropout = p.Results.inputDropout;
          obj.isDropout = obj.inputDropout > 0 || obj.hiddenDropout > 0;
-         
-         if isempty(p.Results.gpu)
-            obj.gpuState = GPUState();
-         else
-            obj.gpuState = GPUState(p.Results.gpu);
-         end
+         obj.gpuState = GPUState(p.Results.gpu);
       end
       
       function gather(obj)

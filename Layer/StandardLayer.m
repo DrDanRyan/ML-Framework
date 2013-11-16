@@ -28,12 +28,7 @@ classdef StandardLayer < handle
          
          obj.inputSize = inputSize;
          obj.outputSize = outputSize;
-         
-         if isempty(p.Results.gpu)
-            obj.gpuState = GPUState();
-         else
-            obj.gpuState = GPUState(p.Results.gpu);
-         end
+         obj.gpuState = GPUState(p.Results.gpu);
          
          obj.initType = p.Results.initType;
          obj.initScale = p.Results.initScale;
