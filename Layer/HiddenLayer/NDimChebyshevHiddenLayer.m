@@ -75,11 +75,15 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
                                  tanhz_minus_xCheb), 5); % L2 x N x cRank x cDim
          cheb1D_denominator = sum(bsxfun(@rdivide, obj.wCheb, tanhz_minus_xCheb), 5); % L2 x N x 1 x cDim
          cheb1D = bsxfun(@rdivide, cheb1D_numerator, cheb1D_denominator); % L2 x N x cRank x cDim
+         clear cheb1D_numerator cheb1D_denominator
          if isReplaceVals
             mask = obj.gpuState.make_numeric(tanhz_minus_xCheb == 0); % L2 x N x 1 x cDim x cRes
+            clear tanhz_minus_xCheb
             replacementVals = sum(bsxfun(@times, obj.params{3}, mask), 5); % L2 x N x cRank x cDim
+            clear mask
             replaceIdx = isnan(cheb1D);
             cheb1D(replaceIdx) = replacementVals(replaceIdx);
+            clear replaceIdx replacementVals
          end
          
          chebRank1 = prod(cheb1D, 4); % L2 x N x cRank
@@ -103,31 +107,38 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
             % compute Dy for this cDim           
             f_d = obj.params{3}(:,:,:,d,:); % L2 x 1 x cRank x 1 x cRes
             Df = permute(pagefun(@mtimes, obj.D1, permute(f_d, [5 1 2 3 4])), [2 3 4 5 1]); % L2 x 1 x cRank x 1 x cRes
+            clear f_d
             Df_term_numer = sum(bsxfun(@rdivide, bsxfun(@times, Df, obj.wCheb), ...
                                  tanhz_minus_xCheb(:,:,:,d,:)), 5); % L2 x N x cRank
             Df_term_denom = sum(bsxfun(@rdivide, obj.wCheb, tanhz_minus_xCheb(:,:,:,d,:)), 5); % L2 x N
             Df_term = bsxfun(@rdivide, Df_term_numer, Df_term_denom);
+            clear Df_term_numer Df_term_denom
             if any(any(any(isnan(Df_term))))
                mask = obj.gpuState.make_numeric(tanhz_minus_xCheb(:,:,:,d,:) == 0);
                replacementVals = sum(bsxfun(@times, Df, mask), 5);
                replacementIdx = isnan(Df_term);
                Df_term(replacementIdx) = replacementVals(replacementIdx);
+               clear replacementVals replacementIdx
             end
             Dy_prod = partial_prod.*Df_term;
             Dy(:,:,1,d) = sum(bsxfun(@times, Dy_prod, obj.params{4}), 3); % still need to mult by dtanhz_dz
+            clear Dy_prod
             
             % compute dydf for this cDim
             no_f_term_numer = bsxfun(@rdivide, obj.wCheb, tanhz_minus_xCheb(:,:,:,d,:));
             no_f_term_denom = sum(no_f_term_numer, 5);
             no_f_term = bsxfun(@rdivide, no_f_term_numer, no_f_term_denom); % L2 x N x 1 x 1 x cRes
+            clear no_f_term_numer no_f_term_denom
             if any(any(any(isnan(no_f_term))))
                % keep same mask as computed in Dy case
                % replacementVals = mask
                replacementIdx = isnan(no_f_term);
                no_f_term(replacementIdx) = mask(replacementIdx);
+               clear replacementIdx
             end
             dydf_prod = bsxfun(@times, no_f_term, partial_prod);
             dydf(:,:,:,d,:) = bsxfun(@times, dydf_prod, obj.params{4});
+            clear dydf_prod
          end
          Dy = Dy.*dtanhz_dz;
       end
@@ -140,8 +151,8 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
          r = obj.initScale;
          obj.params{1} = 2*r*obj.gpuState.rand([obj.outputSize, obj.inputSize, 1, obj.cDim]) - r;
          obj.params{2} = obj.gpuState.zeros([obj.outputSize, 1, 1, obj.cDim]);
-         obj.params{3} = 2*r*obj.gpuState.rand([obj.outputSize, 1, obj.cRank, obj.cDim, obj.cRes]) - r;
-         obj.params{4} = obj.gpuState.ones([obj.outputSize, 1, obj.cRank]);
+         obj.params{3} = 2*obj.gpuState.randn([obj.outputSize, 1, obj.cRank, obj.cDim, obj.cRes]);
+         obj.params{4} = obj.gpuState.ones([obj.outputSize, 1, obj.cRank])/obj.cRank;
       end
       
       function gather(obj)
