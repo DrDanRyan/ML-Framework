@@ -18,6 +18,7 @@ classdef DataManager < matlab.mixin.Copyable
          end
          
          obj.trainingData = trainingData; 
+         obj.trainingSize = size(trainingData{1}, 2);
          obj.validationData = validationData;
          
          p = inputParser();
@@ -26,7 +27,6 @@ classdef DataManager < matlab.mixin.Copyable
          
          if ~isempty(p.Results.batchSize) % Use mini-batches; set batchsize and trainingSize
             obj.batchSize = p.Results.batchSize;
-            obj.trainingSize = size(trainingData{1}, 2);
             obj.shuffle_training_data();
          end
       end
@@ -59,8 +59,8 @@ classdef DataManager < matlab.mixin.Copyable
       end
       
       function reset(obj)
+         obj.trainingSize = size(obj.trainingData{1}, 2);
          if ~isempty(obj.batchSize)
-            obj.trainingSize = size(obj.trainingData{1}, 2);
             obj.shuffle_training_data();
          end
       end

@@ -3,7 +3,7 @@ classdef MomentumSchedule < ParameterSchedule
    properties
       params % {lr, momentum}
       lr0
-      lrDecay % exponential decay rate for learning rate
+      lrDecay % exponential decay rate for learning rate (applied every update after lrBurnIn)
       lrBurnIn % number of updates before lrDecay is applied
       
       % momentum at update t:= min(maxMomentum, (t + C)/(t + 2*C))
@@ -21,12 +21,12 @@ classdef MomentumSchedule < ParameterSchedule
          obj.maxMomentum = maxMomentum;
          
          p = inputParser();
-         p.addParamValue('lrDecay', []);
+         p.addParamValue('lrHalfLife', []);
          p.addParamValue('lrBurnIn', 0);
          p.addParamValue('C', []);
          parse(p, varargin{:});
          
-         obj.lrDecay = p.Results.lrDecay;
+         obj.lrDecay = exp(log(.5)/p.Results.lrHalfLife);
          obj.lrBurnIn = p.Results.lrBurnIn;
          obj.C = p.Results.C;
       end

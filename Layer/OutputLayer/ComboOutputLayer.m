@@ -36,17 +36,17 @@ classdef ComboOutputLayer < OutputLayer
       end
       
       function [grad, dLdx, y] = backprop(obj, x, t)
-         y = obj.hiddenLayer.feed_forward(x);
+         [y, ffExtras] = obj.hiddenLayer.feed_forward(x);
          dLdy = obj.lossFunction.dLdy(y, t);
-         [grad, dLdx] = obj.hiddenLayer.backprop(x, y, dLdy);
+         [grad, dLdx] = obj.hiddenLayer.backprop(x, y, ffExtras, dLdy);
       end
       
-      function value = compute_Dy(obj, z, y)
-         value = obj.hiddenLayer.compute_Dy(z, y);
+      function value = compute_Dy(obj, ffExtras, y)
+         value = obj.hiddenLayer.compute_Dy(ffExtras, y);
       end
       
-      function value = compute_D2y(obj, z, y, Dy)
-         value = obj.hiddenLayer.compute_D2y(z, y, Dy);
+      function value = compute_D2y(obj, ffExtras, y, Dy)
+         value = obj.hiddenLayer.compute_D2y(ffExtras, y, Dy);
       end
       
       function value = compute_z(obj, x)
@@ -57,8 +57,8 @@ classdef ComboOutputLayer < OutputLayer
          loss = obj.lossFunction.compute_loss(y, t);
       end
       
-      function y = feed_forward(obj, x)
-         y = obj.hiddenLayer.feed_forward(x);
+      function [y, ffExtras] = feed_forward(obj, x)
+         [y, ffExtras] = obj.hiddenLayer.feed_forward(x);
       end
       
       function push_to_GPU(obj)

@@ -10,9 +10,9 @@ classdef LinearHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function [y, z] = feed_forward(obj, x)
-         z = obj.compute_z(x);
-         y = z;
+      function [y, ffExtras] = feed_forward(obj, x)
+         y = obj.compute_z(x);
+         ffExtras = [];
       end
       
       function value = compute_Dy(obj, ~, y)

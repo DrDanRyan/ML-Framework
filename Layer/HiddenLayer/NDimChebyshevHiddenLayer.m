@@ -41,9 +41,9 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
          obj.init_params();   
       end
       
-      function [grad, dLdx, y] = backprop(obj, x, y, z, dLdy)
+      function [grad, dLdx, y] = backprop(obj, x, y, ffExtras, dLdy)
          N = size(x, 2);
-         [Dy, dydf, dydsigma] = obj.compute_Dy(z, y);
+         [Dy, dydf, dydsigma] = obj.compute_Dy(ffExtras, y);
          dLdz = bsxfun(@times, dLdy, Dy); % L2 x N x 1 x cDim
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2 1 3 4]), dLdz), 4);
          grad{1} = pagefun(@mtimes, dLdz, x')/N;
@@ -52,36 +52,14 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
          grad{4} = mean(bsxfun(@times, dLdy, dydsigma), 2);
       end
       
-      function [y, z] = feed_forward(obj, x)
+      function [y, ffExtras] = feed_forward(obj, x)
          z = obj.compute_z(x);
          v = exp(-2*z);
          u = 2./(1 + v);
-         zHat = u - 1; % robust version of tanh(z)
-         y = obj.compute_Chebyshev_interpolants(zHat);
-      end
-      
-      function y = compute_Chebyshev_interpolants(obj, zHat)
-         zHat_minus_xCheb = bsxfun(@minus, zHat, obj.xCheb); % L2 x N x 1 x cDim x cRes
-         isReplaceVals = any(any(any(any(zHat_minus_xCheb == 0))));
-         
-         denom_sum = sum(bsxfun(@rdivide, obj.wCheb, zHat_minus_xCheb), 5); % L2 x N x 1 x cDim
-         if isReplaceVals
-            denom_sum(denom_sum == Inf | denom_sum == -Inf) = 1; % correct for cases where z == xCheb
-         end
-         denom_product = prod(denom_sum, 4); % L2 x N
-        
-         num_sum = sum(bsxfun(@rdivide, bsxfun(@times, obj.wCheb, obj.params{3}), ...
-                                 zHat_minus_xCheb), 5); % L2 x N x cRank x cDim
-         if isReplaceVals
-            mask = obj.gpuState.make_numeric(zHat_minus_xCheb == 0); % L2 x N x 1 x cDim x cRes
-            num_replace = sum(bsxfun(@times, obj.params{3}, mask), 5); % L2 x N x cRank x cDim
-            replaceIdx = num_sum == Inf | num_sum == -Inf;
-            num_sum(replaceIdx) = num_replace(replaceIdx);
-         end
-         num_product = prod(num_sum, 4); % L2 x N x cRank
-         num_prod_lincombo = sum(bsxfun(@times, obj.params{4}, num_product), 3); % L2 x N
-         
-         y = num_prod_lincombo./denom_product;
+         tanhz = u - 1; % robust version of tanh(z)
+         dtanhz_dz = v.*u.*u;
+         [y, chebRank1, cheb1D] = obj.compute_Chebyshev_interpolants(tanhz);
+         ffExtras = {tanhz, dtanhz_dz, cheb1D, chebRank1};
       end
       
       function value = compute_z(obj, x)
@@ -89,66 +67,69 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
          value = bsxfun(@plus, pagefun(@mtimes, obj.params{1}, x), obj.params{2});
       end
       
-      function [Dy, dydf, dydsigma] = compute_Dy(obj, z, y)
+      function [y, chebRank1, cheb1D] = compute_Chebyshev_interpolants(obj, tanhz)
+         tanhz_minus_xCheb = bsxfun(@minus, tanhz, obj.xCheb); 
+         isReplaceVals = any(any(any(any(tanhz_minus_xCheb == 0))));
+         
+         cheb1D_numerator = sum(bsxfun(@rdivide,  bsxfun(@times, obj.wCheb, obj.params{3}), ...
+                                 tanhz_minus_xCheb), 5); % L2 x N x cRank x cDim
+         cheb1D_denominator = sum(bsxfun(@rdivide, obj.wCheb, tanhz_minus_xCheb), 5); % L2 x N x 1 x cDim
+         cheb1D = bsxfun(@rdivide, cheb1D_numerator, cheb1D_denominator); % L2 x N x cRank x cDim
+         if isReplaceVals
+            mask = obj.gpuState.make_numeric(tanhz_minus_xCheb == 0); % L2 x N x 1 x cDim x cRes
+            replacementVals = sum(bsxfun(@times, obj.params{3}, mask), 5); % L2 x N x cRank x cDim
+            replaceIdx = isnan(cheb1D);
+            cheb1D(replaceIdx) = replacementVals(replaceIdx);
+         end
+         
+         chebRank1 = prod(cheb1D, 4); % L2 x N x cRank
+         y = sum(bsxfun(@times, chebRank1, obj.params{4}), 3); % L2 x N
+      end
+      
+      function [Dy, dydf, dydsigma] = compute_Dy(obj, ffExtras, y)
          % Dy ~ L2 x N x 1 x cDim
          % dydf ~ L2 x N x cRank x cDim x cRes
-         % dydsigma ~ L2 x N x cRank
-         v = exp(-2*z);
-         u = 2./(1 + v);
-         zHat = u - 1; % robust version of tanh(z)
-         dydzHat = v.*u.*u; % robust Dy for tanh layer
+         [tanhz, dtanhz_dz, cheb1D, chebRank1] = ffExtras{:};
+         dydsigma = chebRank1;
+         tanhz_minus_xCheb = bsxfun(@minus, tanhz, obj.xCheb); % L2 x N x 1 x cDim x cRes
          
-         zHat_minus_xCheb = bsxfun(@minus, zHat, obj.xCheb); % L2 x N x 1 x cDim x cRes
-         isReplaceVals = any(any(any(any(zHat_minus_xCheb == 0))));
-         if isReplaceVals
-            replaceIdx = repmat(obj.gpuState.make_numeric(any(zHat_minus_xCheb == 0, 5)), ...
-                                    1, 1, obj.cRank, 1); % L2 x N x cRank x cDim
-         end
-         
-         Df = pagefun(@mtimes, obj.D1, permute(obj.params{3}, [5 1 2 3 4]));
-         Df = permute(Df, [2 3 4 5 1]); % L2 x 1 x cRank x cDim x cRes
-         
-         wCheb_over_zHat_minus_xCheb = bsxfun(@rdivide, obj.wCheb, zHat_minus_xCheb); % L2 x N x 1 x cDim x cRes
-         denom_sum = sum(wCheb_over_zHat_minus_xCheb, 5); % L2 x N x 1 x cDim
-         if isReplaceVals
-            denom_sum(zHat_minus_xCheb==0) = 1; % correct for cases where z == xCheb (will also replace value in numerator)
-         end
-         denom_product = prod(denom_sum, 4); % L2 x N
-         
-         Dy = obj.gpuState.zeros([size(y), 1, obj.cDim]);
-         dydf = obj.gpuState.zeros([size(y), obj.cRank, obj.cDim, obj.cRes]);
-         num_sum = sum(bsxfun(@rdivide, bsxfun(@times, obj.wCheb, obj.params{3}), ...
-                                 zHat_minus_xCheb), 5); % L2 x N x cRank x cDim
-         num_product = prod(num_sum, 4);
-         dydsigma = bsxfun(@rdivide, num_product, denom_product); % L2 x N x cRank
-         
+         Dy = obj.gpuState.zeros([size(y), 1, obj.cDim]); % L2 x N x 1 x cDim
+         dydf = obj.gpuState.zeros([size(y), obj.cRank, obj.cDim, obj.cRes]); % L2 x N x cRank x cDim x cRes
          for d = 1:obj.cDim
-            % Dy
-            temp_num_sum = num_sum;
-            temp_num_sum(:,:,:,d) = sum(bsxfun(@rdivide, bsxfun(@times, obj.wCheb, Df(:,:,:,d,:)), ...
-                                 zHat_minus_xCheb(:,:,:,d)), 5);
-            if isReplaceVals
-               mask = obj.gpuState.make_numeric(zHat_minus_xCheb == 0); % L2 x N x 1 x cDim x cRes
-               num_replace = sum(bsxfun(@times, obj.params{3}, mask), 5); % L2 x N x cRank x cDim
-               num_replace(:,:,:,d) = sum(bsxfun(@times, Df(:,:,:,d,:), mask), 5);
-               temp_num_sum(replaceIdx) = num_replace(replaceIdx);
-            end
-            num_product = prod(temp_num_sum, 4); % L2 x N x cRank
-            num_prod_lincombo = sum(bsxfun(@times, obj.params{4}, num_product), 3); % L2 x N
-            Dy(:,:,1,d) = num_prod_lincombo./denom_product; % L2 x N
+            temp = cheb1D;
+            temp(:,:,:,d) = 1;
+            partial_prod = prod(temp, 4); % L2 x N x cRank
             
-            % dydf
-            temp_num_sum = num_sum;
-            temp_num_sum(:,:,:,d) = 1;
-            num_product = prod(temp_num_sum, 4); % L2 x N x cRank
-            num_part2 = wCheb_over_zHat_minus_xCheb(:,:,1,d,:); % L2 x N x 1 x 1 x cRes
-            if isReplaceVals % TODO fix this line, need to make rest of cRes vals = 0 when replacing Inf value with 1
-               num_part2(num_part2 == Inf | num_part2 == -Inf) = 1;
+            % compute Dy for this cDim           
+            f_d = obj.params{3}(:,:,:,d,:); % L2 x 1 x cRank x 1 x cRes
+            Df = permute(pagefun(@mtimes, obj.D1, permute(f_d, [5 1 2 3 4])), [2 3 4 5 1]); % L2 x 1 x cRank x 1 x cRes
+            Df_term_numer = sum(bsxfun(@rdivide, bsxfun(@times, Df, obj.wCheb), ...
+                                 tanhz_minus_xCheb(:,:,:,d,:)), 5); % L2 x N x cRank
+            Df_term_denom = sum(bsxfun(@rdivide, obj.wCheb, tanhz_minus_xCheb(:,:,:,d,:)), 5); % L2 x N
+            Df_term = bsxfun(@rdivide, Df_term_numer, Df_term_denom);
+            if any(any(any(isnan(Df_term))))
+               mask = obj.gpuState.make_numeric(tanhz_minus_xCheb(:,:,:,d,:) == 0);
+               replacementVals = sum(bsxfun(@times, Df, mask), 5);
+               replacementIdx = isnan(Df_term);
+               Df_term(replacementIdx) = replacementVals(replacementIdx);
             end
-            numerator = bsxfun(@times, obj.params{4}, bsxfun(@times, num_product, num_part2));
-            dydf(:,:,:,d,:) = bsxfun(@rdivide, numerator, denom_product); % L2 x N x cRank x 1 x cRes
+            Dy_prod = partial_prod.*Df_term;
+            Dy(:,:,1,d) = sum(bsxfun(@times, Dy_prod, obj.params{4}), 3); % still need to mult by dtanhz_dz
+            
+            % compute dydf for this cDim
+            no_f_term_numer = bsxfun(@rdivide, obj.wCheb, tanhz_minus_xCheb(:,:,:,d,:));
+            no_f_term_denom = sum(no_f_term_numer, 5);
+            no_f_term = bsxfun(@rdivide, no_f_term_numer, no_f_term_denom); % L2 x N x 1 x 1 x cRes
+            if any(any(any(isnan(no_f_term))))
+               % keep same mask as computed in Dy case
+               % replacementVals = mask
+               replacementIdx = isnan(no_f_term);
+               no_f_term(replacementIdx) = mask(replacementIdx);
+            end
+            dydf_prod = bsxfun(@times, no_f_term, partial_prod);
+            dydf(:,:,:,d,:) = bsxfun(@times, dydf_prod, obj.params{4});
          end
-         Dy = Dy.*dydzHat;
+         Dy = Dy.*dtanhz_dz;
       end
       
       function value = compute_D2y(obj, z, y, Dy)
