@@ -140,7 +140,7 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
          r = obj.initScale;
          obj.params{1} = 2*r*obj.gpuState.rand([obj.outputSize, obj.inputSize, 1, obj.cDim]) - r;
          obj.params{2} = obj.gpuState.zeros([obj.outputSize, 1, 1, obj.cDim]);
-         obj.params{3} = 2*obj.gpuState.rand([obj.outputSize, 1, obj.cRank, obj.cDim, obj.cRes]) - 1;
+         obj.params{3} = 2*r*obj.gpuState.rand([obj.outputSize, 1, obj.cRank, obj.cDim, obj.cRes]) - r;
          obj.params{4} = obj.gpuState.ones([obj.outputSize, 1, obj.cRank]);
       end
       

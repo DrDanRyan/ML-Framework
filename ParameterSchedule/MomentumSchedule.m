@@ -34,12 +34,12 @@ classdef MomentumSchedule < ParameterSchedule
          
          %If parameters are specified layerwise, unroll layerwise specs
          %into componentwise specs using gradShape
-         if ~isempty(obj.gradShape)
+         if ~isempty(gradShape)
             startIdx = 1;
-            obj.lr0 = cell(1, sum(obj.gradShape));
-            obj.maxMomentum = cell(1, sum(obj.gradShape));
+            obj.lr0 = cell(1, sum(gradShape));
+            obj.maxMomentum = cell(1, sum(gradShape));
             for i = 1:length(gradShape);
-               stopIdx = startIdx + obj.gradShape(i) - 1;
+               stopIdx = startIdx + gradShape(i) - 1;
                dummy = ones(1, gradShape(i));
                obj.lr0(startIdx:stopIdx) = mat2cell(lr0*dummy, 1, dummy);
                obj.maxMomentum(startIdx:stopIdx) = mat2cell(maxMomentum*dummy, 1, dummy);
