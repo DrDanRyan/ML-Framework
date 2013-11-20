@@ -103,6 +103,7 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
             temp = cheb1D;
             temp(:,:,:,d) = 1;
             partial_prod = prod(temp, 4); % L2 x N x cRank
+            clear temp
             
             % compute Dy for this cDim           
             f_d = obj.params{3}(:,:,:,d,:); % L2 x 1 x cRank x 1 x cRes
