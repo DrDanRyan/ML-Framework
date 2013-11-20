@@ -3,11 +3,16 @@ classdef DataManager < matlab.mixin.Copyable
    properties
       trainingData % cell array of data relevant for training; targets should be last entry if present
       validationData % cell array of data relevant for validation; same shape as trainingData
+      batchSize   % Size of batch used for training
+      lossBatchSize % Size of batch used to compute training and validation losses
+      trainLossSampleSize % number of training examples to sample for training loss
+      trainLossSample % a sample of the training data used to estimate loss on training set
+      trainingSize % number of training examples total
+      validationSize % number of validation examples total
       
-      batchSize
-      trainingSize
-      startIdx
-      stopIdx
+      % Used to keep track of batches
+      batchIdx
+      lossIdx
    end
    
    methods
@@ -20,32 +25,103 @@ classdef DataManager < matlab.mixin.Copyable
          obj.trainingData = trainingData; 
          obj.trainingSize = size(trainingData{1}, 2);
          obj.validationData = validationData;
+         obj.validationSize = size(validationData{1}, 2);
          
          p = inputParser();
          p.addParamValue('batchSize', []);
+         p.addParamValue('lossBatchSize', []);
+         p.addParamValue('trainLossSampleSize', []);
          parse(p, varargin{:});
          
-         if ~isempty(p.Results.batchSize) % Use mini-batches; set batchsize and trainingSize
-            obj.batchSize = p.Results.batchSize;
+         obj.batchSize = p.Results.batchSize;
+         obj.lossBatchSize = p.Results.lossBatchSize;
+         obj.trainLossSampleSize = p.Results.trainLossSampleSize;
+         
+         if ~isempty(p.Results.batchSize) % Using mini-batches => shuffle data before beginning
             obj.shuffle_training_data();
+         end
+         
+         if ~isempty(obj.lossBatchSize)
+            obj.lossIdx = 1;
          end
       end
       
-      function [batch, endOfEpochFlag] = next_batch(obj)
+      function batch = next_batch(obj)
          if isempty(obj.batchSize) % full batch
             batch = obj.trainingData;
-            endOfEpochFlag = true;
          else % mini-batch
-            batch = cellfun(@(v) v(:,obj.startIdx:obj.stopIdx), obj.trainingData, ...
+            stopIdx = min(obj.trainingSize, obj.batchIdx + obj.batchSize - 1);
+            batch = cellfun(@(v) v(:,obj.batchIdx:stopIdx), obj.trainingData, ...
                               'UniformOutput', false);
             
-            if obj.stopIdx == obj.trainingSize
-               endOfEpochFlag = true;
+            if stopIdx == obj.trainingSize
                obj.shuffle_training_data();
             else
-               endOfEpochFlag = false;
-               obj.startIdx = obj.startIdx + obj.batchSize;
-               obj.stopIdx = min(obj.trainingSize, obj.stopIdx + obj.batchSize);
+               obj.batchIdx = stopIdx + 1;
+            end
+         end
+      end
+      
+      function [batch, isContinue] = trainLoss_batch(obj)
+         if ~isempty(obj.trainLossSampleSize) && isempty(obj.trainLossSample)
+            permvec = randperm(obj.trainingSize, obj.trainLossSampleSize);
+            obj.trainLossSample = cellfun(@(v) v(:,permvec), obj.trainingData, ...
+                                             'UniformOutput', false);
+         end
+         
+         if isempty(obj.lossBatchSize) % no batches, just give whole set
+            if isempty(obj.trainLossSample)
+               batch = obj.trainingData;
+            else
+               batch = obj.trainLossSample;
+               obj.trainLossSample = [];
+            end
+            isContinue = false;
+         else % using batches
+            if isempty(obj.trainLossSample)
+               stopIdx = min(obj.trainingSize, obj.lossIdx + obj.lossBatchSize - 1);
+               batch = cellfun(@(v) v(:, obj.lossIdx:stopIdx), obj.trainingData, ...
+                                 'UniformOutput', false);
+                              
+               if stopIdx == obj.trainingSize
+                  isContinue = false;
+                  obj.lossIdx = 1;
+               else
+                  isContinue = true;
+                  obj.lossIdx = stopIdx + 1;
+               end               
+            else
+               stopIdx = min(obj.trainLossSampleSize, obj.lossIdx + obj.lossBatchSize - 1);
+               batch = cellfun(@(v) v(:, obj.lossIdx:stopIdx), obj.trainLossSample, ...
+                                 'UniformOutput', false);
+                              
+               if stopIdx == obj.trainLossSampleSize
+                  isContinue = false;
+                  obj.lossIdx = 1;
+                  obj.trainLossSample = [];
+               else
+                  isContinue = true;
+                  obj.lossIdx = stopIdx + 1;
+               end               
+            end
+         end
+      end
+      
+      function [batch, isContinue] = validLoss_batch(obj)
+         if isempty(obj.lossBatchSize)
+            batch = obj.validationData;
+            isContinue = false;
+         else
+            stopIdx = min(obj.validationSize, obj.lossIdx + obj.lossBatchSize - 1);
+            batch = cellfun(@(v) v(:, obj.lossIdx:stopIdx), obj.validationData, ...
+                                 'UniformOutput', false);
+
+            if stopIdx == obj.validationSize
+               isContinue = false;
+               obj.lossIdx = 1;
+            else
+               isContinue = true;
+               obj.lossIdx = stopIdx + 1;
             end
          end
       end
@@ -54,12 +130,17 @@ classdef DataManager < matlab.mixin.Copyable
          permvec = randperm(obj.trainingSize);
          obj.trainingData = cellfun(@(v) v(:,permvec), obj.trainingData, ...
                                                       'UniformOutput', false);
-         obj.startIdx = 1;
-         obj.stopIdx = min(obj.batchSize, obj.trainingSize);
+         obj.batchIdx = 1;
       end
       
       function reset(obj)
          obj.trainingSize = size(obj.trainingData{1}, 2);
+         obj.validationSize = size(obj.validationData{1}, 2);
+         
+         if ~isempty(obj.lossBatchSize)
+            obj.lossIdx = 1;
+         end
+         
          if ~isempty(obj.batchSize)
             obj.shuffle_training_data();
          end

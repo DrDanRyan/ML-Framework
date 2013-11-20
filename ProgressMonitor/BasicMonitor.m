@@ -5,7 +5,6 @@ classdef BasicMonitor < ProgressMonitor
       validationInterval % number of updates between computing validation error scores
       validLossFunction % function handle for validation error computation
       isComputeTrainLoss % whether or not to compute training error when validation error is computed
-      trainLossBatchSize % number of training examples used to compute an estimate of mean loss on training set
       trainLossFunction % function handle for training error computation
       validLoss = [] 
       trainLoss = []
@@ -22,31 +21,11 @@ classdef BasicMonitor < ProgressMonitor
    
    methods
       function obj = BasicMonitor(varargin)
-         
-         function validationLoss = default_validLossFunction(model, dataManager)
-            validationLoss = [];
-            if ~isempty(dataManager.validationData)
-               validationLoss = model.compute_loss(dataManager.validationData);
-            end
-         end
-         
-         function trainLoss = default_trainLossFunction(model, dataManager, sampleSize)
-            if sampleSize < dataManager.trainingSize
-               permvec = randperm(dataManager.trainingSize, sampleSize);
-               y = model.output(dataManager.trainingData{1}(:,permvec));
-               t = dataManager.trainingData{end}(:,permvec);
-               trainLoss = model.compute_loss_from_output(y, t);
-            else
-               trainLoss = model.compute_loss(dataManager.trainingData);
-            end
-         end
-         
          p = inputParser();
          p.addParamValue('validationInterval', 100);
-         p.addParamValue('validLossFunction', @default_validLossFunction);
+         p.addParamValue('validLossFunction', []);
          p.addParamValue('isComputeTrainLoss', true);
-         p.addParamValue('trainLossBatchSize', []);
-         p.addParamValue('trainLossFunction', @default_trainLossFunction);
+         p.addParamValue('trainLossFunction', []);
          p.addParamValue('isStoreModels', 'best');
          p.addParamValue('isReport', true);
          
@@ -54,7 +33,6 @@ classdef BasicMonitor < ProgressMonitor
          obj.validationInterval = p.Results.validationInterval;
          obj.validLossFunction = p.Results.validLossFunction;
          obj.isComputeTrainLoss = p.Results.isComputeTrainLoss;
-         obj.trainLossBatchSize = p.Results.trainLossBatchSize;
          obj.trainLossFunction = p.Results.trainLossFunction;
          obj.isStoreModels = p.Results.isStoreModels;
          obj.isReport = p.Results.isReport;
@@ -73,7 +51,21 @@ classdef BasicMonitor < ProgressMonitor
       end
       
       function compute_loss_values(obj, model, dataManager)
-         obj.validLoss = [obj.validLoss, obj.validLossFunction(model, dataManager)];
+         isContinue = true;
+         tempLoss = 0;
+         while isContinue
+            [batch, isContinue] = dataManager.validLoss_batch();
+            batchSize = size(batch{1}, 2);
+            if isempty(obj.validLossFunction)
+               tempLoss = tempLoss + batchSize*model.compute_loss(batch);
+            else
+               y = model.output(batch{1});
+               t = batch{end};
+               tempLoss = tempLoss + batchSize*obj.validLossFunction(y, t); % have to 'unaverage' losses
+            end
+         end
+         obj.validLoss = [obj.validLoss, tempLoss/dataManager.validationSize]; % 'reaverage' losses
+
          if obj.validLoss(end) < obj.bestValidLoss
             obj.bestValidLoss = obj.validLoss(end);
             obj.bestUpdate = obj.nUpdates;
@@ -90,8 +82,22 @@ classdef BasicMonitor < ProgressMonitor
          end
 
          if obj.isComputeTrainLoss
-            obj.trainLoss = [obj.trainLoss, obj.trainLossFunction(model, dataManager, ...
-                                                                     obj.trainLossBatchSize)];
+            isContinue = true;
+            tempLoss = 0;
+            nExamples = 0;
+            while isContinue
+               [batch, isContinue] = dataManager.trainLoss_batch();
+               batchSize = size(batch{1}, 2);
+               if isempty(obj.trainLossFunction)
+                  tempLoss = tempLoss + model.compute_loss(batch);
+               else
+                  y = model.output(batch{1});
+                  t = batch{end};
+                  tempLoss = tempLoss + batchSize*obj.trainLossFunction(y, t);
+               end
+               nExamples = nExamples + batchSize;
+            end
+            obj.trainLoss = [obj.trainLoss, tempLoss/nExamples];
          end
          
          if obj.isReport
