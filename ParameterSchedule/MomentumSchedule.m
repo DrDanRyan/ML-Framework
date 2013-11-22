@@ -27,10 +27,13 @@ classdef MomentumSchedule < ParameterSchedule
          obj.lr0 = lr0;
          obj.maxMomentum = maxMomentum;
          obj.params = {lr0, maxMomentum};
-         obj.lrDecay = exp(log(.5)/p.Results.lrHalfLife);
          obj.lrBurnIn = p.Results.lrBurnIn;
          obj.C = p.Results.C;
          gradShape = p.Results.gradShape;
+         
+         if ~isempty(p.Results.lrHalfLife)
+            obj.lrDecay = exp(log(.5)/p.Results.lrHalfLife);
+         end
          
          %If parameters are specified layerwise, unroll layerwise specs
          %into componentwise specs using gradShape

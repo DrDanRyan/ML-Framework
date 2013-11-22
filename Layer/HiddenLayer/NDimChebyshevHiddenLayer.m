@@ -59,7 +59,7 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
          tanhz = u - 1; % robust version of tanh(z)
          dtanhz_dz = v.*u.*u;
          [y, chebRank1, cheb1D] = obj.compute_Chebyshev_interpolants(tanhz);
-         ffExtras = {tanhz, dtanhz_dz, cheb1D, chebRank1};
+         ffExtras = {tanhz, dtanhz_dz, cheb1D, chebRank1};    
       end
       
       function value = compute_z(obj, x)
@@ -112,7 +112,7 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
             Df_term_numer = sum(bsxfun(@rdivide, bsxfun(@times, Df, obj.wCheb), ...
                                  tanhz_minus_xCheb(:,:,:,d,:)), 5); % L2 x N x cRank
             Df_term_denom = sum(bsxfun(@rdivide, obj.wCheb, tanhz_minus_xCheb(:,:,:,d,:)), 5); % L2 x N
-            Df_term = bsxfun(@rdivide, Df_term_numer, Df_term_denom);
+            Df_term = bsxfun(@rdivide, Df_term_numer, Df_term_denom); % L2 x N x cRank
             clear Df_term_numer Df_term_denom
             if any(any(any(isnan(Df_term))))
                mask = obj.gpuState.make_numeric(tanhz_minus_xCheb(:,:,:,d,:) == 0);
@@ -141,7 +141,7 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
             dydf(:,:,:,d,:) = bsxfun(@times, dydf_prod, obj.params{4});
             clear dydf_prod
          end
-         Dy = Dy.*dtanhz_dz;
+         Dy = Dy.*dtanhz_dz; % L2 x N x 1 x cDim
       end
       
       function value = compute_D2y(obj, z, y, Dy)
@@ -152,7 +152,7 @@ classdef NDimChebyshevHiddenLayer < HiddenLayer
          r = obj.initScale;
          obj.params{1} = 2*r*obj.gpuState.rand([obj.outputSize, obj.inputSize, 1, obj.cDim]) - r;
          obj.params{2} = obj.gpuState.zeros([obj.outputSize, 1, 1, obj.cDim]);
-         obj.params{3} = 2*obj.gpuState.randn([obj.outputSize, 1, obj.cRank, obj.cDim, obj.cRes]);
+         obj.params{3} = .1*obj.gpuState.randn([obj.outputSize, 1, obj.cRank, obj.cDim, obj.cRes]);
          obj.params{4} = obj.gpuState.ones([obj.outputSize, 1, obj.cRank])/obj.cRank;
       end
       
