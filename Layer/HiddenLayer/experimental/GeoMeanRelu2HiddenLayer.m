@@ -14,7 +14,7 @@ classdef GeoMeanRelu2HiddenLayer < StandardLayer & HiddenLayer
       end
       
       function init_params(obj)
-         obj.params{2} = .1*obj.gpuState.ones(obj.outputSize, 1, obj.D);
+         obj.params{2} = .01*obj.gpuState.ones(obj.outputSize, 1, obj.D);
          for d = 1:obj.D
             obj.params{1}(:,:,d) = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
                                                       obj.initScale, obj.gpuState);

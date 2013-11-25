@@ -7,7 +7,7 @@ function value = matrix_init(M, N, initType, initScale, gpuState)
    switch initType
       case 'dense'
          if isempty(initScale)
-            radius = .01;
+            radius = .005;
          else
             radius = initScale;
          end
@@ -24,14 +24,14 @@ function value = matrix_init(M, N, initType, initScale, gpuState)
          end
       case 'positive'
          if isempty(initScale)
-            width = .01;
+            width = .005;
          else
             width = initScale;
          end
          value = width*gpuState.rand([M, N]);
       case 'symmetric positive'
          if isempty(initScale)
-            width = .01;
+            width = .005;
          else
             width = initScale;
          end
