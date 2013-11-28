@@ -89,7 +89,7 @@ classdef BasicMonitor < ProgressMonitor
                [batch, isContinue] = dataManager.trainLoss_batch();
                batchSize = size(batch{1}, 2);
                if isempty(obj.trainLossFunction)
-                  tempLoss = tempLoss + model.compute_loss(batch);
+                  tempLoss = tempLoss + batchSize*model.compute_loss(batch);
                else
                   y = model.output(batch{1});
                   t = batch{end};
