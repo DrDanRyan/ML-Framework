@@ -31,6 +31,14 @@ classdef GPUState
          end
       end
       
+      function value = nan(obj, varargin)
+         if obj.isGPU
+            value = gpuArray.nan(varargin{:}, 'single');
+         else
+            value = nan(varargin{:});
+         end
+      end
+      
       function value = eye(obj, varargin)
          if obj.isGPU
             value = gpuArray.eye(varargin{:}, 'single');
