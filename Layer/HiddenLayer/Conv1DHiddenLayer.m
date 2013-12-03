@@ -3,7 +3,7 @@ classdef Conv1DHiddenLayer < HiddenLayer
    % max pooling. A tanh nonlinearity is used.
    
    properties
-      % params = {W, b} with W ~ nF x 1 x C x fS and b ~ nF x 1
+      params % {W, b} with W ~ nF x 1 x C x fS and b ~ nF x 1
       poolSize % (pS) number of units to maxpool over
       nFilters % (nF) number of convolution filters
       inputSize % (X) length of each 1D inputs signal
@@ -62,13 +62,10 @@ classdef Conv1DHiddenLayer < HiddenLayer
          % Wx ~ nF x N x (X - fS + 1)
          [~, N, X] = size(x);
          Wx = obj.gpuState.zeros(obj.nFilters, N, X - obj.filterSize + 1);
-         startIdx = 1;
          
          for i = 1:(X - obj.filterSize + 1)
-            stopIdx = startIdx + obj.filterSize - 1;
-            xSeg = permute(x(:,:,startIdx:stopIdx), [4, 2, 1, 3]); % 1 X N x C x fS
+            xSeg = permute(x(:,:,i:i+obj.filterSize-1), [4, 2, 1, 3]); % 1 X N x C x fS
             Wx(:,:,i) = sum(sum(bsxfun(@times, xSeg, obj.params{1}), 4), 3);
-            startIdx = stopIdx + 1;
          end
       end
 
@@ -86,7 +83,7 @@ classdef Conv1DHiddenLayer < HiddenLayer
       
       function [grad, dLdx, y] = backprop(obj, x, y, ffExtras, dLdy)
          [z, v, u, prePool] = ffExtras{:};
-         zSize = size(u, 3); % X - fS + 1;
+         [nF, N, zSize] = size(u);
          dyHatdz = u.*u.*v; % robust tanh derivative
          
          mask = obj.gpuState.make_numeric(bsxfun(@eq, y, prePool)); % nF x N x poolSize x oS
@@ -106,9 +103,9 @@ classdef Conv1DHiddenLayer < HiddenLayer
          
          dLdx = obj.gpuState.zeros(size(x)); % C x N x X
          for i = 1:zSize
-            zSeg = permute(z(:,:,i+obj.filterSize-1), [4, 2, 3, 1]); % 1 x N x fS x nF
+            zVal = permute(z(:,:,i), [4, 2, 3, 1]); % 1 x N x 1 x nF
             dLdx(:,:,i:i+obj.filterSize-1) = dLdx(:,:,i:i+obj.filterSize-1) + ...
-                         sum(bsxfun(@times, zSeg, permute(obj.params{1}, [3, 2, 4, 1])), 4); % C x N x fS 
+                         sum(bsxfun(@times, zVal, permute(obj.params{1}, [3, 2, 4, 1])), 4); % C x N x fS 
          end
       end      
       
@@ -129,11 +126,11 @@ classdef Conv1DHiddenLayer < HiddenLayer
          obj.params{2} = obj.params{2} + delta_params{2};
       end
 
-      function value = Dy(obj, dydyHat, y)
+      function value = compute_Dy(obj, dydyHat, y)
          % pass
       end
       
-      function value = D2y(obj, dydyHat, y, Dy)
+      function value = compute_D2y(obj, dydyHat, y, Dy)
          % pass
       end
    end
