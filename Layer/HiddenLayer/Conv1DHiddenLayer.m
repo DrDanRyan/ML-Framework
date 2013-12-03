@@ -79,14 +79,20 @@ classdef Conv1DHiddenLayer < HiddenLayer
          end
          y = max(prePool, [], 3);
          y = squeeze(y); % nF x N x oS
+         
+%          if any(any(any(any(isnan(prePool))))) || any(any(any(isnan(y))))
+%             keyboard()
+%          end
       end
       
       function [grad, dLdx, y] = backprop(obj, x, y, ffExtras, dLdy)
+         % dLdy ~ nF x N x oS
          [z, v, u, prePool] = ffExtras{:};
          [nF, N, zSize] = size(u);
          dyHatdz = u.*u.*v; % robust tanh derivative
          
-         mask = obj.gpuState.make_numeric(bsxfun(@eq, y, prePool)); % nF x N x poolSize x oS
+         % TODO: see if ~isnan below is necessary
+         mask = obj.gpuState.make_numeric(bsxfun(@eq, y, prePool) & ~isnan(prePool)); % nF x N x poolSize x oS
          dLdyHat = bsxfun(@times, permute(dLdy, [1, 2, 4, 3]), mask);
          dLdyHat = reshape(dLdyHat, nF, N, []);
          dLdyHat = dLdyHat(:,:,1:zSize); % nF x N x (X - fS + 1)
