@@ -49,6 +49,9 @@ classdef Conv1DHiddenLayer < HiddenLayer
          yHat = u - 1; % (robust tanh) nF x N x (X - fS + 1)
          [y, prePool] = obj.max_pooling(yHat); 
          ffExtras = {z, v, u, prePool};
+%        if check_nan(z, u, y, prePool)
+%            keyboard();
+%        end
       end
       
       function z = compute_z(obj, x)
@@ -78,21 +81,23 @@ classdef Conv1DHiddenLayer < HiddenLayer
             prePool = obj.gpuState.nan(nF, N, obj.poolSize, (yHatSize + paddingSize)/obj.poolSize);
          end
          y = max(prePool, [], 3);
-         y = squeeze(y); % nF x N x oS
+         y = permute(y, [1, 2, 4, 3]); % nF x N x oS  (permute puts singleton dimension in back)
          
-%          if any(any(any(any(isnan(prePool))))) || any(any(any(isnan(y))))
-%             keyboard()
-%          end
+         if check_nan(prePool, y)
+            keyboard();
+         end
       end
       
       function [grad, dLdx, y] = backprop(obj, x, y, ffExtras, dLdy)
          % dLdy ~ nF x N x oS
+         % z ~ nF x N x (X - fS + 1)
          [z, v, u, prePool] = ffExtras{:};
          [nF, N, zSize] = size(u);
          dyHatdz = u.*u.*v; % robust tanh derivative
+         dyHatdz(isnan(dyHatdz)) = 0; % correct for extreme z values yielding NaN derivative
          
-         % TODO: see if ~isnan below is necessary
-         mask = obj.gpuState.make_numeric(bsxfun(@eq, y, prePool) & ~isnan(prePool)); % nF x N x poolSize x oS
+         mask = obj.gpuState.make_numeric(bsxfun(@eq, permute(y, [1 2 4 3]), prePool) ...
+                                                         & ~isnan(prePool)); % nF x N x poolSize x oS
          dLdyHat = bsxfun(@times, permute(dLdy, [1, 2, 4, 3]), mask);
          dLdyHat = reshape(dLdyHat, nF, N, []);
          dLdyHat = dLdyHat(:,:,1:zSize); % nF x N x (X - fS + 1)
@@ -104,7 +109,7 @@ classdef Conv1DHiddenLayer < HiddenLayer
          zSize = size(u, 3); % X - fS + 1
          for i = 1:obj.filterSize
             xSeg = permute(x(:,:,i:zSize + i - 1), [4, 2, 1, 3]); % 1 x N x C x zSize
-            grad{1}(:,:,:,i) = mean(sum(bsxfun(@times, xSeg, permute(z, [1, 2, 4, 3])), 4), 2);
+            grad{1}(:,:,:,i) = mean(sum(bsxfun(@times, xSeg, permute(z, [1, 2, 4, 3])), 4), 2); % nF x 1 x C
          end
          
          dLdx = obj.gpuState.zeros(size(x)); % C x N x X
@@ -112,6 +117,10 @@ classdef Conv1DHiddenLayer < HiddenLayer
             zVal = permute(z(:,:,i), [4, 2, 3, 1]); % 1 x N x 1 x nF
             dLdx(:,:,i:i+obj.filterSize-1) = dLdx(:,:,i:i+obj.filterSize-1) + ...
                          sum(bsxfun(@times, zVal, permute(obj.params{1}, [3, 2, 4, 1])), 4); % C x N x fS 
+         end
+         
+         if check_nan(grad{1}, grad{2}, dLdx, y)
+            keyboard();
          end
       end      
       
