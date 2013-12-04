@@ -48,7 +48,7 @@ classdef Conv1DHiddenLayer < HiddenLayer
          u = 2./(1 + v);
          yHat = u - 1; % (robust tanh) nF x N x (X - fS + 1)
          [y, prePool] = obj.max_pooling(yHat); 
-         ffExtras = {z, v, u, prePool};
+         ffExtras = {v, u, prePool};
 %        if check_nan(z, u, y, prePool)
 %            keyboard();
 %        end
@@ -91,7 +91,7 @@ classdef Conv1DHiddenLayer < HiddenLayer
       function [grad, dLdx, y] = backprop(obj, x, y, ffExtras, dLdy)
          % dLdy ~ nF x N x oS
          % z ~ nF x N x (X - fS + 1)
-         [z, v, u, prePool] = ffExtras{:};
+         [v, u, prePool] = ffExtras{:};
          [nF, N, zSize] = size(u);
          dyHatdz = u.*u.*v; % robust tanh derivative
          dyHatdz(isnan(dyHatdz)) = 0; % correct for extreme z values yielding NaN derivative
@@ -109,19 +109,19 @@ classdef Conv1DHiddenLayer < HiddenLayer
          zSize = size(u, 3); % X - fS + 1
          for i = 1:obj.filterSize
             xSeg = permute(x(:,:,i:zSize + i - 1), [4, 2, 1, 3]); % 1 x N x C x zSize
-            grad{1}(:,:,:,i) = mean(sum(bsxfun(@times, xSeg, permute(z, [1, 2, 4, 3])), 4), 2); % nF x 1 x C
+            grad{1}(:,:,:,i) = mean(sum(bsxfun(@times, xSeg, permute(dLdz, [1, 2, 4, 3])), 4), 2); % nF x 1 x C
          end
          
          dLdx = obj.gpuState.zeros(size(x)); % C x N x X
          for i = 1:zSize
-            zVal = permute(z(:,:,i), [4, 2, 3, 1]); % 1 x N x 1 x nF
+            dLdzVal = permute(dLdz(:,:,i), [4, 2, 3, 1]); % 1 x N x 1 x nF
             dLdx(:,:,i:i+obj.filterSize-1) = dLdx(:,:,i:i+obj.filterSize-1) + ...
-                         sum(bsxfun(@times, zVal, permute(obj.params{1}, [3, 2, 4, 1])), 4); % C x N x fS 
+                         sum(bsxfun(@times, dLdzVal, permute(obj.params{1}, [3, 2, 4, 1])), 4); % C x N x fS 
          end
          
-         if check_nan(grad{1}, grad{2}, dLdx, y)
-            keyboard();
-         end
+%          if check_nan(grad{1}, grad{2}, dLdx, y)
+%             keyboard();
+%          end
       end      
       
       function gather(obj)

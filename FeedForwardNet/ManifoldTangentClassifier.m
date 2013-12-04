@@ -25,7 +25,7 @@ classdef ManifoldTangentClassifier < FeedForwardNet
             x = x.*mask{1};
             u = u.*mask{1}; % not advised to use input dropout with MTC
                             % there would be different singular vectors for
-                            % different (sub)nets ... ?
+                            % different subnets ... ?
          else
             mask = [];
          end
@@ -34,6 +34,8 @@ classdef ManifoldTangentClassifier < FeedForwardNet
          [y, z] = obj.feed_forward(x, mask);
          
          % get outputLayer output and backpropagate loss
+         % TODO: improve efficiency by capturing Dy values during backprop
+         %       instead of recomputing them layer
          [grad, output, dLdx] = obj.backprop(x, y, t, z, mask);
          
          % compute mainfold tangent penalty gradient and add it to grad

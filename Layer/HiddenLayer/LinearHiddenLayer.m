@@ -10,18 +10,14 @@ classdef LinearHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function [y, ffExtras] = feed_forward(obj, x)
+      function [y, z] = feed_forward(obj, x)
          y = obj.compute_z(x);
-         ffExtras = [];
+         z = [];
       end
       
-      function value = compute_Dy(obj, ~, y)
+      function value = compute_Dy(obj, z, y)
          value = obj.gpuState.ones(size(y));
       end     
-      
-      function value = compute_D2y(obj, ~, y, ~)
-         value = obj.gpuState.zeros(size(y));
-      end
    end
 end
 

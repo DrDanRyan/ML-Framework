@@ -1,4 +1,6 @@
 classdef StandardHiddenLayer < HiddenLayer & StandardLayer
+   % Easiest point to subclass for a simple HiddenLayer. Only need to
+   % provide: feedforward and compute_Dy in subclass
    
    methods
       function obj = StandardHiddenLayer(inputSize, outputSize, varargin)
@@ -11,6 +13,10 @@ classdef StandardHiddenLayer < HiddenLayer & StandardLayer
          dLdx = obj.params{1}'*dLdz;
          grad = obj.grad_from_dLdz(x, dLdz);
       end
+   end
+   
+   methods (Abstract)
+      Dy = compute_Dy(z, y)
    end
    
 end

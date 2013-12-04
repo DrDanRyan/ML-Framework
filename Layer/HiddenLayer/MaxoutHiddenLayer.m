@@ -1,21 +1,26 @@
-classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
+classdef MaxoutHiddenLayer < HiddenLayer & ParamsLayer & RegularizationFunctions
    
    properties
       % params = {W, b} where W and b are 3-dimensional arrays
-      k % number of linear units per maxout units (size of 3rd dimension of W and b)
+      inputSize
+      outputSize
+      D % number of linear units per maxout unit (size of 3rd dimension of W and b)
       isLocallyLinear = true
    end
    
    methods
-      function obj = MaxoutHiddenLayer(inputSize, outputSize, k, varargin)
-         obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
-         obj.k = k;   
+      function obj = MaxoutHiddenLayer(inputSize, outputSize, D, varargin)
+         obj = obj@ParamsLayer(varargin{:});
+         obj = obj@RegularizationFunctions(varargin{:});
+         obj.inputSize = inputSize;
+         obj.outputSize = outputSize;
+         obj.D = D;   
          obj.init_params();
       end
       
       function init_params(obj)
-         obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1, obj.k);
-         for idx = 1:obj.k
+         obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1, obj.D);
+         for idx = 1:obj.D
             obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
                                                       obj.initScale, obj.gpuState);
          end
@@ -32,25 +37,13 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          Dy = obj.compute_Dy(z, y);
          dLdz = bsxfun(@times, dLdy, Dy); % dimensions are L2 x N x k
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
+         grad{1} = pagefun(@mtimes, dLdz, x')/N; % L2 x L1 x k
+         grad{2} = mean(dLdz, 2); % L2 x 1 x k
          
-         switch obj.gradType
-            case 'averaged'
-               grad{1} = pagefun(@mtimes, dLdz, x')/N; % L2 x L1 x k
-               grad{2} = mean(dLdz, 2); % L2 x 1 x k
-            case 'sparse'               
-               nonZero_dLdz = obj.gpuState.make_numeric(dLdz ~= 0);
-               nonZero_xTrans = obj.gpuState.make_numeric(x' ~= 0);
-               total_nonZero_dLdw = pagefun(@mtimes, nonZero_dLdz, nonZero_xTrans);
-               total_nonZero_dLdz = sum(nonZero_dLdz, 2);
-
-               total_nonZero_dLdw(total_nonZero_dLdw == 0) = 1; % Prevents dividing by zero below
-               total_nonZero_dLdz(total_nonZero_dLdz == 0) = 1; % Prevents dividing by zero below
-               grad{1} = pagefun(@mtimes, dLdz, x')./total_nonZero_dLdw;
-               grad{2} = sum(dLdz, 2)./total_nonZero_dLdz;
-            case 'raw'
-               x4D = permute(x, [3, 1, 4, 2]);
-               grad{2} = permute(dLdz, [1, 4, 3, 2]);
-               grad{1} = bsxfun(@times, grad{2}, x4D);            
+         if obj.isPenalty
+            penalties = obj.compute_penalties();
+            grad{1} = grad{1} + penalties{1};
+            grad{2} = grad{2} + penalties{2};
          end
       end
       
@@ -58,17 +51,11 @@ classdef MaxoutHiddenLayer < HiddenLayer & StandardLayer
          value = obj.gpuState.make_numeric((bsxfun(@eq, z, y))); % L2 x N x k
       end
       
-      function value = compute_D2y(obj, ~, y, ~)
-         value = obj.gpuState.zeros([size(y), obj.k]);
-      end
-      
       function value = compute_z(obj, x)
          % z has dimensions L2 x N x k
          value = pagefun(@mtimes, obj.params{1}, x);
          value = bsxfun(@plus, value, obj.params{2});
       end
-      
    end
-   
 end
 

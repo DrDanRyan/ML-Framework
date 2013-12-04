@@ -1,21 +1,21 @@
 classdef HiddenLayer < matlab.mixin.Copyable
    % Defines the HiddenLayer interface 
    
-   properties (Abstract)
-      isLocallyLinear % need to implement for CAE and ManifoldTangentClassifier
-   end
+   % properties required for CAE and MTC
+      % isLocallyLinear  
+   % end
 
    methods (Abstract)
-      [grad, dLdx] = backprop(obj, x, y, ffExtras, dLdy)
       [y, ffExtras] = feed_forward(obj, x)
-      value = compute_z(obj, x)
-      value = compute_Dy(obj, ffExtras, y) % derivative of transfer function
-      value = compute_D2y(obj, ffExtras, y, Dy) % second derivatie of transfer function
+      [grad, dLdx, Dy] = backprop(obj, x, y, ffExtras, dLdy)
+      init_params(obj)
+      increment_params(obj, delta)
       push_to_GPU(obj)
       gather(obj)
-      increment_params(obj, delta_params)
-      init_params(obj)
+      
+      % Required for CAE and MTC:
+      % value = compute_Dy(obj, ffExtras, y)  (derivative of transfer function)
+      % value = compute_D2y(obj, ffExtras, y, Dy)   (only required if isLocallyLinear == false)
    end
-   
 end
 

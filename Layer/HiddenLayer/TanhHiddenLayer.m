@@ -2,7 +2,6 @@ classdef TanhHiddenLayer < StandardHiddenLayer
    
    properties
       isLocallyLinear = false
-      isDiagonalDy = true
    end
    
    methods
@@ -29,6 +28,5 @@ classdef TanhHiddenLayer < StandardHiddenLayer
          value = -2*y.*Dy;
       end
    end
-   
 end
 
