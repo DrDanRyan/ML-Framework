@@ -9,7 +9,7 @@ classdef OutputLayer < matlab.mixin.Copyable
    
    methods (Abstract)
       y = feed_forward(x)
-      [grad, dLdx, y, Dy] = backprop(obj, x, t)
+      [grad, dLdx, y] = backprop(obj, x, t)
       loss = compute_loss(obj, y, t)
       init_params(obj)
       increment_params(obj, delta)

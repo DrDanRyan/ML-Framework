@@ -25,10 +25,6 @@ classdef LinearOutputLayer < StandardOutputLayer
          value = obj.gpuState.ones(size(y));
       end
       
-      function value = compute_D2y(obj, ~, y, ~)
-         value = obj.gpuState.zeros(size(y));
-      end
-      
       function loss = compute_loss(~, y, t)
          loss = .5*nanmean(nansum((y-t).*(y-t), 1));
       end

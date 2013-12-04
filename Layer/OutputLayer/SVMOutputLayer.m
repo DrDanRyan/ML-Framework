@@ -43,10 +43,6 @@ classdef SVMOutputLayer < StandardOutputLayer
          value = obj.gpuState.ones(size(y));
       end
       
-      function value = compute_D2y(obj, ~, y, ~)
-         value = obj.gpuState.zeros(size(y));
-      end
-      
       function y = feed_forward(obj, x)
          y = obj.compute_z(x);
       end
