@@ -24,19 +24,20 @@ classdef NesterovMomentum < StepCalculator
                obj.velocity = cellfun(@(lr, grad) -lr*grad, learnRate, grad, 'UniformOutput', false);
             end
          else
-            modelCopy = model.copy();
             if isscalar(learnRate)
-               modelCopy.increment_params(cellfun(@(v) momentum*v, obj.velocity, ...
+               model.increment_params(cellfun(@(v) momentum*v, obj.velocity, ...
                                                  'UniformOutput', false));
-               grad = modelCopy.gradient(batch);
-               clear modelCopy
+               grad = model.gradient(batch);
+               model.increment_params(cellfun(@(v) -momentum*v, obj.velocity, ...
+                                                 'UniformOutput', false));
                obj.velocity = cellfun(@(grad, vel) momentum*vel - learnRate*grad, grad, ...
                                                 obj.velocity, 'UniformOutput', false);
             else
-               modelCopy.increment_params(cellfun(@(m, v) m*v, momentum, obj.velocity, ...
+               model.increment_params(cellfun(@(m, v) m*v, momentum, obj.velocity, ...
                                                 'UniformOutput', false));
-               grad = modelCopy.gradient(batch);
-               clear modelCopy
+               grad = model.gradient(batch);
+               model.increment_params(cellfun(@(m, v) -m*v, momentum, obj.velocity, ...
+                                                'UniformOutput', false));
                obj.velocity = cellfun(@(lr, m, grad, vel) m*vel - lr*grad, learnRate, momentum, ...
                                                 grad, obj.velocity, 'UniformOutput', false);   
             end
