@@ -87,7 +87,7 @@ classdef Conv1DHiddenLayer < HiddenLayer & ParamsLayer & ReuseValsLayer
          % dLdy ~ nF x N x oS
          % z ~ nF x N x (X - fS + 1)
          if obj.isReuseVals
-            prePool = obj.prePoolVals;
+            prePool = obj.prePoolVal;
          else
             z = obj.compute_z(x);
             [~, prePool] = obj.max_pooling(z);
