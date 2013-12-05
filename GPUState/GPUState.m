@@ -75,7 +75,7 @@ classdef GPUState
          if obj.isGPU
             value = single(logicalMatrix);
          else
-            value = double(logicalMatrix);
+            value = logicalMatrix; % conversion will be done automatically later
          end
       end
       
