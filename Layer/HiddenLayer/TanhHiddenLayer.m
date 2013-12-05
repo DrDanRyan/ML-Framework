@@ -25,7 +25,7 @@ classdef TanhHiddenLayer < StandardHiddenLayer
          end
       end
       
-      function Dy = compute_Dy(~, x, ~)
+      function Dy = compute_Dy(obj, x, ~)
          if obj.isReuseVals
             Dy = obj.vVal.*obj.uVal.*obj.uVal;
          else
