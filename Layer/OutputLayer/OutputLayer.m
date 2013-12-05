@@ -17,7 +17,7 @@ classdef OutputLayer < matlab.mixin.Copyable
       gather(obj)
       
       % Required for MTC
-      % value = compute_Dy(obj, z, y)
-      % value = compute_D2y(obj, z, y, Dy) (only required if isLocallyLinear == false)
+      % Dy = compute_Dy(obj, z, y)
+      % D2y = compute_D2y(obj, z, y, Dy) (only required if isLocallyLinear == false)
    end   
 end

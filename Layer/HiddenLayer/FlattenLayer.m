@@ -10,7 +10,7 @@ classdef FlattenLayer < NoParamsLayer
          ffExtras = [];
       end
       
-      function [grad, dLdx] = backprop(~, x, ~, ~, dLdy)
+      function [grad, dLdx] = backprop(~, x, ~, dLdy)
          grad = [];
          D = ndims(x);
          xSize = size(x);

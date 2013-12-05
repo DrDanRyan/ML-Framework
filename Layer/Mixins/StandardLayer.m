@@ -1,4 +1,4 @@
-classdef StandardLayer < ParamsLayer & RegularizationFunctions
+classdef StandardLayer < ParamsLayer & RegularizationFunctions & ReuseValsLayer
    % A mixin that provides basic functionality for a standard layer
    % consisting of a linear layer (z = W*x + b) followed by a 
    % nonlinear function (y = f(z)).
@@ -13,6 +13,7 @@ classdef StandardLayer < ParamsLayer & RegularizationFunctions
       function obj = StandardLayer(inputSize, outputSize, varargin)       
          obj = obj@ParamsLayer(varargin{:});
          obj = obj@RegularizationFunctions(varargin{:});
+         obj = obj@ReuseValsLayer(varargin{:});
          obj.inputSize = inputSize;
          obj.outputSize = outputSize;
       end

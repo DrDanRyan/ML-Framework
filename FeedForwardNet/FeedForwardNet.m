@@ -74,37 +74,35 @@ classdef FeedForwardNet < SupervisedModel
          end
          
          % feed_forward through hiddenLayers
-         [y, ffExtras] = obj.feed_forward(x, mask);
+         y = obj.feed_forward(x, mask);
          
          % get outputLayer output and backpropagate loss
-         [grad, output, dLdx] = obj.backprop(x, y, t, ffExtras, mask);
+         [grad, output, dLdx] = obj.backprop(x, y, t, mask);
       end
       
-      function [y, ffExtras] = feed_forward(obj, x, mask)
+      function y = feed_forward(obj, x, mask)
          if isempty(obj.hiddenLayers)
             y = [];
-            ffExtras = [];
             return
          end
          
          % feed_forward through hiddenLayers
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(1, nHiddenLayers); % output from each hiddenLayer
-         ffExtras = cell(1, nHiddenLayers); % z = Wx + b from each hiddenLayer
-         [y{1}, ffExtras{1}] = obj.hiddenLayers{1}.feed_forward(x);
+         y{1} = obj.hiddenLayers{1}.feed_forward(x);
          if obj.isDropout
             y{1} = y{1}.*mask{2};
          end
 
          for i = 2:nHiddenLayers
-            [y{i}, ffExtras{i}] = obj.hiddenLayers{i}.feed_forward(y{i-1});
+            y{i} = obj.hiddenLayers{i}.feed_forward(y{i-1});
             if obj.isDropout
                y{i} = y{i}.*mask{i+1};
             end
          end
       end
       
-      function [grad, output, dLdx] = backprop(obj, x, y, t, ffExtras, mask)
+      function [grad, output, dLdx] = backprop(obj, x, y, t, mask)
          if isempty(obj.hiddenLayers)
             [grad, dLdx, output] = obj.outputLayer.backprop(x, t);
             return;
@@ -116,21 +114,17 @@ classdef FeedForwardNet < SupervisedModel
                      
          if obj.isDropout
             dLdx = dLdx.*mask{end};
-            mask{end} = [];
          end
          
          for i = nHiddenLayers:-1:2
-            [grad{i}, dLdx] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, ffExtras{i}, ...
-               dLdx);
+            [grad{i}, dLdx] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, dLdx);
             if obj.isDropout
                dLdx = dLdx.*mask{i};
-               mask{i} = [];
             end
          end
-         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, ffExtras{1}, dLdx);
+         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, dLdx);
          if obj.isDropout
             dLdx = dLdx.*mask{1};
-            clear mask
          end
          grad = obj.unroll_gradient(grad);
       end

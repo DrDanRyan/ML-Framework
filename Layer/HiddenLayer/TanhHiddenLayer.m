@@ -1,6 +1,8 @@
 classdef TanhHiddenLayer < StandardHiddenLayer
    
    properties
+      uVal
+      vVal
       isLocallyLinear = false
    end
    
@@ -9,19 +11,29 @@ classdef TanhHiddenLayer < StandardHiddenLayer
          obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
       end
       
-      function [y, ffExtras] = feed_forward(obj, x)
+      function y = feed_forward(obj, x)
          % Using robust implementation from "Neural Networks Tricks of the
          % Trade" 2nd Edition, Ch 11
          z = obj.compute_z(x);
          v = exp(-2*z);
          u = 2./(1 + v);
          y = u - 1;
-         ffExtras = {v, u};
+         
+         if obj.isReuseVals
+            obj.uVal = u;
+            obj.vVal = v;
+         end
       end
       
-      function value = compute_Dy(~, ffExtras, ~)
-         [v, u] = ffExtras{:};
-         value = v.*u.*u;
+      function Dy = compute_Dy(~, x, ~)
+         if obj.isReuseVals
+            Dy = obj.vVal.*obj.uVal.*obj.uVal;
+         else
+            z = obj.compute_z(x);
+            v = exp(-2*z);
+            u = 2./(1 + v);
+            Dy = v.*u.*u;
+         end
       end
       
       function value = compute_D2y(~, ~, y, Dy)
