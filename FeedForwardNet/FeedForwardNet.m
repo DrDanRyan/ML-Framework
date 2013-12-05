@@ -130,7 +130,7 @@ classdef FeedForwardNet < SupervisedModel
          [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, ffExtras{1}, dLdx);
          if obj.isDropout
             dLdx = dLdx.*mask{1};
-            mask{1} = [];
+            clear mask
          end
          grad = obj.unroll_gradient(grad);
       end
@@ -198,6 +198,7 @@ classdef FeedForwardNet < SupervisedModel
          objCopy.gpuState = obj.gpuState;
          objCopy.isDropout = obj.isDropout;
          objCopy.inputDropout = obj.inputDropout;
+         objCopy.hiddenDropout = obj.hiddenDropout;
          objCopy.nestedGradShape = obj.nestedGradShape;
          objCopy.flatGradLength = obj.flatGradLength;
       end
