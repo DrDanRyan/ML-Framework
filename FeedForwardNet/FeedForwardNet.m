@@ -116,6 +116,7 @@ classdef FeedForwardNet < SupervisedModel
                      
          if obj.isDropout
             dLdx = dLdx.*mask{end};
+            mask{end} = [];
          end
          
          for i = nHiddenLayers:-1:2
@@ -123,11 +124,13 @@ classdef FeedForwardNet < SupervisedModel
                dLdx);
             if obj.isDropout
                dLdx = dLdx.*mask{i};
+               mask{i} = [];
             end
          end
          [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, ffExtras{1}, dLdx);
          if obj.isDropout
             dLdx = dLdx.*mask{1};
+            mask{1} = [];
          end
          grad = obj.unroll_gradient(grad);
       end
