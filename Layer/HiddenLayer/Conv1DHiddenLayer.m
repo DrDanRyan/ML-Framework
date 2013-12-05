@@ -93,7 +93,7 @@ classdef Conv1DHiddenLayer < HiddenLayer & ParamsLayer & ReuseValsLayer
             [~, prePool] = obj.max_pooling(z);
          end
          
-         [nF, N] = size(y);
+         [nF, N, ~] = size(y);
          zSize = obj.inputSize - obj.filterSize + 1;
          mask = obj.gpuState.make_numeric(bsxfun(@eq, permute(y, [1 2 4 3]), prePool) ...
                                                          & ~isnan(prePool)); % nF x N x poolSize x oS
