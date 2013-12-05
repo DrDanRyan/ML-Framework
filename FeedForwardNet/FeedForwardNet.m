@@ -17,14 +17,14 @@ classdef FeedForwardNet < SupervisedModel
    methods
       function obj = FeedForwardNet(varargin)
          p = inputParser;
-         p.addParamValue('hiddenDropout', []);
-         p.addParamValue('inputDropout', []);
+         p.addParamValue('hiddenDropout', 0);
+         p.addParamValue('inputDropout', 0);
          p.addParamValue('gpu', []);         
          parse(p, varargin{:});
          
          obj.hiddenDropout = p.Results.hiddenDropout;
          obj.inputDropout = p.Results.inputDropout;
-         obj.isDropout = ~isempty(obj.inputDropout) || ~isempty(obj.hiddenDropout);
+         obj.isDropout = obj.inputDropout > 0 || any(obj.hiddenDropout(:) > 0);
          obj.gpuState = GPUState(p.Results.gpu);
       end
       
@@ -66,95 +66,81 @@ classdef FeedForwardNet < SupervisedModel
          % each hiddenLayer and outputLayer.
          x = batch{1};
          t = batch{end};
-         if obj.isDropout
-            mask = obj.dropout_mask(x);
-            x = x.*mask{1};
-         else
-            mask = [];
-         end
-         
+ 
          % feed_forward through hiddenLayers
-         y = obj.feed_forward(x, mask);
+         [y, mask] = obj.feed_forward(x);
          
          % get outputLayer output and backpropagate loss
-         [grad, output, dLdx] = obj.backprop(x, y, t, mask);
+         [grad, output, dLdx] = obj.backprop(y, t, mask);
       end
       
-      function y = feed_forward(obj, x, mask)
-         if isempty(obj.hiddenLayers)
-            y = [];
-            return
-         end
-         
-         % feed_forward through hiddenLayers
+      function [y, mask] = feed_forward(obj, x)
          nHiddenLayers = length(obj.hiddenLayers);
-         y = cell(1, nHiddenLayers); % output from each hiddenLayer
-         y{1} = obj.hiddenLayers{1}.feed_forward(x);
+         y = cell(1, nHiddenLayers+1); % output from each hiddenLayer (and y{1} = input)
+         mask = cell(1, nHiddenLayers+1); % dropout mask for each layer (including input)
          if obj.isDropout
-            y{1} = y{1}.*mask{2};
+            mask{1} = obj.compute_dropout_mask(size(x), 1);
+            y{1} = x.*mask{1};
+         else
+            y{1} = x;
          end
 
-         for i = 2:nHiddenLayers
-            y{i} = obj.hiddenLayers{i}.feed_forward(y{i-1});
+         % Feed-forward through hidden layers
+         for i = 1:nHiddenLayers
+            y{i+1} = obj.hiddenLayers{i}.feed_forward(y{i});
             if obj.isDropout
-               y{i} = y{i}.*mask{i+1};
+               mask{i+1} = obj.compute_dropout_mask(size(y{i+1}), i+1);
+               y{i+1} = y{i+1}.*mask{i+1};
             end
          end
       end
       
-      function [grad, output, dLdx] = backprop(obj, x, y, t, mask)
-         if isempty(obj.hiddenLayers)
-            [grad, dLdx, output] = obj.outputLayer.backprop(x, t);
-            return;
-         end
-         
+      function [grad, output, dLdx] = backprop(obj, y, t, mask)
          nHiddenLayers = length(obj.hiddenLayers);
          grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
          [grad{end}, dLdx, output] = obj.outputLayer.backprop(y{end}, t);
-                     
          if obj.isDropout
             dLdx = dLdx.*mask{end};
          end
          
-         for i = nHiddenLayers:-1:2
-            [grad{i}, dLdx] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, dLdx);
+         for i = nHiddenLayers:-1:1
+            [grad{i}, dLdx] = obj.hiddenLayers{i}.backprop(y{i}, y{i+1}, dLdx);
             if obj.isDropout
                dLdx = dLdx.*mask{i};
             end
          end
-         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, dLdx);
-         if obj.isDropout
-            dLdx = dLdx.*mask{1};
-         end
+
          grad = obj.unroll_gradient(grad);
       end
       
-      function mask = dropout_mask(obj, x)   
-         % Computes a binary (0, 1) mask  for both the inputs, x, and each hidden
-         % layer. Zeros correspond to the units removed by dropout.
-
-         nHiddenLayers = length(obj.hiddenLayers);
-         mask = cell(nHiddenLayers+1, 1);
+      function mask = compute_dropout_mask(obj, sizeVec, idx)   
+         % Computes a binary (0, 1) mask  of specified size for a specific
+         % layer index (idx = 1 is input layer)
          
-         % Input mask
-         mask{1} = obj.gpuState.binary_mask(size(x), obj.inputDropout);
-         
-         % hiddenLayers masks
-         N = size(x, 2);
-         for i = 1:nHiddenLayers
-            L = obj.hiddenLayers{i}.outputSize;
-            mask{i+1} = obj.gpuState.binary_mask([L, N], obj.hiddenDropout);
+         if idx == 1 % Input layer
+            mask = obj.gpuState.binary_mask(sizeVec, obj.inputDropout);
+         else % hiddenLayers{idx-1}
+            if isscalar(obj.hiddenDropout) % single dropout prob for all hiddenLayers
+               mask = obj.gpuState.binary_mask(sizeVec, obj.hiddenDropout);
+            else % layer by layer dropout probs are specified
+               mask = obj.gpuState.binary_mask(sizeVec, obj.hiddenDropout(idx-1));
+            end
          end
       end
       
       function y = output(obj, x)
          nHiddenLayers = length(obj.hiddenLayers);
-         x(isnan(x)) = 0;
          
          if obj.isDropout
             y = (1-obj.inputDropout)*x;
-            for i = 1:nHiddenLayers
-               y = (1-obj.hiddenDropout)*obj.hiddenLayers{i}.feed_forward(y);
+            if isscalar(obj.hiddenDropout)
+               for i = 1:nHiddenLayers
+                  y = (1-obj.hiddenDropout)*obj.hiddenLayers{i}.feed_forward(y);
+               end
+            else
+               for i = 1:nHiddenLayers
+                  y = (1-obj.hiddenDropout(i))*obj.hiddenLayers{i}.feed_forward(y);
+               end
             end
          else
             y = x;
