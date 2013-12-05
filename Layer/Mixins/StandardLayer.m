@@ -16,6 +16,7 @@ classdef StandardLayer < ParamsLayer & RegularizationFunctions & ReuseValsLayer
          obj = obj@ReuseValsLayer(varargin{:});
          obj.inputSize = inputSize;
          obj.outputSize = outputSize;
+         obj.init_params();
       end
       
       function init_params(obj)

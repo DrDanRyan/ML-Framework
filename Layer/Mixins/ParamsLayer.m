@@ -8,10 +8,6 @@ classdef ParamsLayer < handle
       params
    end
    
-   methods (Abstract)
-      init_params(obj)
-   end
-   
    methods
       function obj = ParamsLayer(varargin)
          p = inputParser();
@@ -23,7 +19,6 @@ classdef ParamsLayer < handle
          obj.gpuState = GPUState(p.Results.gpu);
          obj.initType = p.Results.initType;
          obj.initScale = p.Results.initScale;
-         obj.init_params();
       end
       
       function gather(obj)

@@ -4,16 +4,13 @@ classdef Conv1DHiddenLayer < HiddenLayer & ParamsLayer & ReuseValsLayer
    % follow with a NoParams nonlinearity layer.
    
    properties
-      params % {W, b} with W ~ nF x 1 x C x fS and b ~ nF x 1
+      % params = {W, b} with W ~ nF x 1 x C x fS and b ~ nF x 1
       prePoolVal
       poolSize % (pS) number of units to maxpool over
       nFilters % (nF) number of convolution filters
       inputSize % (X) length of each 1D inputs signal
       nChannels % (C) number of input channels
       filterSize % (fS) length of the filter on each channel
-      
-      initScale % used for filter initialization
-      gpuState
       outputSize % (oS) not specified by user, derived from other params at contruction
       isLocallyLinear = false
    end
@@ -28,9 +25,14 @@ classdef Conv1DHiddenLayer < HiddenLayer & ParamsLayer & ReuseValsLayer
          obj.nFilters = nFilters;
          obj.poolSize = poolSize;
          obj.outputSize = ceil((inputSize - filterSize + 1)/poolSize);
+         obj.init_params();
       end
       
       function init_params(obj)
+         if isempty(obj.initScale)
+            obj.initScale = .01;
+         end
+         
          obj.params{1} = 2*obj.initScale*obj.gpuState.rand(obj.nFilters, 1, obj.nChannels, ...
                                                             obj.filterSize) - obj.initScale;
          if strcmp(obj.initType, 'relu')
