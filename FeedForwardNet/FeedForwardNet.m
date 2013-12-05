@@ -17,14 +17,14 @@ classdef FeedForwardNet < SupervisedModel
    methods
       function obj = FeedForwardNet(varargin)
          p = inputParser;
-         p.addParamValue('hiddenDropout', 0);
-         p.addParamValue('inputDropout', 0);
+         p.addParamValue('hiddenDropout', []);
+         p.addParamValue('inputDropout', []);
          p.addParamValue('gpu', []);         
          parse(p, varargin{:});
          
          obj.hiddenDropout = p.Results.hiddenDropout;
          obj.inputDropout = p.Results.inputDropout;
-         obj.isDropout = obj.inputDropout > 0 || obj.hiddenDropout > 0;
+         obj.isDropout = ~isempty(obj.inputDropout) || ~isempty(obj.hiddenDropout);
          obj.gpuState = GPUState(p.Results.gpu);
       end
       
@@ -111,22 +111,21 @@ classdef FeedForwardNet < SupervisedModel
          end
          
          nHiddenLayers = length(obj.hiddenLayers);
-         dLdy = cell(1, nHiddenLayers); % derivative of loss function wrt hiddenLayer output
          grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
-         [grad{end}, dLdy{end}, output] = obj.outputLayer.backprop(y{end}, t);
+         [grad{end}, dLdx, output] = obj.outputLayer.backprop(y{end}, t);
                      
          if obj.isDropout
-            dLdy{end} = dLdy{end}.*mask{end};
+            dLdx = dLdx.*mask{end};
          end
          
          for i = nHiddenLayers:-1:2
-            [grad{i}, dLdy{i-1}] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, ffExtras{i}, ...
-               dLdy{i});
+            [grad{i}, dLdx] = obj.hiddenLayers{i}.backprop(y{i-1}, y{i}, ffExtras{i}, ...
+               dLdx);
             if obj.isDropout
-               dLdy{i-1} = dLdy{i-1}.*mask{i};
+               dLdx = dLdx.*mask{i};
             end
          end
-         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, ffExtras{1}, dLdy{1});
+         [grad{1}, dLdx] = obj.hiddenLayers{1}.backprop(x, y{1}, ffExtras{1}, dLdx);
          if obj.isDropout
             dLdx = dLdx.*mask{1};
          end
