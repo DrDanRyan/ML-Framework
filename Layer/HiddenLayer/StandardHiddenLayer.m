@@ -1,10 +1,11 @@
-classdef StandardHiddenLayer < HiddenLayer & StandardLayer
+classdef StandardHiddenLayer < HiddenLayer & StandardLayer & ReuseValsLayer
    % Easiest point to subclass for a simple HiddenLayer. Only need to
    % provide: feedforward and compute_Dy in subclass
    
    methods
       function obj = StandardHiddenLayer(inputSize, outputSize, varargin)
          obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
+         obj = obj@ReuseValsLayer(varargin{:});
       end
       
       function [grad, dLdx, Dy] = backprop(obj, x, y, dLdy)

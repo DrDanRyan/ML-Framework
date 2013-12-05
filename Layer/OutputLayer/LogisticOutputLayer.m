@@ -1,7 +1,6 @@
 classdef LogisticOutputLayer < StandardOutputLayer
    
    properties
-      zVal
       isLocallyLinear = false
       isDiagonalDy = true
    end
@@ -21,22 +20,13 @@ classdef LogisticOutputLayer < StandardOutputLayer
          dLdz(isnan(t)) = 0;
       end
       
-      function y = feed_forward(obj, x)
+      function [y, z] = feed_forward(obj, x)
          z = obj.compute_z(x);
          y = 1./(1 + exp(-z));
-         
-         if obj.isReuseVals
-            obj.zVal = z;
-         end
       end
       
       function Dy = compute_Dy(~, x, y)
-         if obj.isReuseVals
-            z = obj.zVal;
-         else
-            z = obj.compute_z(x);
-         end
-         
+         z = obj.compute_z(x);
          u = exp(-z)./(1 + exp(-z)); % u = 1-y
          Dy = y.*u;
       end
