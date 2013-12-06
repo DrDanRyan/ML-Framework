@@ -19,7 +19,7 @@ classdef LogisticHiddenLayer < StandardHiddenLayer
          end
       end   
       
-      function value = compute_Dy(~, x, y)
+      function value = compute_Dy(obj, x, y)
          if obj.isReuseVals
             z = obj.zVal;
          else
