@@ -20,7 +20,7 @@ classdef ReluHiddenLayer < StandardHiddenLayer
          y = max(0, z);
       end
       
-      function value = compute_Dy(~, ~, y)
+      function value = compute_Dy(obj, ~, y)
          value = obj.gpuState.make_numeric(y > 0);
       end         
    end   
