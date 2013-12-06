@@ -7,7 +7,6 @@ classdef FeedForwardNet < SupervisedModel
       hiddenLayers % cell array of HiddenLayer objects (possibly empty)
       outputLayer % a single OutputLayer object
       gpuState % gpuState object used for array creation dependent on isGPU flag in object
-      isDropout % boolean indicating wheter to use dropout
       hiddenDropout % proportion of hidden units that are replaced with zero (in [0, 1])
       inputDropout % proportion of inputs that are replaced with zero (in [0, 1])
       nestedGradShape % a row vector of integer values describing the nested gradient shape
@@ -24,7 +23,6 @@ classdef FeedForwardNet < SupervisedModel
          
          obj.hiddenDropout = p.Results.hiddenDropout;
          obj.inputDropout = p.Results.inputDropout;
-         obj.isDropout = obj.inputDropout > 0 || any(obj.hiddenDropout(:) > 0);
          obj.gpuState = GPUState(p.Results.gpu);
       end
       
@@ -75,10 +73,15 @@ classdef FeedForwardNet < SupervisedModel
       end
       
       function [y, mask] = feed_forward(obj, x)
+         % Expand obj.hiddenDropout if it is a scalar       
+         if isscalar(obj.hiddenDropout)
+            obj.hiddenDropout = obj.hiddenDropout*ones(1, length(oj.hiddenLayers));
+         end
+
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(1, nHiddenLayers+1); % output from each hiddenLayer (and y{1} = input)
          mask = cell(1, nHiddenLayers+1); % dropout mask for each layer (including input)
-         if obj.isDropout
+         if obj.inputDropout > 0
             mask{1} = obj.compute_dropout_mask(size(x), 1);
             y{1} = x.*mask{1};
          else
@@ -88,7 +91,7 @@ classdef FeedForwardNet < SupervisedModel
          % Feed-forward through hidden layers
          for i = 1:nHiddenLayers
             y{i+1} = obj.hiddenLayers{i}.feed_forward(y{i});
-            if obj.isDropout
+            if obj.hiddenDropout(i) > 0
                mask{i+1} = obj.compute_dropout_mask(size(y{i+1}), i+1);
                y{i+1} = y{i+1}.*mask{i+1};
             end
@@ -99,53 +102,42 @@ classdef FeedForwardNet < SupervisedModel
          nHiddenLayers = length(obj.hiddenLayers);
          grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
          [grad{end}, dLdx, output] = obj.outputLayer.backprop(y{end}, t);
-         if obj.isDropout
+         if ~isempty(mask{end})
             dLdx = dLdx.*mask{end};
          end
          
          for i = nHiddenLayers:-1:1
             [grad{i}, dLdx] = obj.hiddenLayers{i}.backprop(y{i}, y{i+1}, dLdx);
-            if obj.isDropout
+            if ~isempty(mask{i})
                dLdx = dLdx.*mask{i};
             end
          end
-
+         
          grad = obj.unroll_gradient(grad);
       end
       
       function mask = compute_dropout_mask(obj, sizeVec, idx)   
          % Computes a binary (0, 1) mask  of specified size for a specific
          % layer index (idx = 1 is input layer)
-         
+
          if idx == 1 % Input layer
             mask = obj.gpuState.binary_mask(sizeVec, obj.inputDropout);
          else % hiddenLayers{idx-1}
-            if isscalar(obj.hiddenDropout) % single dropout prob for all hiddenLayers
-               mask = obj.gpuState.binary_mask(sizeVec, obj.hiddenDropout);
-            else % layer by layer dropout probs are specified
-               mask = obj.gpuState.binary_mask(sizeVec, obj.hiddenDropout(idx-1));
-            end
+            mask = obj.gpuState.binary_mask(sizeVec, obj.hiddenDropout(idx-1));
          end
       end
       
       function y = output(obj, x)
-         nHiddenLayers = length(obj.hiddenLayers);
-         
-         if obj.isDropout
+         if obj.inputDropout > 0
             y = (1-obj.inputDropout)*x;
-            if isscalar(obj.hiddenDropout)
-               for i = 1:nHiddenLayers
-                  y = (1-obj.hiddenDropout)*obj.hiddenLayers{i}.feed_forward(y);
-               end
-            else
-               for i = 1:nHiddenLayers
-                  y = (1-obj.hiddenDropout(i))*obj.hiddenLayers{i}.feed_forward(y);
-               end
-            end
          else
             y = x;
-            for i = 1:nHiddenLayers
-               y = obj.hiddenLayers{i}.feed_forward(y);
+         end
+         
+         for i = 1:length(obj.hiddenLayers)
+            y = obj.hiddenLayers{i}.feed_forward(y);
+            if obj.hiddenDropout(i) > 0
+               y = (1-obj.hiddenDropout(i))*y;
             end
          end
          y = obj.outputLayer.feed_forward(y);
@@ -176,7 +168,6 @@ classdef FeedForwardNet < SupervisedModel
          
          % Value class properties
          objCopy.gpuState = obj.gpuState;
-         objCopy.isDropout = obj.isDropout;
          objCopy.inputDropout = obj.inputDropout;
          objCopy.hiddenDropout = obj.hiddenDropout;
          objCopy.nestedGradShape = obj.nestedGradShape;
