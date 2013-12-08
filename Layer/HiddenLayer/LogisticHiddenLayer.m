@@ -1,4 +1,4 @@
-classdef LogisticHiddenLayer < StandardLayer
+classdef LogisticHiddenLayer < StandardLayer & HiddenLayer
    
    properties
       Dy

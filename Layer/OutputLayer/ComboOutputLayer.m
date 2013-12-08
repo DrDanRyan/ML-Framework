@@ -1,4 +1,4 @@
-classdef ComboOutputLayer < OutputLayer
+classdef ComboOutputLayer < OutputLayer & matlab.mixin.Copyable
    % This class combines a HiddenLayer object with a LossFunction object to
    % act as an OutputLayer.
    
@@ -71,6 +71,10 @@ classdef ComboOutputLayer < OutputLayer
       
       function init_params(obj)
          obj.hiddenLayer.init_params();
+      end
+      
+      function objCopy = copy(obj)
+         objCopy = ComboOutputLayer(obj.hiddenLayer.copy(), obj.lossFunction.copy());
       end
    end
    

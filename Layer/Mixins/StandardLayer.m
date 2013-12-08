@@ -1,4 +1,4 @@
-classdef StandardLayer < ParamsFunctions & RegularizationFunctions
+classdef StandardLayer < ParamsFunctions & RegularizationFunctions & matlab.mixin.Copyable
    % A mixin that provides basic functionality for a standard layer
    % consisting of a linear layer (z = W*x + b) followed by a 
    % nonlinear function (y = f(z)).

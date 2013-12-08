@@ -1,4 +1,4 @@
-classdef ReluHiddenLayer < StandardHiddenLayer
+classdef ReluHiddenLayer < StandardLayer & HiddenLayer
    
    properties
       %isLocallyLinear = true
@@ -6,7 +6,7 @@ classdef ReluHiddenLayer < StandardHiddenLayer
    
    methods
       function obj = ReluHiddenLayer(inputSize, outputSize, varargin)
-         obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
+         obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
       end
       
       function init_params(obj)

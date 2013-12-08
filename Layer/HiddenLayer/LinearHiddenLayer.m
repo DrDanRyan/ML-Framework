@@ -1,4 +1,4 @@
-classdef LinearHiddenLayer < StandardLayer
+classdef LinearHiddenLayer < StandardLayer & HiddenLayer
    % A simple linear layer.
    
    properties

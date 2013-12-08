@@ -51,6 +51,9 @@ classdef ConvHiddenLayer < HiddenLayer
          objCopy.convLayer = obj.convLayer.copy();
          objCopy.noParamsLayer = obj.noParamsLayer.copy();
          objCopy.poolingLayer = obj.poolingLayer.copy();
+         if ~isempty(obj.flattenLayer)
+            objCopy.flattenLayer = obj.flattenLayer.copy();
+         end
       end
    end
 end

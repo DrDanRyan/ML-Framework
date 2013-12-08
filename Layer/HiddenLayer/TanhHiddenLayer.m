@@ -1,4 +1,4 @@
-classdef TanhHiddenLayer < StandardHiddenLayer
+classdef TanhHiddenLayer < StandardLayer & HiddenLayer
    
    properties
       Dy
@@ -7,7 +7,7 @@ classdef TanhHiddenLayer < StandardHiddenLayer
    
    methods
       function obj = TanhHiddenLayer(inputSize, outputSize, varargin)
-         obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
+         obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
       end
       
       function y = feed_forward(obj, x, isSave)

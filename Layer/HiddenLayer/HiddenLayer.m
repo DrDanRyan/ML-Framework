@@ -1,4 +1,4 @@
-classdef HiddenLayer < matlab.mixin.Copyable
+classdef HiddenLayer < handle
    % Defines the HiddenLayer interface 
    
    % properties required for CAE and MTC

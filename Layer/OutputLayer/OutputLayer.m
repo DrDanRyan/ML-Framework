@@ -1,4 +1,4 @@
-classdef OutputLayer < matlab.mixin.Copyable
+classdef OutputLayer < handle
    % Defines the OutputLayer interface (note some methods are provided by
    % the Layer superclass)
    

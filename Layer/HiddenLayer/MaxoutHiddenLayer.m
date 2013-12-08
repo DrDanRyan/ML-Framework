@@ -1,4 +1,4 @@
-classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunctions
+classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunctions & matlab.mixin.Copyable
    
    properties
       % params = {W, b} where W and b are 3-dimensional arrays
