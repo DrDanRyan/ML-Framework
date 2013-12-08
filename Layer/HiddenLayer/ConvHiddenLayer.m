@@ -37,6 +37,13 @@ classdef ConvHiddenLayer < HiddenLayer
       function gather(obj)
          obj.convLayer.gather();
       end
+      
+      function objCopy = copy(obj)
+         objCopy = ConvHiddenLayer();
+         objCopy.convLayer = obj.convLayer.copy();
+         objCopy.noParamsLayer = obj.noParamsLayer.copy();
+         objCopy.poolingLayer = obj.poolingLayer.copy();
+      end
    end
 end
 
