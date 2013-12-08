@@ -21,11 +21,12 @@ classdef ConvHiddenLayer < HiddenLayer
       end
       
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
-         dLdx = dLdy;
          if ~isempty(obj.flattenLayer)
-            dLdx = obj.flattenLayer.backprop(dLdx);
+            dLdx = obj.flattenLayer.backprop(dLdy);
+            dLdx = obj.poolingLayer.unpool(dLdx);
+         else
+            dLdx = obj.poolingLayer.unpool(dLdy);
          end
-         dLdx = obj.poolingLayer.unpool(dLdx);
          dLdx = obj.noParamsLayer.backprop(dLdx);
          [grad, dLdx] = obj.convLayer.backprop(x, dLdx);
       end

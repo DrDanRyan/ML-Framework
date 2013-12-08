@@ -1,4 +1,4 @@
-classdef FlattenLayer < NoParmasLayer
+classdef FlattenLayer < NoParamsLayer
    % Takes multiple dimension input and flattens to a single dimension
    
    properties
@@ -14,9 +14,8 @@ classdef FlattenLayer < NoParmasLayer
          y = reshape(y, [], obj.xSize(2));
       end
       
-      function [grad, dLdx] = backprop(obj, dLdy)
-         grad = [];
-         shapeVec = [obj.xSize(1), obj.xSize(3:obj.D), obj.xSize(2)];
+      function dLdx = backprop(obj, dLdy)
+         shapeVec = [obj.xSize(1), obj.xSize(3:end), obj.xSize(2)];
          dLdx = reshape(dLdy, shapeVec);
          dLdx = permute(dLdx, [1, obj.D, 2:obj.D-1]);
       end
