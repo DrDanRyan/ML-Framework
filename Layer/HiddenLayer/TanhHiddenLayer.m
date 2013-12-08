@@ -34,6 +34,7 @@ classdef TanhHiddenLayer < StandardHiddenLayer
             u = 2./(1 + v);
             Dy = v.*u.*u;
          end
+         Dy(isnan(Dy)) = 0; % extreme values of z lead to NaN instead of 0 derivative
       end
       
       function value = compute_D2y(~, ~, y, Dy)

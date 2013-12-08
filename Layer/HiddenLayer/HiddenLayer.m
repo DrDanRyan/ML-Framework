@@ -6,8 +6,8 @@ classdef HiddenLayer < matlab.mixin.Copyable
    % end
 
    methods (Abstract)
-      y = feed_forward(obj, x)
-      [grad, dLdx, Dy] = backprop(obj, x, y, dLdy)
+      y = feed_forward(obj, x, isSave)
+      [grad, dLdx] = backprop(obj, x, y, dLdy)
       init_params(obj)
       increment_params(obj, delta)
       push_to_GPU(obj)

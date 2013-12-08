@@ -1,4 +1,4 @@
-classdef ParamsLayer < handle
+classdef ParamsFunctions < handle
    % A class to mixin with HiddenLayer or OutputLayer for layers that have parameters
   
    properties
@@ -9,7 +9,7 @@ classdef ParamsLayer < handle
    end
    
    methods
-      function obj = ParamsLayer(varargin)
+      function obj = ParamsFunctions(varargin)
          p = inputParser();
          p.KeepUnmatched = true;
          p.addParamValue('gpu', []);

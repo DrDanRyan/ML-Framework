@@ -1,4 +1,4 @@
-classdef StandardLayer < ParamsLayer & RegularizationFunctions
+classdef StandardLayer < ParamsFunctions & RegularizationFunctions
    % A mixin that provides basic functionality for a standard layer
    % consisting of a linear layer (z = W*x + b) followed by a 
    % nonlinear function (y = f(z)).
@@ -11,7 +11,7 @@ classdef StandardLayer < ParamsLayer & RegularizationFunctions
    
    methods
       function obj = StandardLayer(inputSize, outputSize, varargin)       
-         obj = obj@ParamsLayer(varargin{:});
+         obj = obj@ParamsFunctions(varargin{:});
          obj = obj@RegularizationFunctions(varargin{:});
          obj.inputSize = inputSize;
          obj.outputSize = outputSize;
@@ -35,15 +35,17 @@ classdef StandardLayer < ParamsLayer & RegularizationFunctions
          value = bsxfun(@plus, obj.params{1}*x, obj.params{2});
       end
       
-      function grad = grad_from_dLdz(obj, x, dLdz)
+      function [grad, dLdx] = grad_from_dLdz(obj, x, dLdz)
          grad{1} = dLdz*x'/size(x, 2);
          grad{2} = mean(dLdz, 2);
-         
+
          if obj.isPenalty
             penalties = obj.compute_penalties();
             grad{1} = grad{1} + penalties{1};
             grad{2} = grad{2} + penalties{2};
          end
+         
+         dLdx = obj.params{1}'*dLdz;
       end
       
    end

@@ -1,38 +1,40 @@
-classdef LogisticHiddenLayer < StandardHiddenLayer
+classdef LogisticHiddenLayer < StandardLayer
    
    properties
-      zVal
-      isLocallyLinear = false
+      Dy
+      % isLocallyLinear = false
    end
    
    methods
       function obj = LogisticHiddenLayer(inputSize, outputSize, varargin)
-         obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
+         obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
       end
       
-      function y = feed_forward(obj, x)
+      function y = feed_forward(obj, x, isSave)
+         if nargin < 2
+            isSave = false;
+         end
+         
          z = obj.compute_z(x);
-         y = 1./(1+exp(-z));
-         
-         if obj.isReuseVals
-            obj.zVal = z;
+         y = 1./(1 + exp(-z));
+         if isSave
+            obj.Dy = exp(-z).*y.*y;
          end
-      end   
+      end
       
-      function value = compute_Dy(obj, x, y)
-         if obj.isReuseVals
-            z = obj.zVal;
+      function [grad, dLdx] = backprop(obj, x, y, dLdy)
+         if ~isempty(obj.Dy)
+            dLdz = obj.Dy.*dLdy;
+            obj.Dy = [];
          else
-            z = obj.compute_z(x);
+            dLdz = y.*(1-y).*dLdy;
          end
-         
-         u = exp(-z)./(1 + exp(-z)); % u = 1-y
-         value = y.*u;
+         [grad, dLdx] = obj.grad_from_dLdz(x, dLdz);
       end
       
-      function value = compute_D2y(~, ~, y, Dy)
-         value = Dy.*(1-2*y);
-      end
+%       function value = compute_D2y(~, ~, y, Dy)
+%          value = Dy.*(1-2*y);
+%       end
    end
 end
 

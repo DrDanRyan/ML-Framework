@@ -2,12 +2,11 @@ classdef FlattenLayer < NoParamsLayer
    % Takes multiple dimension input and flattens to a single dimension
    
    methods
-      function [y, ffExtras] = feed_forward(~, x)
+      function y = feed_forward(~, x, ~)
          N = size(x, 2);
          D = ndims(x);
          y = permute(x, [1, 3:D, 2]);
          y = reshape(y, [], N);
-         ffExtras = [];
       end
       
       function [grad, dLdx] = backprop(~, x, ~, dLdy)

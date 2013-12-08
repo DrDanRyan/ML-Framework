@@ -1,22 +1,22 @@
-classdef LinearHiddenLayer < StandardHiddenLayer
+classdef LinearHiddenLayer < StandardLayer
    % A simple linear layer.
    
    properties
-      isLocallyLinear = true
+      % isLocallyLinear = true
    end
    
    methods
       function obj = LinearHiddenLayer(inputSize, outputSize, varargin)
-         obj = obj@StandardHiddenLayer(inputSize, outputSize, varargin{:});
+         obj = obj@StandardLayer(inputSize, outputSize, varargin{:});
       end
       
-      function y = feed_forward(obj, x)
+      function y = feed_forward(obj, x, ~)
          y = obj.compute_z(x);
-      end
+      end   
       
-      function value = compute_Dy(obj, ~, y)
-         value = obj.gpuState.ones(size(y));
-      end     
+      function [grad, dLdx] = backprop(obj, x, ~, dLdy)
+         [grad, dLdx] = obj.grad_from_dLdz(x, dLdy);
+      end
    end
 end
 
