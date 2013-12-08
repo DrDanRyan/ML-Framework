@@ -4,6 +4,7 @@ classdef ConvHiddenLayer < HiddenLayer
       convLayer
       noParamsLayer
       poolingLayer
+      flattenLayer
    end
    
    methods
@@ -14,10 +15,17 @@ classdef ConvHiddenLayer < HiddenLayer
          y = obj.convLayer.feed_forward(x);
          y = obj.noParamsLayer.feed_forward(y, isSave);
          y = obj.poolingLayer.pool(y, isSave);
+         if ~isempty(obj.flattenLayer)
+            y = obj.flattenLayer.feed_forward(y, isSave);
+         end
       end
       
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
-         dLdx = obj.poolingLayer.unpool(dLdy);
+         dLdx = dLdy;
+         if ~isempty(obj.flattenLayer)
+            dLdx = obj.flattenLayer.backprop(dLdx);
+         end
+         dLdx = obj.poolingLayer.unpool(dLdx);
          dLdx = obj.noParamsLayer.backprop(dLdx);
          [grad, dLdx] = obj.convLayer.backprop(x, dLdx);
       end
