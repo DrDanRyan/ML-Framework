@@ -90,7 +90,7 @@ classdef FeedForwardNet < SupervisedModel
 
          % Feed-forward through hidden layers
          for i = 1:nHiddenLayers
-            y{i+1} = obj.hiddenLayers{i}.feed_forward(y{i});
+            y{i+1} = obj.hiddenLayers{i}.feed_forward(y{i}, true);
             if obj.hiddenDropout(i) > 0
                mask{i+1} = obj.compute_dropout_mask(size(y{i+1}), i+1);
                y{i+1} = y{i+1}.*mask{i+1};

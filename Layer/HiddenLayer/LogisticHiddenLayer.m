@@ -11,24 +11,16 @@ classdef LogisticHiddenLayer < StandardLayer
       end
       
       function y = feed_forward(obj, x, isSave)
-         if nargin < 2
-            isSave = false;
-         end
-         
          z = obj.compute_z(x);
          y = 1./(1 + exp(-z));
-         if isSave
+         if nargin == 3 && isSave
             obj.Dy = exp(-z).*y.*y;
          end
       end
       
-      function [grad, dLdx] = backprop(obj, x, y, dLdy)
-         if ~isempty(obj.Dy)
-            dLdz = obj.Dy.*dLdy;
-            obj.Dy = [];
-         else
-            dLdz = y.*(1-y).*dLdy;
-         end
+      function [grad, dLdx] = backprop(obj, x, ~, dLdy)
+         dLdz = obj.Dy.*dLdy;
+         obj.Dy = [];
          [grad, dLdx] = obj.grad_from_dLdz(x, dLdz);
       end
       

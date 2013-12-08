@@ -28,14 +28,10 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
       end
       
       function y = feed_forward(obj, x, isSave)
-         if nargin < 2
-            isSave = false;
-         end
-         
          z = obj.compute_z(x);
          y = max(z, [], 3);
          
-         if isSave
+         if nargin == 3 && isSave
             obj.Dy = obj.gpuState.make_numeric(bsxfun(@eq, z, y));
          end
       end
@@ -43,6 +39,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
          N = size(x, 2);         
          dLdz = bsxfun(@times, dLdy, obj.Dy); % dimensions are L2 x N x D
+         obj.Dy = [];
          dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
          grad{1} = pagefun(@mtimes, dLdz, x')/N; % L2 x L1 x D
          grad{2} = mean(dLdz, 2); % L2 x 1 x D

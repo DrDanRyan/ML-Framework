@@ -23,7 +23,7 @@ classdef ConvHiddenLayer < HiddenLayer
       end
       
       function init_params(obj)
-         obj.convLayer.init_params(obj);
+         obj.convLayer.init_params();
       end
       
       function increment_params(obj, delta)

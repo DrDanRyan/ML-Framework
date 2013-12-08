@@ -1,7 +1,7 @@
 classdef ReluNoParamsLayer < NoParamsLayer
    
    methods
-      function y = feed_forward(~, x, isSave)
+      function y = feed_forward(obj, x, isSave)
          y = max(0, x);
          
          if nargin == 3 && isSave
