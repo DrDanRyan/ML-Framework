@@ -25,7 +25,7 @@ classdef StandardLayer < ParamsFunctions & RegularizationFunctions
       end
       
       function increment_params(obj, delta)
-         increment_params@ParamsLayer(obj, delta);
+         increment_params@ParamsFunctions(obj, delta);
          if ~isempty(obj.maxFanIn)
             obj.impose_fanin_constraint();
          end
