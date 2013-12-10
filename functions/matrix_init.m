@@ -7,11 +7,18 @@ function value = matrix_init(M, N, initType, initScale, gpuState)
    switch initType
       case 'dense'
          if isempty(initScale)
-            radius = .005;
+            stddev = .01;
          else
-            radius = initScale;
+            stddev = initScale;
          end
-         value = 2*radius*gpuState.rand([M,N]) - radius;
+         value = stddev*gpuState.randn([M,N]);
+      case 'relu'
+         if isempty(initScale)
+            stddev = .1;
+         else
+            stddev = initScale;
+         end
+         value = stddev*gpuState.randn([M,N]);
       case 'sparse'
          if isempty(initScale)
             nConnections = min(N/2, 15);

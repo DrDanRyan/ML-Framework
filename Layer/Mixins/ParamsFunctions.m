@@ -14,7 +14,7 @@ classdef ParamsFunctions < handle
          p.KeepUnmatched = true;
          p.addParamValue('gpu', []);
          p.addParamValue('initType', 'dense');
-         p.addParamValue('initScale', .005);
+         p.addParamValue('initScale', []);
          parse(p, varargin{:});
          obj.gpuState = GPUState(p.Results.gpu);
          obj.initType = p.Results.initType;

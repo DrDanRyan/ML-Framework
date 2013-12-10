@@ -21,7 +21,11 @@ classdef StandardLayer < ParamsFunctions & RegularizationFunctions & matlab.mixi
       function init_params(obj)
          obj.params{1} = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
                                           obj.initScale, obj.gpuState);
-         obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1);
+         if strcmp(obj.initType, 'relu')
+            obj.params{2} = obj.gpuState.ones(obj.outputSize, 1);
+         else
+            obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1);
+         end
       end
       
       function increment_params(obj, delta)
