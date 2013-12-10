@@ -60,16 +60,20 @@ classdef Conv1DLayer < ParamsFunctions & ConvLayer
          grad{2} = mean(sum(dLdy, 3), 2);
          grad{1} = obj.gpuState.zeros(size(obj.params{1})); % nF x 1 x C x fS
          for i = 1:obj.filterSize
-            xSeg = permute(x(:,:,i:ySize + i - 1), [4, 2, 1, 3]); % 1 x N x C x zSize
+            xSeg = permute(x(:,:,i:ySize + i - 1), [4, 2, 1, 3]); % 1 x N x C x Size
             grad{1}(:,:,:,i) = mean(sum(bsxfun(@times, xSeg, permute(dLdy, [1, 2, 4, 3])), 4), 2); % nF x 1 x C
          end
          
-         dLdx = obj.gpuState.zeros(size(x)); % C x N x X
-         for i = 1:ySize
-            dLdyVal = permute(dLdy(:,:,i), [4, 2, 3, 1]); % 1 x N x 1 x nF
-            dLdx(:,:,i:i+obj.filterSize-1) = dLdx(:,:,i:i+obj.filterSize-1) + ...
-                         sum(bsxfun(@times, dLdyVal, permute(obj.params{1}, [3, 2, 4, 1])), 4); % C x N x fS 
+         [nF, N, ~] = size(dLdy);
+         dLdx = obj.gpuState.zeros(obj.inputSize, N, obj.nChannels); % X x N x C (need to permute before returning)
+         dLdyPadded = cat(4, obj.gpuState.zeros(nF, N, 1, obj.filterSize-1), ...
+                              permute(dLdy, [1, 2, 4, 3]), ...
+                              obj.gpuState.zeros(nF, N, 1, obj.filterSize-1)); % nF x N x 1 x (X + fS - 1)
+         for i = 1:obj.inputSize
+            dLdySeg = dLdyPadded(:,:,:,i:i+obj.filterSize-1); % nF x N x 1 x fS
+            dLdx(i,:,:) = sum(sum(bsxfun(@times, dLdySeg, flip(obj.params{1}, 4)), 4), 1); % 1 x N x C
          end
+         dLdx = permute(dLdx, [3, 2, 1]);
       end      
    end
 end
