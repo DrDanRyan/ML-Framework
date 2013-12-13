@@ -75,7 +75,7 @@ classdef FeedForwardNet < SupervisedModel
       function [y, mask] = feed_forward(obj, x)
          % Expand obj.hiddenDropout if it is a scalar       
          if isscalar(obj.hiddenDropout)
-            obj.hiddenDropout = obj.hiddenDropout*ones(1, length(oj.hiddenLayers));
+            obj.hiddenDropout = obj.hiddenDropout*ones(1, length(obj.hiddenLayers));
          end
 
          nHiddenLayers = length(obj.hiddenLayers);
