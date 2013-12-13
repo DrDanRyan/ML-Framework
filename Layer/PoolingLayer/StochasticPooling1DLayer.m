@@ -1,4 +1,5 @@
 classdef StochasticPooling1DLayer < PoolingLayer
+   % requires input (x) to be nonnegative values
    
    properties
       poolSize
@@ -18,19 +19,19 @@ classdef StochasticPooling1DLayer < PoolingLayer
          remainder = mod(obj.inputSize, obj.poolSize);
          if remainder > 0
             if isa(x, 'gpuArray')
-               padding = gpuArray.nan([nF, N, obj.poolSize - remainder], 'single');
+               padding = gpuArray.zeros([nF, N, obj.poolSize - remainder], 'single');
             else
-               padding = nan([nF, N, obj.poolSize - remainder]);
+               padding = zeros([nF, N, obj.poolSize - remainder]);
             end
             x = cat(3, x, padding);
          end
          x = reshape(x, nF, N, obj.poolSize, []);
-         probs = bsxfun(@rdivide, x, nansum(x, 3));         
+         probs = bsxfun(@rdivide, x, sum(x, 3));         
          if nargin == 3 && isSave % sample for pooled values
             obj.winners = multinomial_sample(probs, 3);
-            xPool = permute(nansum(x.*obj.winners, 3), [1, 2, 4, 3]);
+            xPool = permute(sum(x.*obj.winners, 3), [1, 2, 4, 3]);
          else % weighted average for pooled values
-            xPool = permute(nansum(x.*probs, 3), [1, 2, 4, 3]);
+            xPool = permute(sum(x.*probs, 3), [1, 2, 4, 3]);
          end
       end
       
