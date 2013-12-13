@@ -7,6 +7,10 @@ classdef ConvHiddenLayer < HiddenLayer
       flattenLayer
    end
    
+   properties (Dependent)
+      params
+   end
+   
    methods
       function y = feed_forward(obj, x, isSave)
          if nargin < 3
@@ -29,6 +33,14 @@ classdef ConvHiddenLayer < HiddenLayer
          end
          dLdx = obj.noParamsLayer.backprop(dLdx);
          [grad, dLdx] = obj.convLayer.backprop(x, dLdx);
+      end
+      
+      function params = get.params(obj)
+         params = obj.convLayer.params;
+      end
+      
+      function set.params(obj, newParams)
+         obj.convLayer.params = newParams;
       end
       
       function init_params(obj)
