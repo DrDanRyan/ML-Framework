@@ -8,7 +8,7 @@ classdef GPUState
    
    methods
       function obj = GPUState(isGPU)
-         if ~isempty(isGPU)
+         if nargin == 1 && ~isempty(isGPU)
             obj.isGPU = isGPU;
          else
             obj.isGPU = gpuDeviceCount > 0;
