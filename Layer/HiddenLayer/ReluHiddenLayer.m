@@ -12,8 +12,7 @@ classdef ReluHiddenLayer < StandardLayer & HiddenLayer
       function init_params(obj)
          obj.params{1} = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
                                           obj.initScale, obj.gpuState);
-         obj.params{2} = obj.gpuState.randn(obj.outputSize, 1) + ...
-                              4*obj.initScale*obj.gpuState.ones(obj.outputSize, 1);
+         obj.params{2} = obj.gpuState.ones(obj.outputSize, 1);
       end
       
       function y = feed_forward(obj, x, ~)
