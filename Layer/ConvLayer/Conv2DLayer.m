@@ -37,7 +37,7 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer
          end
       end
       
-      function y = feed_forward(obj, x)
+      function y = feed_forward(obj, x, ~)
          % x ~ C x N x X
          % y ~ nF x N x (X - fS + 1)
          Wx = obj.filter_activations(x);
@@ -73,19 +73,19 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer
             for j = 1:obj.filterCols
                xSample = permute(x(:,:,i:i+yRows-1, j:j+yCols-1), [5, 2, 1, 3, 4]); % 1 x N x C x yRows x yCols
                grad{1}(:,:,:,i,j) = mean(sum(sum(...
-                        bsxfun(@times, xSample, dLdy), 5, 4)), 2); % nF x 1 x C
+                        bsxfun(@times, xSample, dLdy), 5), 4), 2); % nF x 1 x C
             end
          end
          
          [nF, N, ~, ~, ~] = size(dLdy);
          dLdx = obj.gpuState.zeros(1, N, obj.nChannels, obj.inputRows, obj.inputCols); % 1 x N x C x iR x iC 
-         dLdy = cat(4, obj.gpuState.zeros(nF, N, 1, obj.filterRows-1, obj.yCols), ...
+         dLdy = cat(4, obj.gpuState.zeros(nF, N, 1, obj.filterRows-1, yCols), ...
                               dLdy, ...
-                              obj.gpuState.zeros(nF, N, 1, obj.filterRows-1, obj.yCols)); % nF x N x 1 x (yRows + fRows - 1) x yCol
+                              obj.gpuState.zeros(nF, N, 1, obj.filterRows-1, yCols)); % nF x N x 1 x (yRows + fRows - 1) x yCol
          dLdy = cat(5, ...
-             obj.gpuState.zeros(nF, N, 1, yRows+obj.filterRows-1, obj.filterCols-1), ...
+             obj.gpuState.zeros(nF, N, 1, obj.inputRows+obj.filterRows-1, obj.filterCols-1), ...
              dLdy, ...
-             obj.gpuState.zeros(nF, N, 1, yRows+obj.filterRows-1, obj.filterCols-1)); % nF x N x 1 x (yRows + fRows - 1) x (yCol + fCol - 1)
+             obj.gpuState.zeros(nF, N, 1, obj.inputRows+obj.filterRows-1, obj.filterCols-1)); % nF x N x 1 x (yRows + fRows - 1) x (yCol + fCol - 1)
          WFlipped = flip(flip(obj.params{1}, 5), 4);
          for i = 1:obj.inputRows
             for j = 1:obj.inputCols

@@ -7,7 +7,7 @@ end
 
 % Use backprop method
 y = layer.feed_forward(x, true);
-[grad, dLdx] = layer.backprop(x, y, dLdy);
+[grad, dLdx] = layer.backprop(x, dLdy);
 
 % Finite difference gradients
 FD_grad = cell(size(grad));
@@ -37,7 +37,7 @@ for i = 1:length(x)
 end
 
 % Compute differences
-grad_errors = cellfun(@(bp, fd) gather(max(abs(bp(:) - fd(:)))), grad, FD_grad);
+grad_errors = cellfun(@(bp, fd) gather(max(abs(bp(:) - fd(:)))), grad, FD_grad, 'UniformOutput', false);
 sens_error = gather(max(abs(dLdx(:) - FD_dLdx(:))));
 end
 
