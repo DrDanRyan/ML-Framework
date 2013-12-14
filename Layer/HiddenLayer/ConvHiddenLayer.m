@@ -36,7 +36,9 @@ classdef ConvHiddenLayer < HiddenLayer
       end
       
       function params = get.params(obj)
-         params = obj.convLayer.params;
+         if ~isempty(obj.convLayer)
+            params = obj.convLayer.params;
+         end
       end
       
       function set.params(obj, newParams)
