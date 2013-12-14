@@ -33,7 +33,7 @@ while startIdx <= N
    yRowNormed = bsxfun(@rdivide, y, rowNorms);
    colNorms = sqrt(sum(yRowNormed.*yRowNormed, 1));
    F = bsxfun(@rdivide, yRowNormed, colNorms);
-   loss = sum(abs(F(:)));
+   loss = gather(sum(abs(F(:))));
 
    % Backprop
    dLdy = batchSize*gpuState.ones(size(F)); % multiply by batchSize to cancel averaging effect
