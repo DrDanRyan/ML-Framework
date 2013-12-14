@@ -1,4 +1,4 @@
-classdef LossFunction
+classdef LossFunction < matlab.mixin.Copyable
    % This abstract class defines the LossFunction interface.
    
    methods (Abstract)
