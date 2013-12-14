@@ -51,7 +51,7 @@ classdef DataManager < matlab.mixin.Copyable
             batch = obj.trainingData;
          else % mini-batch
             stopIdx = min(obj.trainingSize, obj.batchIdx + obj.batchSize - 1);
-            batch = cellfun(@(v) v(:,obj.batchIdx:stopIdx,:), obj.trainingData, ...
+            batch = cellfun(@(v) v(:,obj.batchIdx:stopIdx,:,:), obj.trainingData, ...
                               'UniformOutput', false);
             
             if stopIdx == obj.trainingSize
@@ -65,7 +65,7 @@ classdef DataManager < matlab.mixin.Copyable
       function [batch, isContinue] = trainLoss_batch(obj)
          if ~isempty(obj.trainLossSampleSize) && isempty(obj.trainLossSample)
             permvec = randperm(obj.trainingSize, obj.trainLossSampleSize);
-            obj.trainLossSample = cellfun(@(v) v(:,permvec,:), obj.trainingData, ...
+            obj.trainLossSample = cellfun(@(v) v(:,permvec,:,:), obj.trainingData, ...
                                              'UniformOutput', false);
          end
          
@@ -80,7 +80,7 @@ classdef DataManager < matlab.mixin.Copyable
          else % using batches
             if isempty(obj.trainLossSample)
                stopIdx = min(obj.trainingSize, obj.lossIdx + obj.lossBatchSize - 1);
-               batch = cellfun(@(v) v(:, obj.lossIdx:stopIdx,:), obj.trainingData, ...
+               batch = cellfun(@(v) v(:,obj.lossIdx:stopIdx,:,:), obj.trainingData, ...
                                  'UniformOutput', false);
                               
                if stopIdx == obj.trainingSize
@@ -92,7 +92,7 @@ classdef DataManager < matlab.mixin.Copyable
                end               
             else
                stopIdx = min(obj.trainLossSampleSize, obj.lossIdx + obj.lossBatchSize - 1);
-               batch = cellfun(@(v) v(:, obj.lossIdx:stopIdx,:), obj.trainLossSample, ...
+               batch = cellfun(@(v) v(:,obj.lossIdx:stopIdx,:,:), obj.trainLossSample, ...
                                  'UniformOutput', false);
                               
                if stopIdx == obj.trainLossSampleSize
@@ -113,7 +113,7 @@ classdef DataManager < matlab.mixin.Copyable
             isContinue = false;
          else
             stopIdx = min(obj.validationSize, obj.lossIdx + obj.lossBatchSize - 1);
-            batch = cellfun(@(v) v(:, obj.lossIdx:stopIdx, :), obj.validationData, ...
+            batch = cellfun(@(v) v(:,obj.lossIdx:stopIdx,:,:), obj.validationData, ...
                                  'UniformOutput', false);
 
             if stopIdx == obj.validationSize
@@ -128,7 +128,7 @@ classdef DataManager < matlab.mixin.Copyable
       
       function shuffle_training_data(obj)
          permvec = randperm(obj.trainingSize);
-         obj.trainingData = cellfun(@(v) v(:,permvec,:), obj.trainingData, ...
+         obj.trainingData = cellfun(@(v) v(:,permvec,:,:), obj.trainingData, ...
                                                       'UniformOutput', false);
          obj.batchIdx = 1;
       end
