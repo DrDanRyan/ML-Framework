@@ -6,8 +6,8 @@ if nargin < 2
 end
 
 % Use backprop method
-[y, ffExtras] = layer.feed_forward(x);
-[grad, dLdx] = layer.backprop(x, y, ffExtras, dLdy);
+y = layer.feed_forward(x, true);
+[grad, dLdx] = layer.backprop(x, y, dLdy);
 
 % Finite difference gradients
 FD_grad = cell(size(grad));
