@@ -12,6 +12,10 @@ classdef MulticlassSampler < Sampler
       
       function [sampleIdx, out_of_sample] = sample(obj, idxs, targets)       
          D = size(targets, 1);
+         if isa(targets, 'gpuArray')
+            targets = gather(targets);
+         end
+         targets(targets ~= 1) = 0;
          nSamples = round(obj.proportion*sum(targets, 2));
          sampleIdx = [];
          for i = 1:D
