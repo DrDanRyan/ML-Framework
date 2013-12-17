@@ -1,26 +1,21 @@
-function [grad_errors, sens_error] = backprop_test(layer, x, dLdy)
-eps = 1e-3;
-if nargin < 2
-   x = gpuArray.rand(layer.inputSize, 1);
-   dLdy = gpuArray.rand(layer.outputSize, 1);
-end
-
+function [grad_errors, sens_error] = conv_backprop_test(layer, x, dLdy)
+eps = 1e-2;
 % Use backprop method
 y = layer.feed_forward(x, true);
 [grad, dLdx] = layer.backprop(x, y, dLdy);
 
 % Finite difference gradients
 FD_grad = cell(size(grad));
-for p = 1:length(layer.params)
-   FD_grad{p} = gpuArray.nan(size(layer.params{p}));
-   for i = 1:length(layer.params{p})
-      layer.params{p}(i) = layer.params{p}(i) + eps;
+for p = 1:length(layer.convLayer.params)
+   FD_grad{p} = gpuArray.nan(size(layer.convLayer.params{p}));
+   for i = 1:length(layer.convLayer.params{p})
+      layer.convLayer.params{p}(i) = layer.convLayer.params{p}(i) + eps;
       posVal = layer.feed_forward(x);
-      layer.params{p}(i) = layer.params{p}(i) - 2*eps;
+      layer.convLayer.params{p}(i) = layer.convLayer.params{p}(i) - 2*eps;
       negVal = layer.feed_forward(x);
       dydp = (posVal - negVal)/(2*eps);
       FD_grad{p}(i) = sum(dLdy(:).*dydp(:));
-      layer.params{p}(i) = layer.params{p}(i) + eps; % return to original value
+      layer.convLayer.params{p}(i) = layer.convLayer.params{p}(i) + eps; % return to original value
    end
 end
 
