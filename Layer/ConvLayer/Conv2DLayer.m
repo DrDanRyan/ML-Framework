@@ -1,5 +1,5 @@
 classdef Conv2DLayer < ParamsFunctions & ConvLayer
-   % A convolution layer for multiple channels of 1D signals.
+   % A convolution layer for multiple channels of 2D signals.
    
    properties
       % params = {W, b} with W ~ nF x 1 x C x fR x fC and b ~ nF x 1

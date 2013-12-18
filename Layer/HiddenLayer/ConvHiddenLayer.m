@@ -1,4 +1,6 @@
 classdef ConvHiddenLayer < HiddenLayer
+   % Provides a facade for a stack of simple layers typically used in a
+   % convnet to act as a single HiddenLayer
    
    properties
       convLayer
