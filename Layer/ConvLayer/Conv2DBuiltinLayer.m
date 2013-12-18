@@ -62,14 +62,13 @@ classdef Conv2DBuiltinLayer < ParamsFunctions & ConvLayer
          % dLdx ~ C x N x iR x iC
          grad{2} = mean(sum(sum(dLdy, 4), 3), 2);
          grad{1} = obj.gpuState.zeros(size(obj.params{1})); % nF x C x 1 x fR x fC
-         N = size(x, 2);
+         [nF, N, ~, ~] = size(dLdy);
          
          for i = 1:obj.nFilters
             grad{1}(i,:,:,:,:) = ...
                flip(flip(flip(convn(x, flip(flip(flip(dLdy(i,:,:,:), 2), 3), 4), 'valid'), 1), 3), 4)/N;
          end
-         
-         [nF, N, ~, ~] = size(dLdy);
+
          dLdyPadded = obj.gpuState.zeros(nF, 2*obj.nChannels-1, N, ...
                               obj.inputRows+obj.filterRows-1, obj.inputCols+obj.filterCols-1);
          dLdyPadded(:,obj.nChannels,:,obj.filterRows:obj.inputRows, obj.filterCols:obj.inputCols) ...
