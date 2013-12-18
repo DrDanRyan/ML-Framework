@@ -2,7 +2,7 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer
    % A convolution layer for multiple channels of 2D signals.
    
    properties
-      % params = {W, b} with W ~ nF x C x N x fR x fC and b ~ nF x 1
+      % params = {W, b} with W ~ nF x C x 1 x fR x fC and b ~ nF x 1
       nFilters % (nF) number of convolution filters
       inputRows % (iR) width of the 2D input signal
       inputCols % (iC) columns of the 2D input signal
@@ -31,7 +31,7 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer
          obj.params{1} = obj.initScale*obj.gpuState.randn(obj.nFilters, obj.nChannels, 1, ...
                                                             obj.filterRows, obj.filterCols);
          if strcmp(obj.initType, 'relu')
-            obj.params{2} = obj.gpuState.ones(obj.nFilters, 1);
+            obj.params{2} = obj.initScale*obj.gpuState.ones(obj.nFilters, 1);
          else
             obj.params{2} = obj.gpuState.zeros(obj.nFilters, 1);
          end
@@ -75,19 +75,18 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer
                grad{1}(:,:,1,i,j) = mean(sum(sum(bsxfun(@times, xSample, dLdy), 5), 4), 3); % nF x C
             end
          end
+         clear xSample
          
          dLdx = obj.gpuState.zeros(1, obj.nChannels, N, obj.inputRows, obj.inputCols); % 1 x C x N x iR x iC 
-         dLdy = cat(4, obj.gpuState.zeros(nF, 1, N, obj.filterRows-1, yCols), ...
-                              dLdy, ...
-                              obj.gpuState.zeros(nF, 1, N, obj.filterRows-1, yCols)); % nF x 1 x N x (yRows + fRows - 1) x yCol
-         dLdy = cat(5, ...
-             obj.gpuState.zeros(nF, 1, N, obj.inputRows+obj.filterRows-1, obj.filterCols-1), ...
-             dLdy, ...
-             obj.gpuState.zeros(nF, 1, N, obj.inputRows+obj.filterRows-1, obj.filterCols-1)); % nF x 1 x N x (yRows + fRows - 1) x (yCol + fCol - 1)
+         dLdyPadded = obj.gpuState.zeros(nF, 1, N, obj.inputRows+obj.filterRows-1, ...
+                                             obj.inputCols+obj.filterCols-1);
+         dLdyPadded(:,:,:,obj.filterRows:obj.inputRows, obj.filterCols:obj.inputCols) = dLdy;
+         clear dLdy
+         
          WFlipped = flip(flip(obj.params{1}, 5), 4);
          for i = 1:obj.inputRows
             for j = 1:obj.inputCols
-               dLdySeg = dLdy(:,:,:,i:i+obj.filterRows-1, j:j+obj.filterCols-1); % nF x 1 x N x fR x fC
+               dLdySeg = dLdyPadded(:,:,:,i:i+obj.filterRows-1, j:j+obj.filterCols-1); % nF x 1 x N x fR x fC
                dLdx(:,:,:,i,j) = sum(sum(sum(bsxfun(@times, dLdySeg, WFlipped), 5), 4), 1); % 1 x C x N
             end
          end
