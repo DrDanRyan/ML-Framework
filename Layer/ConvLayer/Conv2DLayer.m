@@ -25,13 +25,11 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer
       end
       
       function init_params(obj)
-         if isempty(obj.initScale)
-            obj.initScale = .05;
-         end
-         obj.params{1} = obj.initScale*obj.gpuState.randn(obj.nFilters, obj.nChannels, 1, ...
-                                                            obj.filterRows, obj.filterCols);
+         radius = 1/(obj.filterRows*obj.filterCols*obj.nChannels);
+         obj.params{1} = 2*radius*obj.gpuState.rand(obj.nFilters, obj.nChannels, 1, ...
+                              obj.filterRows, obj.filterCols) - radius;
          if strcmp(obj.initType, 'relu')
-            obj.params{2} = obj.initScale*obj.gpuState.ones(obj.nFilters, 1);
+            obj.params{2} = radius*obj.gpuState.ones(obj.nFilters, 1);
          else
             obj.params{2} = obj.gpuState.zeros(obj.nFilters, 1);
          end
