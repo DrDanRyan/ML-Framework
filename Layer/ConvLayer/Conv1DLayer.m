@@ -1,4 +1,4 @@
-classdef Conv1DLayer < ParamsFunctions & ConvLayer
+classdef Conv1DLayer < ParamsFunctions & ConvLayer & matlab.mixin.Copyable
    % A convolution layer for multiple channels of 1D signals.
    
    properties

@@ -1,4 +1,4 @@
-classdef ConvLayer < matlab.mixin.Copyable
+classdef ConvLayer < handle
    % This defines the interface for ConvLayers
    
    methods (Abstract)
@@ -8,6 +8,7 @@ classdef ConvLayer < matlab.mixin.Copyable
       push_to_GPU(obj)
       gather(obj)
       increment_params(obj, delta)
+      objCopy = copy(obj)
    end
    
 end
