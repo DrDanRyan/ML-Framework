@@ -44,8 +44,8 @@ classdef MomentumSchedule < ParameterSchedule
             for i = 1:length(gradShape);
                stopIdx = startIdx + gradShape(i) - 1;
                dummy = ones(1, gradShape(i));
-               obj.lr0(startIdx:stopIdx) = mat2cell(lr0*dummy, 1, dummy);
-               obj.maxMomentum(startIdx:stopIdx) = mat2cell(maxMomentum*dummy, 1, dummy);
+               obj.lr0(startIdx:stopIdx) = mat2cell(lr0{i}*dummy, 1, dummy);
+               obj.maxMomentum(startIdx:stopIdx) = mat2cell(maxMomentum{i}*dummy, 1, dummy);
                startIdx = stopIdx + 1;
             end
             obj.params = {obj.lr0, obj.maxMomentum};

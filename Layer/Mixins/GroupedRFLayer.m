@@ -37,9 +37,9 @@ classdef GroupedRFLayer < handle
       function y = feed_forward(obj, x)
          N = size(x, 2);
          if ndims(x) == 3 % 1D convGroups
-            y = obj.gpuState(obj.nFilters, N, obj.ySize);
+            y = obj.gpuState.nan(obj.nFilters, N, obj.ySize);
          elseif ndims(x) == 4 % 2D convGroups
-            y = obj.gpuState(obj.nFilters, N, obj.yRows, obj.yCols);
+            y = obj.gpuState.nan(obj.nFilters, N, obj.yRows, obj.yCols);
          end
          startIdx = 1;
          for i = 1:obj.nGroups
