@@ -37,7 +37,7 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer
          end
       end
       
-      function y = feed_forward(obj, x, ~)
+      function y = feed_forward(obj, x)
          % x ~ C x N x iR x iC
          % y ~ nF x N x yR x yC
          Wx = obj.filter_activations(x);
