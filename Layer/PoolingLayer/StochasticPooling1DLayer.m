@@ -28,8 +28,9 @@ classdef StochasticPooling1DLayer < PoolingLayer
          x = reshape(x, nF, N, obj.poolSize, []);
          probs = bsxfun(@rdivide, x, sum(x, 3));         
          if nargin == 3 && isSave % sample for pooled values
-            obj.winners = multinomial_sample(probs, 3);
-            xPool = permute(sum(x.*obj.winners, 3), [1, 2, 4, 3]);
+            sample = multinomial_sample(probs, 3);
+            xPool = permute(sum(x.*sample, 3), [1, 2, 4, 3]);
+            obj.winners = logical(sample);
          else % weighted average for pooled values
             xPool = permute(sum(x.*probs, 3), [1, 2, 4, 3]);
          end
