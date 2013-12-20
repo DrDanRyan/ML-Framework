@@ -12,7 +12,7 @@ classdef StochasticPooling1DLayer < PoolingLayer
          obj.poolSize = poolSize;
       end
       
-      function xPool = pool(obj, x, isSave)
+      function xPool = feed_forward(obj, x, isSave)
          % if isSave is false, use linear combination, else sample based on
          % multinomial probabilities
          [nF, N, obj.inputSize] = size(x);
@@ -35,12 +35,12 @@ classdef StochasticPooling1DLayer < PoolingLayer
          end
       end
       
-      function yUnpool = unpool(obj, y)
-         [nF, N, ~] = size(y);
-         yUnpool = bsxfun(@times, obj.winners, permute(y, [1,2,4,3]));
+      function dLdyUnpool = backprop(obj, dLdy)
+         [nF, N, ~] = size(dLdy);
+         dLdyUnpool = bsxfun(@times, obj.winners, permute(dLdy, [1,2,4,3]));
          obj.winners = [];
-         yUnpool = reshape(yUnpool, nF, N, []);
-         yUnpool = yUnpool(:,:,1:obj.inputSize);    
+         dLdyUnpool = reshape(dLdyUnpool, nF, N, []);
+         dLdyUnpool = dLdyUnpool(:,:,1:obj.inputSize);    
       end
    end
    

@@ -31,7 +31,7 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer & matlab.mixin.Copyable
          obj.params{1} = 2*obj.initScale*obj.gpuState.rand(obj.nFilters, obj.nChannels, 1, ...
                               obj.filterRows, obj.filterCols) - obj.initScale;
          if strcmp(obj.initType, 'relu')
-            obj.params{2} = obj.initScale*obj.gpuState.ones(obj.nFilters, 1);
+            obj.params{2} = .25*obj.initScale*obj.gpuState.ones(obj.nFilters, 1);
          else
             obj.params{2} = obj.gpuState.zeros(obj.nFilters, 1);
          end

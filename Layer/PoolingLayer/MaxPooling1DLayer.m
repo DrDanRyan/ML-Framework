@@ -11,7 +11,7 @@ classdef MaxPooling1DLayer < PoolingLayer
          obj.poolSize = poolSize;
       end
       
-      function xPool = pool(obj, x, isSave)
+      function xPool = feed_forward(obj, x, isSave)
          [nF, N, obj.inputSize] = size(x);
          remainder = mod(obj.inputSize, obj.poolSize);
          if remainder > 0
@@ -30,12 +30,12 @@ classdef MaxPooling1DLayer < PoolingLayer
          xPool = permute(xPool, [1, 2, 4, 3]);
       end
       
-      function yUnpool = unpool(obj, y)
-         [nF, N, ~] = size(y);
-         yUnpool = bsxfun(@times, obj.winners, permute(y, [1,2,4,3]));
+      function dLdyUnpool = backprop(obj, dLdy)
+         [nF, N, ~] = size(dLdy);
+         dLdyUnpool = bsxfun(@times, obj.winners, permute(dLdy, [1,2,4,3]));
          obj.winners = [];
-         yUnpool = reshape(yUnpool, nF, N, []);
-         yUnpool = yUnpool(:,:,1:obj.inputSize);         
+         dLdyUnpool = reshape(dLdyUnpool, nF, N, []);
+         dLdyUnpool = dLdyUnpool(:,:,1:obj.inputSize);         
       end
    end
 end
