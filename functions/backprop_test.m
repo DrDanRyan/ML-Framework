@@ -6,35 +6,57 @@ y = layer.feed_forward(x, true);
 dLdy = gpuArray.ones(size(y));
 [grad, dLdx] = layer.backprop(x, y, dLdy);
 
+% Create a cell array of deltas for incrementing params in FD calculation
+nParams = length(grad);
+delta = cell(size(grad));
+for idx = 1:length(grad)
+   delta{idx} = gpuArray.zeros(size(grad{idx}));
+end
+
 % Finite difference gradients
 FD_grad = cell(size(grad));
-for p = 1:length(layer.params)
-   FD_grad{p} = gpuArray.nan(size(layer.params{p}));
-   for i = 1:length(layer.params{p})
-      layer.params{p}(i) = layer.params{p}(i) + eps;
+for p = 1:nParams
+   FD_grad{p} = gpuArray.nan(size(grad{p}));
+   for i = 1:numel(grad{p})
+      % Positive perturbation
+      delta{p}(i) = eps;
+      layer.increment_params(delta);
       posVal = layer.feed_forward(x);
-      layer.params{p}(i) = layer.params{p}(i) - 2*eps;
+      
+      % Negative perturbation
+      delta{p}(i) = -2*eps;
+      layer.increment_params(delta);
       negVal = layer.feed_forward(x);
-      dydp = (posVal - negVal)/(2*eps);
-      FD_grad{p}(i) = sum(dydp(:))/size(x, 2);
-      layer.params{p}(i) = layer.params{p}(i) + eps; % return to original value
+      
+      % Finite-difference value
+      deltaY = posVal - negVal;
+      FD_grad{p}(i) = sum(deltaY(:))/(size(x, 2)*2*eps);
+      
+      % Reset delta to 0 and layer parameters to original value
+      delta{p}(i) = eps;
+      layer.increment_params(delta);
+      delta{p}(i) = 0;
    end
 end
+grad_errors = cellfun(@(bp, fd) gather(max(abs(bp(:) - fd(:)))), grad, FD_grad, ...
+                        'UniformOutput', false);
+clear delta grad
+
 
 % Finite difference sensetivity (dLdx)
-FD_dLdx = gpuArray.nan(size(dLdx));
-for i = 1:length(x)
-   x(i) = x(i) + eps;
-   posVal = layer.feed_forward(x);
-   x(i) = x(i) - 2*eps;
-   negVal = layer.feed_forward(x);
-   dydx = (posVal - negVal)/(2*eps);
-   FD_dLdx(i) = sum(dydx(:));
-   x(i) = x(i) + eps;
+if nargout > 1
+   FD_dLdx = gpuArray.nan(size(dLdx));
+   for i = 1:numel(x)
+      x(i) = x(i) + eps;
+      posVal = layer.feed_forward(x);
+      x(i) = x(i) - 2*eps;
+      negVal = layer.feed_forward(x);
+      dydx = (posVal - negVal)/(2*eps);
+      FD_dLdx(i) = sum(dydx(:));
+      x(i) = x(i) + eps;
+   end
+   sens_error = gather(max(abs(dLdx(:) - FD_dLdx(:))));
 end
 
-% Compute differences
-grad_errors = cellfun(@(bp, fd) gather(max(abs(bp(:) - fd(:)))), grad, FD_grad, 'UniformOutput', false);
-sens_error = gather(max(abs(dLdx(:) - FD_dLdx(:))));
 end
 
