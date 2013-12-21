@@ -7,6 +7,7 @@ classdef IRprop < StepCalculator
    % previous values
    
    properties
+      lr0
       upFactor
       downFactor
       maxRate
@@ -19,7 +20,7 @@ classdef IRprop < StepCalculator
    end
    
    methods
-      function obj = IRprop(varargin)
+      function obj = IRprop(lr0, varargin)
          p = inputParser();
          p.addParamValue('upFactor', 1.2);
          p.addParamValue('downFactor', .5);
@@ -27,6 +28,7 @@ classdef IRprop < StepCalculator
          p.addParamValue('minRate', 1e-6);
          parse(p, varargin{:});
          
+         obj.lr0 = lr0;
          obj.upFactor = p.Results.upFactor;
          obj.downFactor = p.Results.downFactor;
          obj.maxRate = p.Results.maxRate;
@@ -34,7 +36,7 @@ classdef IRprop < StepCalculator
       end
       
       
-      function take_step(obj, batch, model, params)
+      function take_step(obj, batch, model, ~)
          % Check each connection to see if gradient has changed sign from
          % previous step. If so, check if error has increased or decreased.
          % If error increase backtrack previous weight changes on those
@@ -50,7 +52,7 @@ classdef IRprop < StepCalculator
          if isempty(obj.prevGrad)
             obj.rates = cell(size(grad));
             for i = 1:length(grad)
-               obj.rates{i} = params{1}*model.gpuState.ones(size(grad{i}));
+               obj.rates{i} = obj.lr0*model.gpuState.ones(size(grad{i}));
                step{i} = -obj.rates{i}.*sign(grad{i});
             end
          else
