@@ -79,14 +79,6 @@ classdef GPUState
          end
       end
       
-      function value = make_numeric(obj, logicalMatrix)
-         if obj.isGPU
-            value = single(logicalMatrix);
-         else
-            value = logicalMatrix; % conversion will be done automatically later
-         end
-      end
-      
       function value = linspace(obj, varargin)
          if obj.isGPU
             value = single(gpuArray.linspace(varargin{:}));
