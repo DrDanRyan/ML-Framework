@@ -51,36 +51,40 @@ classdef BasicMonitor < ProgressMonitor
       end
       
       function compute_loss_values(obj, model, dataManager)
-         isContinue = true;
-         tempLoss = 0;
-         while isContinue
-            [batch, isContinue] = dataManager.validLoss_batch();
-            batchSize = size(batch{1}, 2);
-            if isempty(obj.validLossFunction)
-               tempLoss = tempLoss + batchSize*model.compute_loss(batch);
-            else
-               y = model.output(batch{1});
-               t = batch{end};
-               tempLoss = tempLoss + batchSize*obj.validLossFunction(y, t); % have to 'unaverage' losses
+         % Compute validation loss (if dataManager has validationData)
+         if ~isempty(dataManager.validationData)
+            isContinue = true;
+            tempLoss = 0;
+            while isContinue
+               [batch, isContinue] = dataManager.validLoss_batch();
+               batchSize = size(batch{1}, 2);
+               if isempty(obj.validLossFunction)
+                  tempLoss = tempLoss + batchSize*model.compute_loss(batch);
+               else
+                  y = model.output(batch{1});
+                  t = batch{end};
+                  tempLoss = tempLoss + batchSize*obj.validLossFunction(y, t); % have to 'unaverage' losses
+               end
+            end
+            obj.validLoss = [obj.validLoss, tempLoss/dataManager.validationSize]; % 'reaverage' losses
+
+            if obj.validLoss(end) < obj.bestValidLoss
+               obj.bestValidLoss = obj.validLoss(end);
+               obj.bestUpdate = obj.nUpdates;
+            end
+            
+            % Store model if appropriate
+            switch obj.isStoreModels
+               case 'all' % store all model snapshots for each validationInterval
+                  obj.models = [obj.models, model.copy()];
+               case 'best' % only store the best model so far (overwrite previous best)
+                  if obj.bestUpdate == obj.nUpdates
+                     obj.models{1} = model.copy();
+                  end
             end
          end
-         obj.validLoss = [obj.validLoss, tempLoss/dataManager.validationSize]; % 'reaverage' losses
-
-         if obj.validLoss(end) < obj.bestValidLoss
-            obj.bestValidLoss = obj.validLoss(end);
-            obj.bestUpdate = obj.nUpdates;
-         end
-            
-         % Store model if appropriate
-         switch obj.isStoreModels
-            case 'all' % store all model snapshots for each validationInterval
-               obj.models = [obj.models, model.copy()];
-            case 'best' % only store the best model so far (overwrite previous best)
-               if obj.bestUpdate == obj.nUpdates
-                  obj.models{1} = model.copy();
-               end
-         end
-
+         
+         % Compute training loss if desired
          if obj.isComputeTrainLoss
             isContinue = true;
             tempLoss = 0;
@@ -100,6 +104,7 @@ classdef BasicMonitor < ProgressMonitor
             obj.trainLoss = [obj.trainLoss, tempLoss/nExamples];
          end
          
+         % Report results
          if obj.isReport
             obj.report();
          end
