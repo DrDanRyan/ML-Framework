@@ -21,10 +21,6 @@ classdef SparseFilteringLoss < LossFunction
                      - bsxfun(@times, F, sum(dLdy.*yRowNormed, 1)./(colNorms.*colNorms));       
          dLdy = bsxfun(@rdivide, dLdy, rowNorms) ...
                      - bsxfun(@times, yRowNormed, sum(dLdy.*y, 2)./(rowNorms.*rowNorms));
-                  
-         if check_nan(dLdy)
-            keyboard();
-         end
       end
       
       function loss = compute_loss(~, y, ~)
@@ -33,7 +29,7 @@ classdef SparseFilteringLoss < LossFunction
          yRowNormed = bsxfun(@rdivide, y, rowNorms);
          colNorms = sqrt(sum(yRowNormed.*yRowNormed, 1));
          F = bsxfun(@rdivide, yRowNormed, colNorms);
-         loss = sum(abs(F(:)));
+         loss = sum(F(:));
       end
    end
    
