@@ -12,6 +12,7 @@ classdef HiddenLayer < handle
       increment_params(obj, delta)
       push_to_GPU(obj)
       gather(obj)
+      objCopy = copy(obj)
       
       % Required for CAE and MTC:
       % Dy = compute_Dy(obj, x, y)  (derivative of transfer function)
