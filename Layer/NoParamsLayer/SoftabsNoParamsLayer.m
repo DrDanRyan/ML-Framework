@@ -13,7 +13,7 @@ classdef SoftabsNoParamsLayer < NoParamsLayer
       end
       
       function y = feed_forward(obj, x, isSave)
-         y = sqrt(x.*x + 1e-8);
+         y = sqrt(x.*x + obj.epsilon);
          if nargin == 3 && isSave
             obj.Dy = x./y;
          end
