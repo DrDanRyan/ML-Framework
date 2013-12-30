@@ -73,7 +73,7 @@ classdef CompositeHiddenLayer < HiddenLayer
          startIdx = 1;
          for i = 1:length(obj.layers)
             if obj.gradShape(i) > 0
-               stopIdx = startIdx + obj.gradShape(i) - 1;
+               stopIdx = startIdx + obj.gradShape(i) - 1;               
                obj.layers{i}.increment_params(delta(startIdx:stopIdx));
                startIdx = stopIdx+1;
             end            
