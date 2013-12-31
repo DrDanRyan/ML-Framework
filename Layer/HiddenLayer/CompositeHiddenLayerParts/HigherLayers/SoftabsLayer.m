@@ -1,11 +1,12 @@
 classdef SoftabsLayer < matlab.mixin.Copyable
    
    properties
+      dydx
       eps
    end
    
    methods
-      function obj = SoftabsNoParamsLayer(eps)
+      function obj = SoftabsLayer(eps)
          if nargin < 1
             eps = 1e-8;
          end
