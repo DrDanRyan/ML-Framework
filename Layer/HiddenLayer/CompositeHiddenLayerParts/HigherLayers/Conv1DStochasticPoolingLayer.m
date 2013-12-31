@@ -1,4 +1,4 @@
-classdef StochasticPooling1DLayer < PoolingLayer
+classdef Conv1DStochasticPoolingLayer < matlab.mixin.Copyable
    % requires input (x) to be nonnegative values
    
    properties
@@ -8,11 +8,11 @@ classdef StochasticPooling1DLayer < PoolingLayer
    end
    
    methods
-      function obj = StochasticPooling1DLayer(poolSize)
+      function obj = Conv1DStochasticPoolingLayer(poolSize)
          obj.poolSize = poolSize;
       end
       
-      function xPool = feed_forward(obj, x, isSave)
+      function y = feed_forward(obj, x, isSave)
          % if isSave is false, use linear combination, else sample based on
          % multinomial probabilities
          [nF, N, obj.inputSize] = size(x);
@@ -29,21 +29,21 @@ classdef StochasticPooling1DLayer < PoolingLayer
          probs = bsxfun(@rdivide, x, sum(x, 3));         
          if nargin == 3 && isSave % sample for pooled values
             sample = multinomial_sample(probs, 3);
-            xPool = permute(sum(x.*sample, 3), [1, 2, 4, 3]);
+            y = permute(sum(x.*sample, 3), [1, 2, 4, 3]);
             obj.winners = logical(sample);
          else % weighted average for pooled values
-            xPool = permute(sum(x.*probs, 3), [1, 2, 4, 3]);
+            y = permute(sum(x.*probs, 3), [1, 2, 4, 3]);
          end
       end
       
-      function dLdyUnpool = backprop(obj, dLdy)
+      function dLdx = backprop(obj, dLdy)
          [nF, N, ~] = size(dLdy);
-         dLdyUnpool = bsxfun(@times, obj.winners, permute(dLdy, [1,2,4,3]));
+         dLdx = bsxfun(@times, obj.winners, permute(dLdy, [1,2,4,3]));
          obj.winners = [];
-         dLdyUnpool = reshape(dLdyUnpool, nF, N, []);
-         dLdyUnpool = dLdyUnpool(:,:,1:obj.inputSize);    
+         dLdx = reshape(dLdx, nF, N, []);
+         dLdx = dLdx(:,:,1:obj.inputSize);    
       end
+      
    end
-   
 end
 

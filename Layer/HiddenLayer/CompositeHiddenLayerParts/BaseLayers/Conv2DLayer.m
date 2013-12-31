@@ -1,4 +1,4 @@
-classdef Conv2DLayer < ParamsFunctions & ConvLayer & matlab.mixin.Copyable
+classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
    % A convolution layer for multiple channels of 2D signals.
    
    properties
@@ -37,7 +37,7 @@ classdef Conv2DLayer < ParamsFunctions & ConvLayer & matlab.mixin.Copyable
          end
       end
       
-      function y = feed_forward(obj, x)
+      function y = feed_forward(obj, x, ~)
          % x ~ C x N x iR x iC
          % y ~ nF x N x yR x yC
          Wx = obj.filter_activations(x);

@@ -1,4 +1,4 @@
-classdef MaxPooling1DLayer < PoolingLayer
+classdef Conv1DMaxPoolingLayer < matlab.mixin.Copyable
    
    properties
       inputSize
@@ -7,7 +7,7 @@ classdef MaxPooling1DLayer < PoolingLayer
    end
    
    methods
-      function obj = MaxPooling1DLayer(poolSize)
+      function obj = Conv1DMaxPoolingLayer(poolSize)
          obj.poolSize = poolSize;
       end
       
@@ -37,6 +37,7 @@ classdef MaxPooling1DLayer < PoolingLayer
          dLdyUnpool = reshape(dLdyUnpool, nF, N, []);
          dLdyUnpool = dLdyUnpool(:,:,1:obj.inputSize);         
       end
+      
    end
 end
 

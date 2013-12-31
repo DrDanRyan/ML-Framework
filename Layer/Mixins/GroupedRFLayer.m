@@ -10,7 +10,7 @@ classdef GroupedRFLayer < handle
       nFilters  % (nF = gS*nG)
       
       connectionTable % a G x C logical matrix where each row has rF true values
-      convGroups % a cell array of length nGroups full of Conv2DLayer objects
+      convGroups % a cell array of length nGroups full of Conv1DLayer or Conv2DLayer objects
       gpuState
    end   
    
@@ -34,7 +34,7 @@ classdef GroupedRFLayer < handle
          end
       end
       
-      function y = feed_forward(obj, x)
+      function y = feed_forward(obj, x, ~)
          N = size(x, 2);
          if ndims(x) == 3 % 1D convGroups
             y = obj.gpuState.nan(obj.nFilters, N, obj.ySize);

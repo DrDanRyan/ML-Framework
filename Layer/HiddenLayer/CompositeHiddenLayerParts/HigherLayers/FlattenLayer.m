@@ -1,4 +1,4 @@
-classdef FlattenLayer < NoParamsLayer
+classdef FlattenLayer < matlab.mixin.Copyable
    % Takes multiple dimension input and flattens to a single dimension
    
    properties

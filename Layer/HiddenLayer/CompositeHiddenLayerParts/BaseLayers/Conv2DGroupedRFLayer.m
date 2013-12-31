@@ -1,4 +1,4 @@
-classdef Conv2DGroupedRFLayer < ConvLayer & GroupedRFLayer
+classdef Conv2DGroupedRFLayer < GroupedRFLayer
    
    properties
       inputRows % (iR) width of the 2D input signal

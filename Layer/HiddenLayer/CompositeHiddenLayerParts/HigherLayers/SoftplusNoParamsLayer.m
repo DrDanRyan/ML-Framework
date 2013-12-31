@@ -1,4 +1,8 @@
-classdef SoftplusNoParamsLayer < NoParamsLayer
+classdef SoftplusNoParamsLayer < matlab.mixin.Copyable
+   
+   properties
+      dydx
+   end
    
    methods
       function y = feed_forward(obj, x, isSave)
@@ -6,7 +10,7 @@ classdef SoftplusNoParamsLayer < NoParamsLayer
             expX = exp(x);
             one_plus_expX = 1 + expX;
             y = log(one_plus_expX);
-            obj.Dy = max(expX./one_plus_expX, 1e-14);
+            obj.dydx = max(expX./one_plus_expX, 1e-14);
          else
             y = log(1 + exp(x));
          end
@@ -22,7 +26,12 @@ classdef SoftplusNoParamsLayer < NoParamsLayer
             y(yZero) = 1e-14;
          end
       end
+      
+      function dLdx = backprop(obj, dLdy)
+         dLdx = obj.dydx.*dLdy;
+         obj.dydx = [];
+      end
+      
    end
-   
 end
 

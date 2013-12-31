@@ -72,7 +72,7 @@ classdef CompositeHiddenLayer < HiddenLayer
       function increment_params(obj, delta)
          startIdx = 1;
          for i = 1:length(obj.layers)
-            if obj.gradShape(i) > 0
+            if ismethod(obj.layers{i}, 'increment_params')
                stopIdx = startIdx + obj.gradShape(i) - 1;               
                obj.layers{i}.increment_params(delta(startIdx:stopIdx));
                startIdx = stopIdx+1;
@@ -82,7 +82,7 @@ classdef CompositeHiddenLayer < HiddenLayer
       
       function gather(obj)
          for i = 1:length(obj.layers)
-            if obj.gradShape(i) > 0
+            if ismethod(obj.layers{i}, 'gather')
                obj.layers{i}.gather();
             end            
          end
@@ -90,7 +90,7 @@ classdef CompositeHiddenLayer < HiddenLayer
       
       function push_to_GPU(obj)
          for i = 1:length(obj.layers)
-            if obj.gradShape(i) > 0
+            if ismethod(obj.layers{i}, 'push_to_GPU')
                obj.layers{i}.push_to_GPU();
             end            
          end

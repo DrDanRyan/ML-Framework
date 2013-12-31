@@ -1,4 +1,4 @@
-classdef Conv1DLayer < ParamsFunctions & ConvLayer & matlab.mixin.Copyable
+classdef Conv1DLayer < ParamsFunctions & matlab.mixin.Copyable
    % A convolution layer for multiple channels of 1D signals.
    
    properties
@@ -32,7 +32,7 @@ classdef Conv1DLayer < ParamsFunctions & ConvLayer & matlab.mixin.Copyable
          end
       end
       
-      function y = feed_forward(obj, x)
+      function y = feed_forward(obj, x, ~)
          % x ~ C x N x X
          % y ~ nF x N x (X - fS + 1)
          Wx = obj.filter_activations(x);

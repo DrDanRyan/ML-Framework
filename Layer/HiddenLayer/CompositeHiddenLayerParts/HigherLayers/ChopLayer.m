@@ -1,4 +1,4 @@
-classdef ChopLayer < NoParamsLayer
+classdef ChopLayer < matlab.mixin.Copyable
    % Takes multiple dimension input and chops into multiple examples,
    % keeping first dimension as the input dimension (useful for
    % convolutional sparse filtering)

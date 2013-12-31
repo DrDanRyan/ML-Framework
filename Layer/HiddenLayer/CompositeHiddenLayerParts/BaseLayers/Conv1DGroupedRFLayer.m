@@ -1,4 +1,4 @@
-classdef Conv1DGroupedRFLayer < ConvLayer & GroupedRFLayer
+classdef Conv1DGroupedRFLayer < GroupedRFLayer
    
    properties
       inputSize
