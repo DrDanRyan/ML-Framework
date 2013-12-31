@@ -1,4 +1,4 @@
-classdef SoftplusNoParamsLayer < matlab.mixin.Copyable
+classdef SoftplusLayer < matlab.mixin.Copyable
    
    properties
       dydx

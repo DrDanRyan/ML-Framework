@@ -1,4 +1,4 @@
-classdef ReluNoParamsLayer < matlab.mixin.Copyable
+classdef ReluLayer < matlab.mixin.Copyable
    
    properties
       dydx

@@ -1,4 +1,4 @@
-classdef SoftabsNoParamsLayer < matlab.mixin.Copyable
+classdef SoftabsLayer < matlab.mixin.Copyable
    
    properties
       eps

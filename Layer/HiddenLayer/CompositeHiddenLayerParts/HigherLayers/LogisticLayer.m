@@ -1,17 +1,14 @@
-classdef TanhNoParamsLayer < matlab.mixin.Copyable
+classdef LogisticLayer < matlab.mixin.Copyable
    
    properties
       dydx
    end
-
+   
    methods
       function y = feed_forward(obj, x, isSave)
-         v = exp(-2*x);
-         u = 2./(1 + v);
-         y = u - 1; % robust tanh(x)
-         
+         y = 1./(1+exp(-x));
          if nargin == 3 && isSave
-            obj.dydx = v.*u.*u;
+            obj.Dy = exp(-x).*y.*y;
          end
       end   
       
