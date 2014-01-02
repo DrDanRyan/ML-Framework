@@ -1,10 +1,21 @@
 classdef SparseFilteringLoss < LossFunction
-   % Assumes output is non-negative. Replaces all zero values with 1e-8 to
-   % prevent degeneracies.
+   % Assumes output is non-negative. Fudges all y values by adding eps
+   % to prevent degenericies arising from all examples of a feature == 0
 
+   properties
+      eps
+   end
+   
    methods
-      function dLdy = dLdy(~, y, ~)
-         y = max(y, 1e-8); % set minimum value for y
+      function obj = SparseFilteringLoss(eps)
+         if nargin < 1
+            eps = 1e-4;
+         end
+         obj.eps = eps;
+      end
+      
+      function dLdy = dLdy(obj, y, ~)
+         y = y + obj.eps;
          rowNorms = sqrt(sum(y.*y, 2));
          yRowNormed = bsxfun(@rdivide, y, rowNorms);
          colNorms = sqrt(sum(yRowNormed.*yRowNormed, 1));
@@ -23,15 +34,15 @@ classdef SparseFilteringLoss < LossFunction
                      - bsxfun(@times, yRowNormed, sum(dLdy.*y, 2)./(rowNorms.*rowNorms));
       end
       
-      function loss = compute_loss(~, y, ~)
-         y = max(y, 1e-8);
+      function loss = compute_loss(obj, y, ~)
+         y = y + obj.eps;
          rowNorms = sqrt(sum(y.*y, 2));
          yRowNormed = bsxfun(@rdivide, y, rowNorms);
          colNorms = sqrt(sum(yRowNormed.*yRowNormed, 1));
          F = bsxfun(@rdivide, yRowNormed, colNorms);
          loss = sum(F(:));
       end
+      
    end
-   
 end
 
