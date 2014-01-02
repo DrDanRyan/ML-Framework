@@ -15,7 +15,7 @@ classdef ReluLayer < matlab.mixin.Copyable
       
       function dLdx = backprop(obj, dLdy)
          dLdx = obj.dydx.*dLdy;
-         obj.Dy = [];
+         obj.dydx = [];
       end
    end
 end
