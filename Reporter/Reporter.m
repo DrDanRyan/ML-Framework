@@ -2,7 +2,7 @@ classdef Reporter < matlab.mixin.Copyable
    % Defines the Reporter interface
    
    methods (Abstract)
-      update(obj, trainingLoss, validationLoss)
+      report(obj, progressMonitor, model)
       reset(obj)
    end
    

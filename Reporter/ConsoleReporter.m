@@ -1,19 +1,23 @@
 classdef ConsoleReporter < Reporter
    
-   properties
-      epoch = 0;
-   end
-   
    methods
-      function update(obj, trainingLoss, validationLoss)
-         obj.epoch = obj.epoch + 1;
-         fprintf('Epoch %d: \t train: %d \t valid: %d \n', obj.epoch, trainingLoss, validationLoss);
+      function report(~, progressMonitor, ~)
+         if isempty(progressMonitor.trainLoss)
+            fprintf('Epoch %d:  valid: %.5g\n', ...
+                     progressMonitor.nUpdates, ...
+                     progressMonitor.validLoss(end));
+         else
+            fprintf('Epoch %d:  train: %.5g   valid: %.5g\n', ...
+                     progressMonitor.nUpdates, ...
+                     progressMonitor.trainLoss(end), ...
+                     progressMonitor.validLoss(end));
+         end
       end
       
-      function reset(obj)
-         obj.epoch = 0;
+      function reset(~)
+         % pass
       end
+      
    end
-   
 end
 

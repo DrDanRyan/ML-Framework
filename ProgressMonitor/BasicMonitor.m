@@ -10,6 +10,7 @@ classdef BasicMonitor < ProgressMonitor
       trainLoss = []
       
       isReport % boolean indicating whether to call report function after losses are computed
+      reporter % instance of the Reporter class
       
       isStoreModels % whether or not to store copies of model at each validation point: {'all', 'best', false}
       models = {} % cell array of stored models if isStoreModels is 'all', or only best model if 'best'
@@ -36,6 +37,9 @@ classdef BasicMonitor < ProgressMonitor
          obj.trainLossFunction = p.Results.trainLossFunction;
          obj.isStoreModels = p.Results.isStoreModels;
          obj.isReport = p.Results.isReport;
+         if obj.isReport % if isReport give a basic ConsoleReporter as default reporter
+            obj.reporter = ConsoleReporter();
+         end
       end
       
       function isContinue = update(obj, model, dataManager)
@@ -43,7 +47,8 @@ classdef BasicMonitor < ProgressMonitor
          if mod(obj.nUpdates, obj.validationInterval) == 0
             obj.compute_loss_values(model, dataManager);
          end
-         isContinue = obj.should_continue();
+         isContinue = obj.should_continue(); % useful hook for subclasses to implement 
+                                             % stopping criteria
       end
       
       function isContinue = should_continue(~)
@@ -106,7 +111,7 @@ classdef BasicMonitor < ProgressMonitor
          
          % Report results
          if obj.isReport
-            obj.report();
+            obj.reporter.report(obj, model);
          end
       end
       
@@ -137,6 +142,7 @@ classdef BasicMonitor < ProgressMonitor
          obj.models = {};
          obj.bestUpdate = 0;
          obj.bestValidLoss = Inf;
+         obj.reporter.reset();
          obj.validLoss = [];
          obj.trainLoss = [];
       end
