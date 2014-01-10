@@ -8,7 +8,7 @@ classdef LogisticLayer < matlab.mixin.Copyable
       function y = feed_forward(obj, x, isSave)
          y = 1./(1+exp(-x));
          if nargin == 3 && isSave
-            obj.Dy = exp(-x).*y.*y;
+            obj.dydx = exp(-x).*y.*y;
          end
       end   
       
