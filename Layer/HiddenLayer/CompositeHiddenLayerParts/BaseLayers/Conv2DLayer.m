@@ -9,18 +9,25 @@ classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
       nChannels % (C) number of input channels
       filterRows % (fR)
       filterCols % (fC)
+      filterMax % max L2norm allowed for filters; if filter exceeds max project back to max
    end
    
    methods
       function obj = Conv2DLayer(inputRows, inputCols, nChannels, filterRows, ...
                                     filterCols, nFilters, varargin)
          obj = obj@ParamsFunctions(varargin{:});
+         p = inputParser();
+         p.KeepUnmatched = true;
+         p.addParamValue('filterMax', []);
+         parse(p, varargin{:});
+         
          obj.inputRows = inputRows;
          obj.inputCols = inputCols;
          obj.nChannels = nChannels;
          obj.filterRows = filterRows;
          obj.filterCols = filterCols;
          obj.nFilters = nFilters;
+         obj.filterMax = p.Results.filterMax;
          obj.init_params();
       end
       
@@ -91,7 +98,17 @@ classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
             end
          end
          dLdx = shiftdim(dLdx, 1);
-      end      
+      end
+      
+      function increment_params(obj, delta)
+         increment_params@ParamsFunctions(obj, delta);
+         if ~isempty(obj.filterMax)
+            filterNorms = sqrt(sum(sum(obj.params{1}.*obj.params{1}, 5), 4));
+            factors = min(1, obj.filterMax./filterNorms);
+            obj.params{1} = bsxfun(@times, obj.params{1}, factors);
+         end
+      end
+      
    end
 end
 
