@@ -1,5 +1,5 @@
-function [grad_errors, sens_error] = backprop_test(layer, x)
-eps = 1e-3;
+function [grad_errors, sens_error] = backprop_test(layer, x, sensSampleSize)
+eps = 1e-5;
 
 % Use backprop method
 y = layer.feed_forward(x, true);
@@ -45,8 +45,13 @@ clear delta grad
 
 % Finite difference sensetivity (dLdx)
 if nargout > 1
+   if nargin < 3
+      sensSample = 1:numel(x);
+   else
+      sensSample = randsample(numel(x), sensSampleSize);
+   end
    FD_dLdx = gpuArray.nan(size(dLdx));
-   for i = 1:numel(x)
+   for i = sensSample
       x(i) = x(i) + eps;
       posVal = layer.feed_forward(x);
       x(i) = x(i) - 2*eps;
@@ -55,7 +60,7 @@ if nargout > 1
       FD_dLdx(i) = sum(dydx(:));
       x(i) = x(i) + eps;
    end
-   sens_error = gather(max(abs(dLdx(:) - FD_dLdx(:))));
+   sens_error = gather(nanmax(abs(dLdx(:) - FD_dLdx(:))));
 end
 
 end
