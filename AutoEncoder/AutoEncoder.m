@@ -1,11 +1,12 @@
 classdef AutoEncoder < handle
-   % Generic denoising AutoEncoder
+   % Generic AutoEncoder
    
    properties
       encodeLayer % a HiddenLayer object that functions as the encoding layer
       decodeLayer % a OutputLayer object that functions as the decoding layer and loss function
       isTiedWeights % a boolean indicating if the params in encodeLayer and decodeLayer are shared
       gpuState
+      encodeGradSize
    end
    
    methods
@@ -29,9 +30,10 @@ classdef AutoEncoder < handle
          xTarget = batch{1}; % keep any NaN values
          xIn = batch{1}; % will replace NaN values by 0 if present
          xIn(isnan(xIn)) = 0; 
-         xCode = obj.encodeLayer.feed_forward(xIn);
+         xCode = obj.encodeLayer.feed_forward(xIn, true);
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, xTarget);
          encodeGrad = obj.encodeLayer.backprop(xIn, xCode, dLdxCode);
+         obj.encodeGradSize = length(encodeGrad);
          
          if obj.isTiedWeights
             if ndims(encodeGrad{1}) <= 2
@@ -72,9 +74,8 @@ classdef AutoEncoder < handle
             obj.decodeLayer.increment_params({0, delta_params{3}});
             obj.decodeLayer.params{1} = obj.get_encode_params_transposed();
          else
-            splitIdx = length(obj.encodeLayer.params);
-            obj.encodeLayer.increment_params(delta_params(1:splitIdx));
-            obj.decodeLayer.increment_params(delta_params(splitIdx+1:end));
+            obj.encodeLayer.increment_params(delta_params(1:obj.encodeGradSize));
+            obj.decodeLayer.increment_params(delta_params(obj.encodeGradSize+1:end));
          end
       end
       
