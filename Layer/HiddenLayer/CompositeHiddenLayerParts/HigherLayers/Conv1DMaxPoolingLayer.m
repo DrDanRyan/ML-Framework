@@ -11,7 +11,7 @@ classdef Conv1DMaxPoolingLayer < matlab.mixin.Copyable
          obj.poolSize = poolSize;
       end
       
-      function xPool = feed_forward(obj, x, isSave)
+      function y = feed_forward(obj, x, isSave)
          [nF, N, obj.inputSize] = size(x);
          remainder = mod(obj.inputSize, obj.poolSize);
          if remainder > 0
@@ -23,19 +23,27 @@ classdef Conv1DMaxPoolingLayer < matlab.mixin.Copyable
             x = cat(3, x, padding);
          end
          x = reshape(x, nF, N, obj.poolSize, []);
-         xPool = max(x, [], 3);
+         [y, idx] = max(x, [], 3);
          if nargin == 3 && isSave
-            obj.winners = bsxfun(@eq, xPool, x);
+            if isa(x, 'gpuArray')
+               obj.winners = gpuArray.false(size(x));
+            else
+               obj.winners = false(size(x));
+            end
+            
+            for i = 1:obj.poolSize
+               obj.winners(:,:,i,:) = idx==i;
+            end
          end
-         xPool = permute(xPool, [1, 2, 4, 3]);
+         y = permute(y, [1, 2, 4, 3]);
       end
       
-      function dLdyUnpool = backprop(obj, dLdy)
+      function dLdx = backprop(obj, dLdy)
          [nF, N, ~] = size(dLdy);
-         dLdyUnpool = bsxfun(@times, obj.winners, permute(dLdy, [1,2,4,3]));
+         dLdx = bsxfun(@times, obj.winners, permute(dLdy, [1,2,4,3]));
          obj.winners = [];
-         dLdyUnpool = reshape(dLdyUnpool, nF, N, []);
-         dLdyUnpool = dLdyUnpool(:,:,1:obj.inputSize);         
+         dLdx = reshape(dLdx, nF, N, []);
+         dLdx = dLdx(:,:,1:obj.inputSize);         
       end
       
    end

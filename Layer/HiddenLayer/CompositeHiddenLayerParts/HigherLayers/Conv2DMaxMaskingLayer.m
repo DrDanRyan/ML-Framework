@@ -28,7 +28,7 @@ classdef Conv2DMaxMaskingLayer < matlab.mixin.Copyable
             obj.winners = obj.gpuState.false(size(x));
          end
          
-         y = obj.gpuState.nan(size(x));
+         y = obj.gpuState.zeros(size(x));
          for i = 1:poolRegionRows
             for j = 1:poolRegionCols
                rowStart = (i-1)*obj.poolRows + 1;
@@ -36,11 +36,17 @@ classdef Conv2DMaxMaskingLayer < matlab.mixin.Copyable
                colStart = (j-1)*obj.poolCols + 1;
                colEnd = min(colStart + obj.poolCols - 1, obj.inputCols);
                samp = x(:,:, rowStart:rowEnd, colStart:colEnd);
-               maxVals = max(max(samp, [], 3), [], 4);
-               winners = bsxfun(@eq, samp, maxVals); %#ok<*PROP>
-               y(:,:,rowStart:rowEnd, colStart:colEnd) = samp.*winners;
+               [maxVal, colIdx] = max(samp, [], 4); % colIdx ~ C x N x poolRows
+               [~, rowIdx] = max(maxVal, [], 3); % rowIdx ~ C x N
+               winners = obj.gpuState.false(size(samp));
+               for s = 1:obj.poolCols
+                  for r = 1:obj.poolRows
+                     winners(:,:,rowStart+r-1, colStart+s-1) = colIdx(:,:,r)==s & rowIdx==r;  %#ok<*PROP>
+                  end
+               end
+               y(:,:,rowStart:rowEnd,colStart:colEnd) = samp.*winners;
                if nargin == 3 && isSave
-                  obj.winners(:,:,rowStart:rowEnd, colStart:colEnd) = winners;
+                  obj.winners(:,:,rowStart:rowEnd,colStart:colEnd) = winners;
                end
             end
          end  

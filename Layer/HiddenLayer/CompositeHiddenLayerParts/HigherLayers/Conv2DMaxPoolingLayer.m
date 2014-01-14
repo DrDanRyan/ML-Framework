@@ -23,7 +23,7 @@ classdef Conv2DMaxPoolingLayer < matlab.mixin.Copyable
          outCols = ceil(obj.inputCols/obj.poolCols);
          y = obj.gpuState.nan(nF, N, outRows, outCols);
          if nargin == 3 && isSave
-            obj.winners = obj.gpuState.zeros(nF, N, obj.inputRows, obj.inputCols);
+            obj.winners = obj.gpuState.false(nF, N, obj.inputRows, obj.inputCols);
          end
          
          for i = 1:outRows
@@ -33,22 +33,22 @@ classdef Conv2DMaxPoolingLayer < matlab.mixin.Copyable
                colStart = (j-1)*obj.poolCols + 1;
                colEnd = min(colStart + obj.poolCols - 1, obj.inputCols);
                samp = x(:,:, rowStart:rowEnd, colStart:colEnd);
-               y(:,:,i,j) = max(max(samp, [], 3), [], 4);
+               [maxVals, colIdx] = max(samp, [], 4); % colIdx ~ C x N x poolRows
+               [y(:,:,i,j), rowIdx] = max(maxVals, [], 3); % rowIdx ~ C x N
                if nargin == 3 && isSave
-                  obj.winners(:,:,rowStart:rowEnd, colStart:colEnd) = ...
-                                                      bsxfun(@eq, samp, y(:,:,i,j));
+                  for s = 1:obj.poolCols
+                     for r = 1:obj.poolRows
+                        obj.winners(:,:,rowStart+r-1, colStart+s-1) = ...
+                            colIdx(:,:,r)==s & rowIdx==r;
+                     end
+                  end
                end
             end
          end  
       end
       
       function dLdx = backprop(obj, dLdy)
-         [nF, N, outRows, outCols] = size(dLdy);
-         if isa(obj.winners, 'gpuArray')
-            obj.winners = single(obj.winners);
-         end
-         
-         dLdx = obj.gpuState.zeros(nF, N, obj.inputRows, obj.inputCols);
+         [~, ~, outRows, outCols] = size(dLdy);       
          for i = 1:outRows
             for j = 1:outCols
                rowStart = (i-1)*obj.poolRows + 1;
