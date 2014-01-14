@@ -1,5 +1,5 @@
 function [grad_errors, sens_error] = backprop_test(layer, x, sensSampleSize)
-eps = 1e-5;
+eps = 1e-3;
 
 % Use backprop method
 y = layer.feed_forward(x, true);
