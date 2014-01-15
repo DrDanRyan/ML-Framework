@@ -4,7 +4,6 @@ classdef FeedForwardNet < SupervisedModel
 % dropout and gpu training. 
 
    properties
-      preprocessorLayers % a cell array of Preprocessor (or HiddenLayer) objects (possibly empty)
       hiddenLayers % cell array of HiddenLayer objects (possibly empty)
       outputLayer % a single OutputLayer object
       gpuState % gpuState object used for array creation dependent on isGPU flag in object
@@ -28,12 +27,6 @@ classdef FeedForwardNet < SupervisedModel
       end
       
       function gather(obj)
-         for i = 1:length(obj.preprocessorLayers);
-            if ismethod(obj.preprocessorLayers{i}, 'gather')
-               obj.preprocessorLayers{i}.gather();
-            end
-         end
-         
          for i = 1:length(obj.hiddenLayers);
             obj.hiddenLayers{i}.gather();
          end
@@ -42,12 +35,6 @@ classdef FeedForwardNet < SupervisedModel
       end
       
       function push_to_GPU(obj)
-         for i = 1:length(obj.preprocessorLayers);
-            if ismethod(obj.preprocessorLayers{i}, 'push_to_GPU')
-               obj.preprocessorLayers{i}.push_to_GPU();
-            end
-         end
-         
          for i = 1:length(obj.hiddenLayers)
             obj.hiddenLayers{i}.push_to_GPU();
          end
@@ -90,17 +77,10 @@ classdef FeedForwardNet < SupervisedModel
          if isscalar(obj.hiddenDropout)
             obj.hiddenDropout = obj.hiddenDropout*ones(1, length(obj.hiddenLayers));
          end
+
          nHiddenLayers = length(obj.hiddenLayers);
          y = cell(1, nHiddenLayers+1); % output from each hiddenLayer (and y{1} = input)
          mask = cell(1, nHiddenLayers+1); % dropout mask for each layer (including input)
-         
-         
-         % Apply preprocessorLayers (if any)
-         for i = 1:length(obj.preprocessorLayers)
-            x = obj.preprocessorLayers.feed_forward(x);
-         end
-
-         % Apply input dropout if required        
          if obj.inputDropout > 0
             mask{1} = obj.compute_dropout_mask(size(x), 1);
             y{1} = x.*mask{1};
@@ -147,11 +127,7 @@ classdef FeedForwardNet < SupervisedModel
          end
       end
       
-      function y = output(obj, x) 
-         for i = 1:length(obj.preprocessorLayers)
-            x = obj.preprocessorLayers{i}.feed_forward(x);
-         end
-         
+      function y = output(obj, x)
          if obj.inputDropout > 0
             y = (1-obj.inputDropout)*x;
          else
@@ -181,11 +157,6 @@ classdef FeedForwardNet < SupervisedModel
          objCopy = FeedForwardNet();
          
          % Handle class properties
-         objCopy.preprocessorLayers = cell(size(obj.preprocessorLayers));
-         for idx = 1:length(obj.preprocessorLayers)
-            objCopy.preprocessorLayers{idx} = copy(obj.preprocessorLayers{idx});
-         end
-         
          objCopy.hiddenLayers = cell(size(obj.hiddenLayers));
          for idx = 1:length(obj.hiddenLayers)
             objCopy.hiddenLayers{idx} = copy(obj.hiddenLayers{idx});
@@ -204,12 +175,6 @@ classdef FeedForwardNet < SupervisedModel
       end
       
       function reset(obj)
-         for i = 1:length(obj.preprocessorLayers)
-            if ismethod(obj.preprocessorLayers{i}, 'init_params')
-               obj.preprocessorLayers{i}.init_params();
-            end
-         end
-         
          for i = 1:length(obj.hiddenLayers)
             obj.hiddenLayers{i}.init_params();
          end
