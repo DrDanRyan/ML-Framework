@@ -2,8 +2,8 @@ classdef CompositeHiddenLayer < HiddenLayer
    
    properties
       layers
-      gradShape
-      gradLength
+      nestedGradShape
+      flatGradLength
    end
    
    methods
@@ -27,55 +27,35 @@ classdef CompositeHiddenLayer < HiddenLayer
       end
       
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
-         if isempty(obj.gradShape)
-            obj.compute_grad_shape();
-         end
-         grad = cell(1, obj.gradLength);
-         
-         stopIdx = obj.gradLength;
-         if obj.gradShape(end) == 0
-            dLdx = obj.layers{end}.backprop(dLdy);
-         else
-            startIdx = stopIdx - obj.gradShape(end) + 1;
-            [grad(startIdx:stopIdx), dLdx] = obj.layers{end}.backprop(dLdy);
-            stopIdx = startIdx - 1;
-         end
-         
-         for i = length(obj.layers)-1:-1:2
-            if obj.gradShape(i) == 0
-               dLdx = obj.layers{i}.backprop(dLdx);
-            else
-               startIdx = stopIdx - obj.gradShape(i) + 1;
-               [grad(startIdx:stopIdx), dLdx] = obj.layers{i}.backprop(dLdx);
-               stopIdx = startIdx - 1;
-            end
-         end
-         
-         if obj.gradShape(1) == 0
-            dLdx = obj.layers{1}.backprop(x, dLdx);
-         else
-            [grad(1:stopIdx), dLdx] = obj.layers{1}.backprop(x, dLdx);
-         end
-      end
-      
-      function compute_grad_shape(obj)
          nLayers = length(obj.layers);
-         obj.gradShape = zeros(1, nLayers);
-         for i = 1:nLayers
-            if isprop(obj.layers{i}, 'params')
-               obj.gradShape(i) = length(obj.layers{i}.params);
+         grad = cell(1, nLayers);
+         if ismethod(obj.layers{end}, 'increment_params')
+            [grad{end}, dLdx] = obj.layers{end}.backprop(dLdy);
+         else
+            dLdx = obj.layers{end}.backprop(dLdy);
+         end
+         
+         for i = nLayers-1:-1:2
+            if ismethod(obj.layers{i}, 'increment_params')
+               [grad{i}, dLdx] = obj.layers{i}.backprop(dLdx);
+            else
+               dLdx = obj.layers{i}.backprop(dLdx);
             end
          end
-         obj.gradLength = sum(obj.gradShape);
+         
+         if ismethod(obj.layers{1}, 'increment_params')
+            [grad{1}, dLdx] = obj.layers{1}.backprop(x, dLdx);
+         else
+            dLdx = obj.layers{1}.backprop(x, dLdx);
+         end
+         grad = obj.unroll_gradient(grad);
       end
       
       function increment_params(obj, delta)
-         startIdx = 1;
+         delta = obj.roll_gradient(delta);
          for i = 1:length(obj.layers)
-            if ismethod(obj.layers{i}, 'increment_params')
-               stopIdx = startIdx + obj.gradShape(i) - 1;               
-               obj.layers{i}.increment_params(delta(startIdx:stopIdx));
-               startIdx = stopIdx+1;
+            if ismethod(obj.layers{i}, 'increment_params')          
+               obj.layers{i}.increment_params(delta{i});
             end            
          end
       end
@@ -96,6 +76,42 @@ classdef CompositeHiddenLayer < HiddenLayer
          end
       end
       
+      function flatGrad = unroll_gradient(obj, nestedGrad)
+         if isempty(obj.nestedGradShape)
+            obj.compute_gradient_shapes(nestedGrad);
+         end
+         
+         flatGrad = cell(1, obj.flatGradLength);
+         startIdx = 1;
+         for i = 1:length(nestedGrad)
+            stopIdx = startIdx + obj.nestedGradShape(i) - 1;
+            flatGrad(startIdx:stopIdx) = nestedGrad{i};
+            startIdx = stopIdx + 1;
+         end
+      end
+      
+      function nestedGrad = roll_gradient(obj, flatGrad)
+         startIdx = 1;
+         nestedLength = length(obj.nestedGradShape);
+         nestedGrad = cell(1, nestedLength);
+         for i = 1:nestedLength
+            stopIdx = startIdx + obj.nestedGradShape(i) - 1;
+            nestedGrad{i} = flatGrad(startIdx:stopIdx);
+            startIdx = stopIdx + 1;
+         end
+      end
+      
+      function compute_gradient_shapes(obj, nestedGrad)
+         flatLength = 0;
+         nestedShape = zeros(1, length(nestedGrad));
+         for i = 1:length(nestedGrad)
+            nestedShape(i) = length(nestedGrad{i});
+            flatLength = flatLength + nestedShape(i);
+         end
+         obj.nestedGradShape = nestedShape;
+         obj.flatGradLength = flatLength;
+      end
+      
       function objCopy = copy(obj)
          objCopy = CompositeHiddenLayer();
          nLayers = length(obj.layers);
@@ -103,8 +119,8 @@ classdef CompositeHiddenLayer < HiddenLayer
          for i = 1:nLayers
             objCopy.layers{i} = obj.layers{i}.copy();
          end
-         objCopy.gradShape = obj.gradShape;
-         objCopy.gradLength = obj.gradLength;
+         objCopy.nestedGradShape = obj.nestedGradShape;
+         objCopy.flatGradLength = obj.flatGradLength;
       end
       
    end
