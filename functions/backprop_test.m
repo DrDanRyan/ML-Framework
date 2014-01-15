@@ -1,5 +1,5 @@
 function [grad_errors, sens_error] = backprop_test(layer, x, sensSampleSize)
-eps = 1e-3;
+eps = 1e-4;
 
 % Use backprop method
 y = layer.feed_forward(x, true);
@@ -38,7 +38,7 @@ for p = 1:nParams
       delta{p}(i) = 0;
    end
 end
-grad_errors = cellfun(@(bp, fd) gather(max(abs(bp(:) - fd(:)))), grad, FD_grad, ...
+grad_errors = cellfun(@(bp, fd) gather(mean(abs(bp(:) - fd(:)))), grad, FD_grad, ...
                         'UniformOutput', false);
 clear delta grad
 
@@ -60,7 +60,7 @@ if nargout > 1
       FD_dLdx(i) = sum(dydx(:));
       x(i) = x(i) + eps;
    end
-   sens_error = gather(nanmax(abs(dLdx(:) - FD_dLdx(:))));
+   sens_error = gather(nanmean(abs(dLdx(:) - FD_dLdx(:))));
 end
 
 end
