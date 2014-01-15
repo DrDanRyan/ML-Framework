@@ -65,8 +65,7 @@ classdef Conv2DDivisiveNormalization < matlab.mixin.Copyable
                end
             end
          end
-         % meanSigma = mean(mean(sigma, 4), 3); % 1 x N
-         meanSigma = single(gpuArray([2.17, 2.68]));
+         meanSigma = mean(mean(sigma, 4), 3); % 1 x N
          y = bsxfun(@rdivide, x, bsxfun(@max, sigma, meanSigma));
          
          if nargin == 3 && isSave
@@ -79,8 +78,10 @@ classdef Conv2DDivisiveNormalization < matlab.mixin.Copyable
       function dLdx = backprop(obj, dLdy)
          radius = (obj.windowSize-1)/2;
          [~, N, rows, cols] = size(dLdy);
-         convTerm = obj.gpuState.nan(1, N, rows, cols);
-         sigmaIndicator = bsxfun(@gt, obj.sigma, obj.meanSigma);
+         convTerm1 = obj.gpuState.nan(1, N, rows, cols);
+         convTerm2 = obj.gpuState.nan(1, N, rows, cols);
+         sigmaLarge = bsxfun(@gt, obj.sigma, obj.meanSigma);
+         sigmaSmall = bsxfun(@le, obj.sigma, obj.meanSigma);
          
          for i = 1:rows
             for j = 1:cols
@@ -90,11 +91,12 @@ classdef Conv2DDivisiveNormalization < matlab.mixin.Copyable
                   rE = min(rows, i+radius); % rowEnd
                   cS = max(1, j-radius); % colStart
                   cE = min(cols, j+radius); % colEnd
-                  samp = sum(dLdy(:,:,rS:rE,cS:cE).*obj.x(:,:,rS:rE,cS:cE), 1).*...
-                         sigmaIndicator(:,:,rS:rE,cS:cE)./...
+                  samp1 = sum(dLdy(:,:,rS:rE,cS:cE).*obj.x(:,:,rS:rE,cS:cE), 1).*...
+                         sigmaLarge(:,:,rS:rE,cS:cE)./...
                          bsxfun(@times, obj.edgeFactor(:,:,rS:rE,cS:cE), ...
                                         obj.sigma(:,:,rS:rE,cS:cE).^3);
-                  samp(isnan(samp)) = 0; % in case sigma == 0 somewhere
+                  samp1(isnan(samp1)) = 0; % in case sigma == 0 somewhere
+                  
                   topRoom = min(radius, i-1);
                   bottomRoom = min(radius, rows-i);
                   leftRoom = min(radius, j-1);
@@ -102,23 +104,35 @@ classdef Conv2DDivisiveNormalization < matlab.mixin.Copyable
                   center = radius+1;
                   truncW = obj.W(1,1,center-topRoom:center+bottomRoom, ...
                                      center-leftRoom:center+rightRoom);
-                  convTerm(:,:,i,j) = sum(sum(bsxfun(@times, truncW, samp), 4), 3);
+                  convTerm1(:,:,i,j) = sum(sum(bsxfun(@times, truncW, samp1), 4), 3);
+                  
+                  % Possibly optimize by not computing when all(x(:,:,i,j), 1) == 0
+                  samp2 = bsxfun(@times, obj.edgeFactor(:,:,rS:rE,cS:cE), ...
+                                         obj.sigma(:,:,rS:rE,cS:cE));
+                  convTerm2(:,:,i,j) = sum(sum(bsxfun(@rdivide, truncW, samp2), 4), 3);
                else   % Interior, can use full filter (still need to account for edgeFactors)
                   rS = i-radius;
                   rE = i+radius;
                   cS = j-radius;
                   cE = j+radius;
-                  samp = sum(dLdy(:,:,rS:rE,cS:cE).*obj.x(:,:,rS:rE,cS:cE), 1).*...
-                         sigmaIndicator(:,:,rS:rE,cS:cE)./...
+                  samp1 = sum(dLdy(:,:,rS:rE,cS:cE).*obj.x(:,:,rS:rE,cS:cE), 1).*...
+                         sigmaLarge(:,:,rS:rE,cS:cE)./...
                          bsxfun(@times, obj.edgeFactor(:,:,rS:rE,cS:cE), ...
                                         obj.sigma(:,:,rS:rE,cS:cE).^3);
-                  samp(isnan(samp)) = 0; % in case sigma == 0 somewhere
-                  convTerm(:,:,i,j) = sum(sum(bsxfun(@times, obj.W, samp), 4), 3);
+                  samp1(isnan(samp1)) = 0; % in case sigma == 0 somewhere
+                  convTerm1(:,:,i,j) = sum(sum(bsxfun(@times, obj.W, samp1), 4), 3);
+                  
+                  samp2 = bsxfun(@times, obj.edgeFactor(:,:,rS:rE,cS:cE), ...
+                                         obj.sigma(:,:,rS:rE,cS:cE));
+                  convTerm2(:,:,i,j) = sum(sum(bsxfun(@rdivide, obj.W, samp2), 4), 3);
                end
             end
          end
+         convTerm2(isinf(convTerm2)) = 0; % fix cases where sigma == 0 (corresponds to x == 0)
+         temp1 = sum(sum(sigmaSmall.*sum(dLdy.*obj.x, 1), 4), 3)./obj.meanSigma.^2; % 1 x N
          dLdx = bsxfun(@rdivide, dLdy, bsxfun(@max, obj.sigma, obj.meanSigma)) - ...
-                bsxfun(@times, obj.x, convTerm);
+                bsxfun(@times, obj.x, convTerm1) - ...
+                bsxfun(@times, temp1, bsxfun(@times, obj.x/(rows*cols), convTerm2));
          obj.x = [];
          obj.sigma = [];
          obj.meanSigma = [];
