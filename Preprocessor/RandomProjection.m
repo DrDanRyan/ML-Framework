@@ -5,21 +5,25 @@ classdef RandomProjection < Preprocessor
    % orthogonal.
    
    properties
-      P % projection" matrix
+      inputDim
+      outputDim
+      gpuState
+      P % projection matrix
    end
    
    methods
-      function obj = RandomProjection(inputDim, outputDim, gpuState)
+      function obj = RandomProjection(inputDim, outputDim, gpu)
          if nargin < 3
-            gpuState = GPUState();
+            gpu = [];
          end
-         obj.P = gpuState.randn(outputDim, inputDim);
-         columnNorms = sqrt(sum(obj.P.^2, 1));
-         obj.P = bsxfun(@rdivide, obj.P, columnNorms);
+         obj.inputDim = inputDim;
+         obj.outputDim = outputDim;
+         obj.gpuState = GPUState(gpu);
+         obj.init_params();
       end
       
-      function data = transform(obj, data)
-         data = obj.P*data;
+      function x = feed_forward(obj, x)
+         x = obj.P*x;
       end
       
       function gather(obj)
@@ -28,6 +32,12 @@ classdef RandomProjection < Preprocessor
       
       function push_to_GPU(obj)
          obj.P = single(gpuArray(obj.P));
+      end
+      
+      function init_params(obj)
+         obj.P = obj.gpuState.randn(obj.outputDim, obj.inputDim);
+         columnNorms = sqrt(sum(obj.P.^2, 1));
+         obj.P = bsxfun(@rdivide, obj.P, columnNorms);
       end
    end
    
