@@ -8,7 +8,7 @@ classdef SoftabsLayer < matlab.mixin.Copyable
    methods
       function obj = SoftabsLayer(eps)
          if nargin < 1
-            eps = 1e-8;
+            eps = 1e-6;
          end
          obj.eps = eps;
       end
