@@ -40,7 +40,7 @@ classdef Conv2DFilterReporter < Reporter
                f = squeeze(obj.convLayer.params{1}(idx,:,:,:,:));
                M = gather(max(abs(f(:))));
                image(f, 'CDataMapping', 'scaled');
-               set(gca, 'CLim', [-M-1e-4, M+1e-4]);
+               set(gca, 'CLim', [-M-.02, M+.02]);
                axis off tight
             end
          end
