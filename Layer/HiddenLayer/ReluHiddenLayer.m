@@ -10,9 +10,12 @@ classdef ReluHiddenLayer < StandardLayer & HiddenLayer
       end
       
       function init_params(obj)
+         if isempty(obj.initScale)
+            obj.initScale = 1/obj.inputSize;
+         end
          obj.params{1} = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
                                           obj.initScale, obj.gpuState);
-         obj.params{2} = obj.gpuState.ones(obj.outputSize, 1);
+         obj.params{2} = obj.initScale*obj.gpuState.ones(obj.outputSize, 1);
       end
       
       function y = feed_forward(obj, x, ~)
@@ -21,7 +24,7 @@ classdef ReluHiddenLayer < StandardLayer & HiddenLayer
       end
       
       function [grad, dLdx] = backprop(obj, x, y, dLdy)
-         dLdz = dLdy.*obj.gpuState.make_numeric(y > 0);
+         dLdz = dLdy.*(y > 0);
          [grad, dLdx] = obj.grad_from_dLdz(x, dLdz);
       end         
    end   
