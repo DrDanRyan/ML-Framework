@@ -1,9 +1,11 @@
 classdef SVMOutputLayer < StandardOutputLayer
-   % A linear output layer with a hinge loss function raised to the power lossExponent.
-   % Requires targets to take values {-1, 1} (as opposed to {0, 1} for LogisticOutputLayer)
+   % A linear output layer with a hinge loss function raised to the power 
+   % lossExponent. Requires targets to take values {-1, 1} (as opposed to 
+   % {0, 1} for LogisticOutputLayer). If left unspecified, maxFanIn is set
+   % to 1/sqrt(L2Penalty) as optimal solution must lie in this ball.
    
    properties
-      costRatio % multiplies the loss for incorrectly classifying positive (rarer) examples
+      costRatio % multiplies the loss for misclassifying positive examples
       lossExponent % exponent of the hinge loss function (>= 1)
       isLocallyLinear = true
       isDiagonalDy = true
@@ -19,6 +21,10 @@ classdef SVMOutputLayer < StandardOutputLayer
          parse(p, varargin{:});
          obj.lossExponent = p.Results.lossExponent;
          obj.costRatio = p.Results.costRatio;
+         
+         if ~isempty(obj.L2Penalty) && isempty(obj.maxFanIn)
+            obj.maxFanIn = 1/sqrt(obj.L2Penalty);
+         end
       end
          
       function [dLdz, y] = compute_dLdz(obj, x, t)
