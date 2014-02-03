@@ -20,7 +20,7 @@ classdef TanhHiddenLayer < StandardLayer & HiddenLayer
          
          if nargin == 3 && isSave
             obj.Dy = v.*u.*u;
-            obj.Dy(isnan) = 0;
+            obj.Dy(isnan(obj.Dy)) = 0;
          end
       end
       
