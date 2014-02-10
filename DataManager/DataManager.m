@@ -25,7 +25,11 @@ classdef DataManager < matlab.mixin.Copyable
          obj.trainingData = trainingData; 
          obj.trainingSize = size(trainingData{1}, 2);
          obj.validationData = validationData;
-         obj.validationSize = size(validationData{1}, 2);
+         if ~isempty(validationData)
+            obj.validationSize = size(validationData{1}, 2);
+         else
+            obj.validationSize = 0;
+         end
          
          p = inputParser();
          p.addParamValue('batchSize', []);
@@ -135,7 +139,11 @@ classdef DataManager < matlab.mixin.Copyable
       
       function reset(obj)
          obj.trainingSize = size(obj.trainingData{1}, 2);
-         obj.validationSize = size(obj.validationData{1}, 2);
+         if ~isempty(obj.validationData)
+            obj.validationSize = size(obj.validationData{1}, 2);
+         else
+            obj.validationSize = 0;
+         end
          
          if ~isempty(obj.lossBatchSize)
             obj.lossIdx = 1;
