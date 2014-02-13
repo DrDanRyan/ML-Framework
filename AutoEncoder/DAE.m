@@ -39,7 +39,15 @@ classdef DAE < AutoEncoder
       end
       
       function objCopy = copy(obj)
-         objCopy = copy@AutoEncoder(obj);
+         objCopy = DAE();
+         
+         % Handle properties
+         objCopy.encodeLayer = obj.encodeLayer.copy();
+         objCopy.decodeLayer = obj.decodeLayer.copy();
+         
+         % Value properties
+         objCopy.isTiedWeights = obj.isTiedWeights;
+         objCopy.gpuState = obj.gpuState;
          objCopy.noiseType = obj.noiseType;
          objCopy.noiseLevel = obj.noiseLevel;
       end

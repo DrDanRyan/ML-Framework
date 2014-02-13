@@ -116,7 +116,7 @@ classdef CAE < AutoEncoder
       end
       
       function objCopy = copy(obj)
-         objCopy = CAE;
+         objCopy = CAE();
          
          % Handle properties
          objCopy.encodeLayer = obj.encodeLayer.copy();

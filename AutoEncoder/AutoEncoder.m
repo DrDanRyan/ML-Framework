@@ -1,12 +1,18 @@
-classdef AutoEncoder < handle
-   % Generic AutoEncoder
+classdef AutoEncoder < AutoEncoderInterface
+   % Basic AutoEncoder
    
    properties
       encodeLayer % a HiddenLayer object that functions as the encoding layer
-      decodeLayer % a OutputLayer object that functions as the decoding layer and loss function
-      isTiedWeights % a boolean indicating if the params in encodeLayer and decodeLayer are shared
+      isTiedWeights % a boolean indicating if the params in encodeLayer and 
+                    % decodeLayer are shared; assumes encodeLayer.params = {W, b} 
+                    % when isTiedWeights is true
       gpuState
-      encodeGradSize
+      encodeGradSize % size of cell array returned by enocdeLayer.backprop
+   end
+   
+   properties (Dependent)
+      decodeLayer % a OutputLayer object that functions as the decoding layer 
+                  % and loss function
    end
    
    methods
@@ -26,18 +32,26 @@ classdef AutoEncoder < handle
          end
       end
       
+      function set.decodeLayer(obj, decodeLayer)
+         % Ties the weights of the decodeLayer to the encodeLayer if
+         % isTiedWeights is true.
+         obj.decodeLayer = decodeLayer;
+         if obj.isTiedWeights
+            obj.decodeLayer.params{1} = obj.get_encode_params_transposed();
+         end
+      end
+      
       function [grad, xRecon] = gradient(obj, batch)
-         xTarget = batch{1}; % keep any NaN values
-         xIn = batch{1}; % will replace NaN values by 0 if present
-         xIn(isnan(xIn)) = 0; 
-         xCode = obj.encodeLayer.feed_forward(xIn, true);
-         [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, xTarget);
-         encodeGrad = obj.encodeLayer.backprop(xIn, xCode, dLdxCode);
+         x = batch{1};
+         h = obj.encodeLayer.feed_forward(x, true);
+         [decodeGrad, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
+         encodeGrad = obj.encodeLayer.backprop(x, h, dLdh);
          obj.encodeGradSize = length(encodeGrad);
          
          if obj.isTiedWeights
             if ndims(encodeGrad{1}) <= 2
-               grad = {encodeGrad{1}+decodeGrad{1}', encodeGrad{2}, decodeGrad{2}};
+               grad = {encodeGrad{1}+decodeGrad{1}', encodeGrad{2}, ...
+                       decodeGrad{2}};
             else
                grad = {encodeGrad{1}+permute(decodeGrad{1}, [2, 1, 3]), ...
                         encodeGrad{2}, decodeGrad{2}};
@@ -57,25 +71,23 @@ classdef AutoEncoder < handle
          loss = obj.decodeLayer.compute_loss(xRecon, x);
       end
       
-      function xCode = encode(obj, x)
-         x(isnan(x)) = 0;
-         xCode = obj.encodeLayer.feed_forward(x);
+      function h = encode(obj, x)
+         h = obj.encodeLayer.feed_forward(x);
       end
       
       function xRecon = output(obj, x)
-         x(isnan(x)) = 0;
-         xCode = obj.encodeLayer.feed_forward(x);
-         xRecon = obj.decodeLayer.feed_forward(xCode);
+         h = obj.encodeLayer.feed_forward(x);
+         xRecon = obj.decodeLayer.feed_forward(h);
       end
       
-      function increment_params(obj, delta_params)
+      function increment_params(obj, delta)
          if obj.isTiedWeights
-            obj.encodeLayer.increment_params(delta_params(1:2));
-            obj.decodeLayer.increment_params({0, delta_params{3}});
+            obj.encodeLayer.increment_params(delta(1:2));
+            obj.decodeLayer.increment_params({0, delta{3}});
             obj.decodeLayer.params{1} = obj.get_encode_params_transposed();
          else
-            obj.encodeLayer.increment_params(delta_params(1:obj.encodeGradSize));
-            obj.decodeLayer.increment_params(delta_params(obj.encodeGradSize+1:end));
+            obj.encodeLayer.increment_params(delta(1:obj.encodeGradSize));
+            obj.decodeLayer.increment_params(delta(obj.encodeGradSize+1:end));
          end
       end
       
