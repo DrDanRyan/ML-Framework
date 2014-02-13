@@ -2,8 +2,10 @@ classdef DAE < AutoEncoder
    % Denoising AutoEncoder
    
    properties     
-      noiseType % string indicating type of input noise to use: 'none', 'dropout', 'Gaussian'
-      noiseLevel % a scalar indicating the level of noise (i.e. dropout prob, or std_dev)
+      noiseType % string indicating type of input noise to use: 
+                % 'none', 'dropout', 'Gaussian'
+      noiseLevel % a scalar indicating the level of noise 
+                 % (i.e. dropout prob, or std_dev)
    end
    
    methods
@@ -20,10 +22,18 @@ classdef DAE < AutoEncoder
       end
       
       function [grad, xRecon] = gradient(obj, batch)
-         xTarget = batch{1}; % noise free, will keep NaN vals
-         xIn = batch{1}; % noise will be added and then NaNs replaced with 0
-         xIn = obj.inject_noise(xIn);
-         [grad, xRecon] = gradient@AutoEncoder(obj, xIn, xTarget, []);
+         x = batch{1}; % noise free, will keep NaN vals
+         xNoisy = obj.inject_noise(x);
+         h = obj.encodeLayer.feed_forward(xNoisy, true);
+         [decodeGrad, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
+         encodeGrad = obj.encodeLayer.backprop(xNoisy, h, dLdh);
+         
+         if obj.isTiedWeights
+            grad = obj.tied_weights_grad(encodeGrad, decodeGrad);
+         else
+            obj.encodeGradSize = length(encodeGrad);
+            grad = [encodeGrad, decodeGrad];
+         end
       end
       
       function x = inject_noise(obj, x)
@@ -35,7 +45,6 @@ classdef DAE < AutoEncoder
             case 'Gaussian'
                x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
          end
-         x(isnan(x)) = 0;
       end
       
       function objCopy = copy(obj)
