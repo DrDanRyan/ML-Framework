@@ -46,18 +46,22 @@ classdef AutoEncoder < AutoEncoderInterface
          h = obj.encodeLayer.feed_forward(x, true);
          [decodeGrad, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
          encodeGrad = obj.encodeLayer.backprop(x, h, dLdh);
-         obj.encodeGradSize = length(encodeGrad);
-         
+
          if obj.isTiedWeights
-            if ndims(encodeGrad{1}) <= 2
+            grad = obj.tied_weights_grad(encodeGrad, decodeGrad);
+         else
+            obj.encodeGradSize = length(encodeGrad);
+            grad = [encodeGrad, decodeGrad];
+         end
+      end
+      
+      function grad = tied_weights_grad(~, encodeGrad, decodeGrad)
+         if ndims(encodeGrad{1}) <= 2
                grad = {encodeGrad{1}+decodeGrad{1}', encodeGrad{2}, ...
                        decodeGrad{2}};
-            else
+         else
                grad = {encodeGrad{1}+permute(decodeGrad{1}, [2, 1, 3]), ...
                         encodeGrad{2}, decodeGrad{2}};
-            end
-         else
-            grad = [encodeGrad, decodeGrad];
          end
       end
       
