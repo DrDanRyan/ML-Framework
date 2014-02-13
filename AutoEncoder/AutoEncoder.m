@@ -3,6 +3,8 @@ classdef AutoEncoder < AutoEncoderInterface
    
    properties
       encodeLayer % a HiddenLayer object that functions as the encoding layer
+      decodeLayer % a OutputLayer object that functions as the decoding layer 
+                  % and loss function
       isTiedWeights % a boolean indicating if the params in encodeLayer and 
                     % decodeLayer are shared; assumes encodeLayer.params = {W, b} 
                     % when isTiedWeights is true
@@ -13,11 +15,6 @@ classdef AutoEncoder < AutoEncoderInterface
                      % feed-forward scheme (keeping non-NaN values clamped)
       imputeTol % a tolerance for the max absolute difference for imputed values
                 % after one cycle through the AutoEncoder
-   end
-   
-   properties (Dependent)
-      decodeLayer % a OutputLayer object that functions as the decoding layer 
-                  % and loss function
    end
    
    methods
@@ -45,7 +42,7 @@ classdef AutoEncoder < AutoEncoderInterface
          % Ties the weights of the decodeLayer to the encodeLayer if
          % isTiedWeights is true.
          obj.decodeLayer = decodeLayer;
-         if obj.isTiedWeights
+         if obj.isTiedWeights %#ok<MCSUP>
             obj.decodeLayer.params{1} = obj.get_encode_params_transposed();
          end
       end
@@ -158,7 +155,7 @@ classdef AutoEncoder < AutoEncoderInterface
          while absDiff > obj.imputeTol
             h = obj.encodeLayer.feed_forward(x);
             xRecon = obj.decodeLayer.feed_forward(h);
-            absDiff = max(abs(x(nanIdx) - xRecon(nanIdx)));
+            absDiff = gather(max(abs(x(nanIdx) - xRecon(nanIdx))));
             x(nanIdx) = xRecon(nanIdx);
          end
       end
