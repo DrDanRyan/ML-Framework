@@ -22,7 +22,12 @@ classdef DAE < AutoEncoder
       end
       
       function [grad, xRecon] = gradient(obj, batch)
-         x = batch{1}; % noise free, will keep NaN vals
+         if obj.isImputeValues
+            x = obj.impute_values(batch{1});
+         else
+            x = batch{1};
+         end
+         
          xNoisy = obj.inject_noise(x);
          h = obj.encodeLayer.feed_forward(xNoisy, true);
          [decodeGrad, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
@@ -56,6 +61,8 @@ classdef DAE < AutoEncoder
          
          % Value properties
          objCopy.isTiedWeights = obj.isTiedWeights;
+         objCopy.isImputeValues = obj.isImputeValues;
+         objCopy.imputeTol = obj.imputeTol;
          objCopy.gpuState = obj.gpuState;
          objCopy.noiseType = obj.noiseType;
          objCopy.noiseLevel = obj.noiseLevel;
