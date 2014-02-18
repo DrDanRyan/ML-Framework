@@ -37,12 +37,7 @@ classdef CAE < AutoEncoder
                                  'UniformOutput', false);
          
          if obj.isTiedWeights
-            if ndims(encodeGrad{1}) <= 2
-               grad = {encodeGrad{1}+decodeGrad{1}', encodeGrad{2}, decodeGrad{2}};
-            else % maxout layer
-               grad = {encodeGrad{1}+permute(decodeGrad{1}, [2, 1, 3]), ...
-                        encodeGrad{2}, decodeGrad{2}};
-            end
+            grad = obj.tied_weights_grad(encodeGrad, decodeGrad);
          else
             grad = [encodeGrad, decodeGrad];
          end
@@ -116,7 +111,7 @@ classdef CAE < AutoEncoder
       end
       
       function objCopy = copy(obj)
-         objCopy = CAE;
+         objCopy = CAE();
          
          % Handle properties
          objCopy.encodeLayer = obj.encodeLayer.copy();
