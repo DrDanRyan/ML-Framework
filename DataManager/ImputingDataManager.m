@@ -4,6 +4,7 @@ classdef ImputingDataManager < DataManager
       isNaN       % logical array same size as trainingData indicating
                   % where trainingData had NaN values originally
       oldBatchIdx % batchIdx used to generate last mini-batch
+      stopIdx  % stopIdx used to generate last mini-batch
    end
    
    methods
@@ -15,13 +16,21 @@ classdef ImputingDataManager < DataManager
       
       function batch = next_batch(obj)
          if isempty(obj.batchSize) % full batch
-            batch = next_batch@DataManager(obj);
-            batch = [batch, obj.isNaN];
+            batch = obj.trainingData;
+            batch{end+1} = obj.isNaN;
          else % mini-batch
+            obj.stopIdx = min(obj.trainingSize, obj.batchIdx + obj.batchSize - 1);
+            batch = cellfun(@(v) v(:,obj.batchIdx:obj.stopIdx,:,:), obj.trainingData, ...
+                              'UniformOutput', false);
+            batch{end+1} = obj.isNaN(:,obj.batchIdx:obj.stopIdx,:,:);
+            
             obj.oldBatchIdx = obj.batchIdx;
-            batch = next_batch@DataManager(obj);
-            batch = [batch, obj.isNaN(:,obj.oldBatchIdx:obj.stopIdx,:,:)];
-         end        
+            if obj.stopIdx == obj.trainingSize
+               obj.shuffle_training_data();
+            else
+               obj.batchIdx = obj.stopIdx + 1;
+            end
+         end  
       end
       
       function update_imputed_data(obj, xNew)
@@ -37,7 +46,9 @@ classdef ImputingDataManager < DataManager
          permvec = randperm(obj.trainingSize);
          obj.trainingData = cellfun(@(v) v(:,permvec,:,:), obj.trainingData, ...
                                                       'UniformOutput', false);
-         obj.isNaN = obj.isNaN(:,permvec,:,:);
+         if ~isempty(obj.isNaN) % need to avoid this line during DataManager initialize
+            obj.isNaN = obj.isNaN(:,permvec,:,:);
+         end
          obj.batchIdx = 1;
       end
       

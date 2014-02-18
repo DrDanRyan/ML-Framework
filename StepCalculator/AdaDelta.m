@@ -20,7 +20,7 @@ classdef AdaDelta < StepCalculator
       
       function take_step(obj, batch, model, ~)
          grad = model.gradient(batch);
-         step = obj.compute_step(obj, grad);
+         step = obj.compute_step(grad);
          model.increment_params(step);
       end
       

@@ -43,9 +43,9 @@ classdef ImputingAutoEncoder < DAE
             h = obj.encodeLayer.feed_forward(x, true);
             [~, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
             [~, dLdx] = obj.encodeLayer.backprop(x, h, dLdh);
-            grad = dLdx(isNaN) + (1 + obj.lam)*x(isNaN) - xRecon(isNaN);
+            grad = {dLdx(isNaN) + (1 + obj.lam)*x(isNaN) - xRecon(isNaN)};
             step = obj.stepCalculator.compute_step(grad);
-            x(isNaN) = x(isNaN) + step;
+            x(isNaN) = x(isNaN) + step{1};
          end
          
          obj.imputedData = x(isNaN);
