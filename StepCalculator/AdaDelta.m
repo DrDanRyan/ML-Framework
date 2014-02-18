@@ -20,6 +20,11 @@ classdef AdaDelta < StepCalculator
       
       function take_step(obj, batch, model, ~)
          grad = model.gradient(batch);
+         step = obj.compute_step(obj, grad);
+         model.increment_params(step);
+      end
+      
+      function step = compute_step(obj, grad)
          if isempty(obj.gradSquared)
             obj.gradSquared = cellfun(@(grad) (1-obj.tau)*grad.*grad, grad, ...
                                       'UniformOutput', false);
@@ -36,7 +41,6 @@ classdef AdaDelta < StepCalculator
             obj.stepSquared = cellfun(@(avg, step) obj.tau*avg + (1-obj.tau)*step.*step, ...
                                       obj.stepSquared, step, 'UniformOutput', false);            
          end
-         model.increment_params(step);
       end
       
       function reset(obj)
