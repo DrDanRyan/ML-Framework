@@ -36,20 +36,26 @@ classdef GradientTrainer < handle
          nUpdates = 0;
          while isContinue
             nUpdates = nUpdates + 1;
-            batch = obj.dataManager.next_batch();
-            if isempty(obj.parameterSchedule)
-               params = [];
-            else
-               params = obj.parameterSchedule.update();
-            end
-            obj.stepCalculator.take_step(batch, obj.model, params);
-            if ~isempty(obj.progressMonitor)
-               isContinue = obj.progressMonitor.update(obj.model, ...
-                                                       obj.dataManager); 
-            end
+            isContinue = obj.update();
             if nUpdates >= maxUpdates
                break;
             end
+         end
+      end
+      
+      function isContinue = update(obj)
+         batch = obj.dataManager.next_batch();
+         if isempty(obj.parameterSchedule)
+            params = [];
+         else
+            params = obj.parameterSchedule.update();
+         end
+         obj.stepCalculator.take_step(batch, obj.model, params);
+         if ~isempty(obj.progressMonitor)
+            isContinue = obj.progressMonitor.update(obj.model, ...
+                                                    obj.dataManager); 
+         else
+            isContinue = true;
          end
       end
       
