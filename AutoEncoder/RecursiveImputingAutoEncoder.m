@@ -1,4 +1,4 @@
-classdef AutoEncoder < AutoEncoderInterface
+classdef RecursiveImputingAutoEncoder < AutoEncoderInterface
    % Basic AutoEncoder
    
    properties
@@ -10,18 +10,32 @@ classdef AutoEncoder < AutoEncoderInterface
                     % when isTiedWeights is true
       gpuState
       encodeGradSize % size of cell array returned by enocdeLayer.backprop
+      
+      isImputeValues % if true, NaN values will be imputed by a recursive
+                     % feed-forward scheme (keeping non-NaN values clamped)
+      imputeTol % a tolerance for the max absolute difference for imputed values
+                % after one cycle through the AutoEncoder
    end
    
    methods
-      function obj = AutoEncoder(varargin)
+      function obj = RecursiveImputingAutoEncoder(varargin)
          p = inputParser;
          p.KeepUnmatched = true;
          p.addParamValue('isTiedWeights', false);
+         p.addParamValue('isImputeValues', false);
+         p.addParamValue('imputeTol', 1e-5);
          p.addParamValue('gpu', []);
          parse(p, varargin{:});
 
          obj.isTiedWeights = p.Results.isTiedWeights;
-         obj.gpuState = GPUState(p.Results.gpu);
+         obj.isImputeValues = p.Results.isImputeValues;
+         obj.imputeTol = p.Results.imputeTol;
+         
+         if isempty(p.Results.gpu)
+            obj.gpuState = GPUState();
+         else
+            obj.gpuState = GPUState(p.Results.gpu);
+         end
       end
       
       function set.decodeLayer(obj, decodeLayer)
@@ -34,7 +48,12 @@ classdef AutoEncoder < AutoEncoderInterface
       end
       
       function [grad, xRecon] = gradient(obj, batch)
-         x = batch{1};
+         if obj.isImputeValues
+            x = obj.impute_values(batch{1});
+         else
+            x = batch{1};
+         end
+         
          h = obj.encodeLayer.feed_forward(x, true);
          [decodeGrad, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
          encodeGrad = obj.encodeLayer.backprop(x, h, dLdh);
@@ -58,7 +77,11 @@ classdef AutoEncoder < AutoEncoderInterface
       end
       
       function loss = compute_loss(obj, batch)
-         x = batch{1};
+         if obj.isImputeValues
+            x = obj.impute_values(batch{1});
+         else
+            x = batch{1};
+         end
          xRecon = obj.output(x);
          loss = obj.compute_loss_from_output(xRecon, x);
       end
@@ -68,10 +91,16 @@ classdef AutoEncoder < AutoEncoderInterface
       end
       
       function h = encode(obj, x)
+         if obj.isImputeValues
+            x = obj.impute_values(x);
+         end
          h = obj.encodeLayer.feed_forward(x);
       end
       
       function xRecon = output(obj, x)
+         if obj.isImputeValues
+            x = obj.impute_values(x);
+         end
          h = obj.encodeLayer.feed_forward(x);
          xRecon = obj.decodeLayer.feed_forward(h);
       end
@@ -115,6 +144,22 @@ classdef AutoEncoder < AutoEncoderInterface
          end
       end
       
+      function x = impute_values(obj, x)
+         nanIdx = isnan(x);
+         if isempty(nanIdx)
+            return
+         end
+         
+         absDiff = Inf;
+         x(nanIdx) = 0;
+         while absDiff > obj.imputeTol
+            h = obj.encodeLayer.feed_forward(x);
+            xRecon = obj.decodeLayer.feed_forward(h);
+            absDiff = gather(max(abs(x(nanIdx) - xRecon(nanIdx))));
+            x(nanIdx) = xRecon(nanIdx);
+         end
+      end
+      
       function objCopy = copy(obj)
          objCopy = AutoEncoder();
          % Handle properties
@@ -123,6 +168,8 @@ classdef AutoEncoder < AutoEncoderInterface
          
          % Value properties
          objCopy.isTiedWeights = obj.isTiedWeights;
+         objCopy.isImputeValues = obj.isImputeValues;
+         objCopy.imputeTol = obj.imputeTol;
          objCopy.gpuState = obj.gpuState;
       end
    end
