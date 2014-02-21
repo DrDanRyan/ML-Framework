@@ -3,7 +3,6 @@ classdef ImputingDataManager < DataManager
    properties
       isNaN       % logical array same size as trainingData indicating
                   % where trainingData had NaN values originally
-      oldBatchIdx % batchIdx used to generate last mini-batch
       stopIdx  % stopIdx used to generate last mini-batch
    end
    
@@ -23,13 +22,6 @@ classdef ImputingDataManager < DataManager
             batch = cellfun(@(v) v(:,obj.batchIdx:obj.stopIdx,:,:), obj.trainingData, ...
                               'UniformOutput', false);
             batch{end+1} = obj.isNaN(:,obj.batchIdx:obj.stopIdx,:,:);
-            
-            obj.oldBatchIdx = obj.batchIdx;
-            if obj.stopIdx == obj.trainingSize
-               obj.shuffle_training_data();
-            else
-               obj.batchIdx = obj.stopIdx + 1;
-            end
          end  
       end
       
@@ -38,7 +30,13 @@ classdef ImputingDataManager < DataManager
             obj.trainingData{1}(obj.isNaN) = xNew;
          else % mini-batch
             obj.trainingData{1}(...
-               obj.isNaN(:,obj.oldBatchIdx:obj.stopIdx,:,:)) = xNew;
+               obj.isNaN(:,obj.batchIdx:obj.stopIdx,:,:)) = xNew;
+            
+            if obj.stopIdx == obj.trainingSize
+               obj.shuffle_training_data();
+            else
+               obj.batchIdx = obj.stopIdx + 1;
+            end
          end
       end
       

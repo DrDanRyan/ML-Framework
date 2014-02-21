@@ -3,12 +3,17 @@ load MNIST_train
 
 %% Define parameters
 codeSize = 64;
+nRows = 8;
+nCols = 8;
+
 validProp = 1/6;
 nanNoise = .2;
-tol = 1e-2;
+
+nSteps = 100;
+lam = 0;
 
 validationInterval = 10;
-batchSize = 128;
+batchSize = 12800;
 trainLossSampleSize = 1e4;
 nUpdates = 1e5;
 
@@ -18,7 +23,7 @@ corruptedInputs = inputs;
 corruptedInputs(mask) = NaN;
 
 %% Setup model and trainer
-ae = ImputingAutoEncoder('nSteps', 100, 'lam', 0);
+ae = ImputingAutoEncoder('nSteps', nSteps, 'lam', lam);
 enc = LogisticHiddenLayer(784, codeSize);
 dec = LogisticOutputLayer(codeSize, 784);
 ae.encodeLayer = enc;
@@ -27,8 +32,8 @@ ae.decodeLayer = dec;
 trainer = ImputingGradientTrainer();
 trainer.model = ae;
 trainer.stepCalculator = AdaDelta();
-trainer.progressMonitor = BasicMonitor();
-trainer.progressMonitor.reporter = MNISTReporter(8, 8);
+trainer.progressMonitor = BasicMonitor('validationInterval', validationInterval);
+trainer.progressMonitor.reporter = MNISTReporter(nRows, nCols);
 trainer.dataManager = ImputingDataManager({corruptedInputs}, ...
                                   {}, ...
                                   'batchSize', batchSize, ...

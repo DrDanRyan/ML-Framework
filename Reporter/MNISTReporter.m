@@ -42,8 +42,8 @@ classdef MNISTReporter < Reporter
                idx = obj.cols*(i-1) + j;
                subtightplot(obj.rows, obj.cols, idx, [.01, .01]);
                image(reshape(W(idx,:), 28, 28)', 'CDataMapping', 'scaled');
-               maxAbs = gather(max(abs(W(idx,:))));
-               set(gca, 'CLim', [-maxAbs, maxAbs]);
+               absMax = gather(max(abs(W(idx,:))));
+               set(gca, 'CLim', [-absMax-.04, absMax+.04]);
                colormap('gray');
                axis off tight
             end

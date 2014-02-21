@@ -42,6 +42,10 @@ classdef DAE < AutoEncoder
                % do nothing
             case 'dropout'
                x = x.*obj.gpuState.binary_mask(size(x), obj.noiseLevel);
+            case 'salt and pepper'
+               noiseIdx = obj.gpuState.binary_mask(size(x), 1-obj.noiseLevel);
+               noiseVals = obj.gpuState.binary_mask([sum(noiseIdx(:)), 1], .5);
+               x(logical(noiseIdx)) = noiseVals;
             case 'Gaussian'
                x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
          end
