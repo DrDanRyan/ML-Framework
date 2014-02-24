@@ -1,38 +1,38 @@
 %% Train a basic AutoEncoder on MNIST
 clear all
 close all
-load MNIST_train
+load cifar10_train
 
 %% Define model parameters
 nUpdates = 1e5;
-codeSize = 25;
-nRows = 5;
-nCols = 5;
+codeSize = 1024;
 
-noiseType = 'none';
-noiseLevel = .1;
+nRows = 12;
+nCols = 12;
 
-lr0 = .01;
-rho = .8;
+lr0 = .001;
+rho = .5;
 
-validationInterval = 50;
-batchSize = 512;
+validationInterval = 10;
+batchSize = 128;
 trainLossSampleSize = 1e4;
 
-
 %% Setup model and trainer
-encoder = LogisticHiddenLayer(784, codeSize, 'initScale', .1);
-decoder = LogisticOutputLayer(codeSize, 784);
-ae = DAE('noiseType', noiseType, 'noiseLevel', noiseLevel);
+encoder = TRecHiddenLayer(3072, codeSize, 'initScale', .05);
+d1 = LinearZeroBiasHiddenLayer(codeSize, 3072);
+d2 = MeanSquaredError();
+decoder = ComboOutputLayer(d1, d2);
+
+ae = AutoEncoder('isTiedWeights', true);
 ae.encodeLayer = encoder;
 ae.decodeLayer = decoder;
 
 trainer = GradientTrainer();
 trainer.model = ae;
-trainer.stepCalculator = NesterovMomentum();
-trainer.parameterSchedule = MomentumSchedule(lr0, rho);
+trainer.stepCalculator = AdaDelta();
+%trainer.parameterSchedule = MomentumSchedule(lr0, rho);
 trainer.progressMonitor = BasicMonitor('validationInterval', validationInterval);
-trainer.progressMonitor.reporter = MNISTReporter(nRows, nCols);
+trainer.progressMonitor.reporter = Cifar10Reporter(nRows, nCols);
 trainer.dataManager = DataManager({inputs}, {}, 'batchSize', batchSize, ...
                                   'trainLossSampleSize', trainLossSampleSize);
                                

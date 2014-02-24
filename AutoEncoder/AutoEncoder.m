@@ -38,23 +38,22 @@ classdef AutoEncoder < AutoEncoderInterface
          h = obj.encodeLayer.feed_forward(x, true);
          [decodeGrad, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
          encodeGrad = obj.encodeLayer.backprop(x, h, dLdh);
-
+         obj.encodeGradSize = length(encodeGrad);
+         
          if obj.isTiedWeights
             grad = obj.tied_weights_grad(encodeGrad, decodeGrad);
          else
-            obj.encodeGradSize = length(encodeGrad);
             grad = [encodeGrad, decodeGrad];
          end
       end
       
       function grad = tied_weights_grad(~, encodeGrad, decodeGrad)
          if ndims(encodeGrad{1}) <= 2
-               grad = {encodeGrad{1}+decodeGrad{1}', encodeGrad{2}, ...
-                       decodeGrad{2}};
+            grad{1} = encodeGrad{1}+decodeGrad{1}';
          else
-               grad = {encodeGrad{1}+permute(decodeGrad{1}, [2, 1, 3]), ...
-                        encodeGrad{2}, decodeGrad{2}};
+            grad{1} = encodeGrad{1}+permute(decodeGrad{1}, [2, 1, 3]);
          end
+         grad = [grad, encodeGrad(2:end), decodeGrad(2:end)];
       end
       
       function loss = compute_loss(obj, batch)
@@ -77,13 +76,14 @@ classdef AutoEncoder < AutoEncoderInterface
       end
       
       function increment_params(obj, delta)
+         obj.encodeLayer.increment_params(delta(1:obj.encodeGradSize));
+         
+         if length(delta) > 1
+            obj.decodeLayer.increment_params([0, delta(obj.encodeGradSize+1:end)]);
+         end
+         
          if obj.isTiedWeights
-            obj.encodeLayer.increment_params(delta(1:2));
-            obj.decodeLayer.increment_params({0, delta{3}});
             obj.decodeLayer.params{1} = obj.get_encode_params_transposed();
-         else
-            obj.encodeLayer.increment_params(delta(1:obj.encodeGradSize));
-            obj.decodeLayer.increment_params(delta(obj.encodeGradSize+1:end));
          end
       end
       

@@ -5,16 +5,15 @@ classdef ImputingAutoEncoder < DAE
    % values (like a prior enforcing the observed mean).
    
    properties
-      lam % coefficient for sum of squares regularization on imputed data
-      imputedData % imputed values for last batch processed, N x 1 vecotr
-                  % where N is number of NaN values in last batch
-                  
       isImputeValues % boolean: true => NaN vals imputed prior to updating model
                      %          false => NaN vals are ignored (sub-model used)
-                  
+      lam % coefficient for sum of squares regularization on imputed data
+      imputedData % imputed values for last batch processed, N x 1 vecotr
+                  % where N is number of NaN values in last batch 
       nSteps % number of steps to take for imputing data
-      stepCalculator % currently must be AdaDelta 
-                     % must have method: step = compute_step(obj, grad)
+      stepCalculator % NesterovMomentum StepCalculator
+      lr % learning rate for data imputation
+      rho % momentum for data imputation
    end
    
    methods
@@ -22,34 +21,47 @@ classdef ImputingAutoEncoder < DAE
          obj = obj@DAE(varargin{:});
          p = inputParser();
          p.KeepUnmatched = true;
-         p.addParamValue('lam', .1);
          p.addParamValue('isImputeValues', false);
-         p.addParamValue('nSteps', 20);
-         p.addParamValue('tau', .6);
+         p.addParamValue('lam', .1);
+         p.addParamValue('nSteps', 30);
+         p.addParamValue('lr', .005);
+         p.addParamValue('rho', .6);
          parse(p, varargin{:});
-
-         obj.lam = p.Results.lam;
+         
          obj.isImputeValues = p.Results.isImputeValues;
+         obj.lam = p.Results.lam;
          obj.nSteps = p.Results.nSteps;
-         obj.stepCalculator = AdaDelta('tau', p.Results.tau);
+         obj.stepCalculator = NesterovMomentum();
+         obj.lr = p.Results.lr;
+         obj.rho = p.Results.rho;
       end
       
       function [grad, xRecon] = gradient(obj, batch)
-         x = obj.impute_values(batch);
-         [grad, xRecon] = gradient@DAE(obj, {x});         
+         if obj.isImputeValues
+            x = obj.impute_values(batch);
+            [grad, xRecon] = gradient@DAE(obj, {x});
+         else
+            [grad, xRecon] = gradient@DAE(obj, batch);
+         end       
       end
             
       function x = impute_values(obj, batch)
          x = batch{1};
          isNaN = batch{2};
+         params = {obj.lr, obj.rho};
          obj.stepCalculator.reset();
          
          for i = 1:obj.nSteps
+            if i > 1
+               step = obj.stepCalculator.compute_first_step(params);
+               x(isNaN) = x(isNaN) + step{1};
+            end
+            
             h = obj.encodeLayer.feed_forward(x, true);
             [~, dLdh, xRecon] = obj.decodeLayer.backprop(h, x);
             [~, dLdx] = obj.encodeLayer.backprop(x, h, dLdh);
             grad = {dLdx(isNaN) + (1 + obj.lam)*x(isNaN) - xRecon(isNaN)};
-            step = obj.stepCalculator.compute_step(grad);
+            step = obj.stepCalculator.compute_second_step(params, grad);
             x(isNaN) = x(isNaN) + step{1};
          end
          
@@ -73,6 +85,8 @@ classdef ImputingAutoEncoder < DAE
          objCopy.lam = obj.lam;
          objCopy.imputedData = obj.imputedData;
          objCopy.nSteps = obj.nSteps;
+         objCopy.lr = obj.lr;
+         objCopy.rho = obj.rho;
       end
    end
    

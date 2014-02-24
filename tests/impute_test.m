@@ -1,15 +1,15 @@
 clear all
-load MNIST_train
+load cifar10_train
 
 %% Define parameters
-codeSize = 64;
-nRows = 8;
-nCols = 8;
+codeSize = 512;
+%nRows = 8;
+%nCols = 8;
 
-validProp = 1/6;
+validProp = 1/5;
 nanNoise = .2;
 
-nSteps = 100;
+nSteps = 10;
 lam = 0;
 
 validationInterval = 10;

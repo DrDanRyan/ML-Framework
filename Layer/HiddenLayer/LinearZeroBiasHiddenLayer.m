@@ -1,4 +1,4 @@
-classdef LinearZeroBiasLayer < matlab.mixin.Copyable & ParamsFunctions
+classdef LinearZeroBiasHiddenLayer < matlab.mixin.Copyable & ParamsFunctions
    
    properties
       inputSize
@@ -6,7 +6,7 @@ classdef LinearZeroBiasLayer < matlab.mixin.Copyable & ParamsFunctions
    end
    
    methods
-      function obj = LinearZeroBiasLayer(inputSize, outputSize, varargin)
+      function obj = LinearZeroBiasHiddenLayer(inputSize, outputSize, varargin)
          obj = obj@ParamsFunctions(varargin{:});
          obj.inputSize = inputSize;
          obj.outputSize = outputSize;
@@ -22,7 +22,7 @@ classdef LinearZeroBiasLayer < matlab.mixin.Copyable & ParamsFunctions
          y = obj.params{1}*x;
       end
       
-      function [grad, dLdx] = backprop(obj, x, dLdy)
+      function [grad, dLdx] = backprop(obj, x, ~, dLdy)
          N = size(x, 2);
          grad{1} = dLdy*x'/N;
          dLdx = obj.params{1}'*dLdy;
