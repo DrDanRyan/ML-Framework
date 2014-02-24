@@ -9,6 +9,9 @@ classdef ImputingAutoEncoder < DAE
       imputedData % imputed values for last batch processed, N x 1 vecotr
                   % where N is number of NaN values in last batch
                   
+      isImputeValues % boolean: true => NaN vals imputed prior to updating model
+                     %          false => NaN vals are ignored (sub-model used)
+                  
       nSteps % number of steps to take for imputing data
       stepCalculator % currently must be AdaDelta 
                      % must have method: step = compute_step(obj, grad)
@@ -20,11 +23,13 @@ classdef ImputingAutoEncoder < DAE
          p = inputParser();
          p.KeepUnmatched = true;
          p.addParamValue('lam', .1);
+         p.addParamValue('isImputeValues', false);
          p.addParamValue('nSteps', 20);
          p.addParamValue('tau', .6);
          parse(p, varargin{:});
 
          obj.lam = p.Results.lam;
+         obj.isImputeValues = p.Results.isImputeValues;
          obj.nSteps = p.Results.nSteps;
          obj.stepCalculator = AdaDelta('tau', p.Results.tau);
       end
@@ -61,6 +66,7 @@ classdef ImputingAutoEncoder < DAE
          
          % Value properties
          objCopy.isTiedWeights = obj.isTiedWeights;
+         objCopy.isImputeValues = obj.isImputeValues;
          objCopy.gpuState = obj.gpuState;
          objCopy.noiseType = obj.noiseType;
          objCopy.noiseLevel = obj.noiseLevel;
