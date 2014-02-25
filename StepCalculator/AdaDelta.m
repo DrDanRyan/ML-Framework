@@ -11,8 +11,8 @@ classdef AdaDelta < StepCalculator
    methods
       function obj = AdaDelta(varargin)
          p = inputParser();
-         p.addParamValue('eps', 1e-10);
-         p.addParamValue('tau', .95);
+         p.addParamValue('eps', 1e-7);
+         p.addParamValue('tau', .9);
          parse(p, varargin{:});
          obj.eps = p.Results.eps;
          obj.tau = p.Results.tau;
