@@ -5,13 +5,13 @@ load cifar10_train
 
 %% Define model parameters
 nUpdates = 1e5;
-codeSize = 1024;
+codeSize = 256;
 
 nRows = 12;
 nCols = 12;
 
 lr0 = .001;
-rho = .5;
+rho = .9;
 
 validationInterval = 10;
 batchSize = 128;
