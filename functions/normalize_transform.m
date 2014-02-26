@@ -1,4 +1,4 @@
-function [xT, transform, trans_description] = normalize_transform(x)
+function [xT, transform, trans_description, test_stat] = normalize_transform(x)
 % Normalizes data by choosing: a) a nonlinear transform from: identity,
 % sqrt or log; and b) a linear transform to zero mean and 1 std.
 % 
@@ -26,7 +26,7 @@ end
 
 % Choose the transform with lowest test statistic, apply to data and then 
 % linearly transform to mean = 0 and std = 1
-[~, idx] = min([idL, sqrtL, logL]);
+[test_stat, idx] = min([idL, sqrtL, logL]);
 switch idx
    case 1
       f = @(x) x;
