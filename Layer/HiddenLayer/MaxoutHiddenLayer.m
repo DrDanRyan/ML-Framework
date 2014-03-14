@@ -40,7 +40,17 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
          N = size(x, 2);         
          dLdz = bsxfun(@times, dLdy, obj.Dy); % dimensions are L2 x N x D
          obj.Dy = [];
-         dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
+         
+         if obj.gpuState.isGPU
+            dLdx = pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz);
+         else
+            dLdx = zeros(obj.inputSize, N, obj.D);
+            for i = 1:obj.D
+               dLdx(:,:,i) = obj.params{1}(:,:,i)'*dLdz;
+            end
+         end
+         dLdx = sum(dLdx, 3);
+         
          grad{1} = pagefun(@mtimes, dLdz, x')/N; % L2 x L1 x D
          grad{2} = mean(dLdz, 2); % L2 x 1 x D
          
@@ -53,9 +63,18 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
       
       function value = compute_z(obj, x)
          % z has dimensions L2 x N x D
-         value = pagefun(@mtimes, obj.params{1}, x);
-         value = bsxfun(@plus, value, obj.params{2});
+         if obj.gpuState.isGPU
+            value = pagefun(@mtimes, obj.params{1}, x);
+            value = bsxfun(@plus, value, obj.params{2});
+         else
+            value = zeros(obj.outputSize, size(x, 2), obj.D);
+            for i = 1:obj.D
+               value(:,:,i) = bsxfun(@plus, obj.params{1}(:,:,i)*x, ...
+                                       obj.params{2}(:,:,i));
+            end
+         end
       end
+      
    end
 end
 
