@@ -46,7 +46,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
          else
             dLdx = zeros(obj.inputSize, N, obj.D);
             for i = 1:obj.D
-               dLdx(:,:,i) = obj.params{1}(:,:,i)'*dLdz;
+               dLdx(:,:,i) = obj.params{1}(:,:,i)'*dLdz(:,:,i);
             end
          end
          dLdx = sum(dLdx, 3);
