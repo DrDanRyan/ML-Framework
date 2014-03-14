@@ -42,7 +42,6 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
          obj.Dy = [];
          
          if obj.gpuState.isGPU
-<<<<<<< HEAD
             dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
             grad{1} = pagefun(@mtimes, dLdz, x')/N; % L2 x L1 x D 
          else
@@ -55,18 +54,6 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
             dLdx = sum(dLdx, 3);
          end
 
-=======
-            dLdx = pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz);
-         else
-            dLdx = zeros(obj.inputSize, N, obj.D);
-            for i = 1:obj.D
-               dLdx(:,:,i) = obj.params{1}(:,:,i)'*dLdz(:,:,i);
-            end
-         end
-         dLdx = sum(dLdx, 3);
-         
-         grad{1} = pagefun(@mtimes, dLdz, x')/N; % L2 x L1 x D
->>>>>>> a85f19ac49af5dded9558d3f080ae169b108ed7b
          grad{2} = mean(dLdz, 2); % L2 x 1 x D
          
          if obj.isPenalty
