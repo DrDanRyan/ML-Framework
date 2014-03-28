@@ -1,5 +1,5 @@
 classdef GradientTrainer < handle
-% Manages supervised learning of Models that respond to 'gradient(x, t)' method.
+% Manages gradient based learning of SupervisedModels.
 %
 % Key properties that should be set manually before trian() is called:
 %
@@ -16,22 +16,24 @@ classdef GradientTrainer < handle
 %
 % progressMonitor - computes any relevant progress data (on training
 % and/or validation set) and determines when training should terminate
-%
-% The reset() method calls the reset() method on each of the
-% GradientTrainer properties.
    
    properties
       dataManager % an object that implements the DataManager interface
-      model % an object that implements the Model interface
-      progressMonitor % computes performance metrics and can send stop signal 
-                      % to terminate training
-      parameterSchedule % computes the training parameters 
-                        % used in stepCalculator
+      model % an object that implements the SupervisedModel interface
+      
+      % computes and reports performance metrics and can send stop signal 
+      % to terminate training
+      progressMonitor 
+      
+      % computes the training parameters used in stepCalculator
+      parameterSchedule
       stepCalculator % an object that implements the StepCalculator interface
    end
    
    methods
-      function train(obj, maxUpdates)         
+      function train(obj, maxUpdates)   
+         % Trains model until progressMonitor sends stop signal or maxUpdates is
+         % reached.
          isContinue = true;
          nUpdates = 0;
          while isContinue
@@ -44,13 +46,19 @@ classdef GradientTrainer < handle
       end
       
       function isContinue = update(obj)
+         % Tells stepCalculator to request gradient from model and update model
+         % parameters accordingly. If there is a progressMonitor, it is told to
+         % update as well.
          batch = obj.dataManager.next_batch();
+         
          if isempty(obj.parameterSchedule)
             params = [];
          else
             params = obj.parameterSchedule.update();
          end
+         
          obj.stepCalculator.take_step(batch, obj.model, params);
+         
          if ~isempty(obj.progressMonitor)
             isContinue = obj.progressMonitor.update(obj.model, ...
                                                     obj.dataManager); 
