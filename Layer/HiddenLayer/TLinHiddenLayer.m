@@ -1,10 +1,12 @@
 classdef TLinHiddenLayer < matlab.mixin.Copyable & ParamsFunctions
+   % Truncated linear hidden layer. Values with abs value < theta are chopped to
+   % zero.
    
    properties
       inputSize
       outputSize
       theta
-      dydx
+      dydz
    end
    
    methods
@@ -32,14 +34,14 @@ classdef TLinHiddenLayer < matlab.mixin.Copyable & ParamsFunctions
          y(cutIdx) = 0;
          
          if nargin == 3 && isSave
-            obj.dydx = ~cutIdx;
+            obj.dydz = ~cutIdx;
          end
       end
       
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
          N = size(x, 2);
-         dLdz = obj.dydx.*dLdy;
-         obj.dydx = [];
+         dLdz = obj.dydz.*dLdy;
+         obj.dydz = [];
          grad{1} = dLdz*x'/N;
          dLdx = obj.params{1}'*dLdz;
       end

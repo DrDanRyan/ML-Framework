@@ -1,8 +1,8 @@
 classdef LogisticHiddenLayer < StandardLayer & HiddenLayer
+   % A standard hidden layer with logistic nonlinearity.
    
    properties
-      Dy
-      % isLocallyLinear = false
+      dydz
    end
    
    methods
@@ -13,20 +13,18 @@ classdef LogisticHiddenLayer < StandardLayer & HiddenLayer
       function y = feed_forward(obj, x, isSave)
          z = obj.compute_z(x);
          y = 1./(1 + exp(-z));
+         
          if nargin == 3 && isSave
-            obj.Dy = exp(-z).*y.*y;
-         end
+            % more robust than using y*(1-y) on backprop pass
+            obj.dydz = exp(-z).*y.*y;
+         end             
       end
       
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
-         dLdz = obj.Dy.*dLdy;
-         obj.Dy = [];
+         dLdz = obj.dydz.*dLdy;
+         obj.dydz = [];
          [grad, dLdx] = obj.grad_from_dLdz(x, dLdz);
       end
-      
-%       function value = compute_D2y(~, ~, y, Dy)
-%          value = Dy.*(1-2*y);
-%       end
    end
 end
 

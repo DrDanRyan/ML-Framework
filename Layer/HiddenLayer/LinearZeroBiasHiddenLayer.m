@@ -1,6 +1,8 @@
 classdef LinearZeroBiasHiddenLayer < matlab.mixin.Copyable & ParamsFunctions
+   % A linear layer with zero bias. 
    
    properties
+      % params = {W}
       inputSize
       outputSize
    end

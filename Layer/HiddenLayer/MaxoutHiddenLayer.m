@@ -1,12 +1,15 @@
 classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunctions & matlab.mixin.Copyable
+   % A Maxout hidden layer as described in Goodfellow 2013.
    
    properties
       % params = {W, b} where W and b are 3-dimensional arrays
       inputSize
       outputSize
-      D % number of linear units per maxout unit (size of 3rd dimension of W and b)
-      Dy
-      % isLocallyLinear = true
+      
+      % number of linear units per maxout unit 
+      % (size of 3rd dimension of W and b)
+      D 
+      dydz
    end
    
    methods
@@ -22,8 +25,8 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
       function init_params(obj)
          obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1, obj.D);
          for idx = 1:obj.D
-            obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
-                                                      obj.initScale, obj.gpuState);
+            obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, ...
+                  obj.inputSize, obj.initType, obj.initScale, obj.gpuState);
          end
       end
       
@@ -32,15 +35,16 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunct
          y = max(z, [], 3);
          
          if nargin == 3 && isSave
-            obj.Dy = bsxfun(@eq, z, y);
+            obj.dydz = bsxfun(@eq, z, y);
          end
       end
       
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
          N = size(x, 2);         
-         dLdz = bsxfun(@times, dLdy, obj.Dy); % dimensions are L2 x N x D
-         obj.Dy = [];
-         dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
+         dLdz = bsxfun(@times, dLdy, obj.dydz); % dimensions are L2 x N x D
+         obj.dydz = [];
+         dLdx = sum(pagefun(@mtimes, ...
+                              permute(obj.params{1}, [2, 1, 3]), dLdz), 3);
          grad{1} = pagefun(@mtimes, dLdz, x')/N; % L2 x L1 x D
          grad{2} = mean(dLdz, 2); % L2 x 1 x D
          

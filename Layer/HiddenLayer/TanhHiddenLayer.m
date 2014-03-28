@@ -1,8 +1,8 @@
 classdef TanhHiddenLayer < StandardLayer & HiddenLayer
+   % Standard hidden layer with hyperbolic tangent nonlinearity.
    
    properties
-      Dy
-      % isLocallyLinear = false
+      dydz
    end
    
    methods
@@ -19,20 +19,16 @@ classdef TanhHiddenLayer < StandardLayer & HiddenLayer
          y = u - 1;
          
          if nargin == 3 && isSave
-            obj.Dy = v.*u.*u;
-            obj.Dy(isnan(obj.Dy)) = 0;
+            obj.dydz = v.*u.*u;
+            obj.dydz(isnan(obj.dydz)) = 0;
          end
       end
       
-      function [grad, dLdx] = backprop(obj, x, y, dLdy)
-         dLdz = obj.Dy.*dLdy;
-         obj.Dy = [];
+      function [grad, dLdx] = backprop(obj, x, ~, dLdy)
+         dLdz = obj.dydz.*dLdy;
+         obj.dydz = [];
          [grad, dLdx] = obj.grad_from_dLdz(x, dLdz);
       end
-      
-%       function value = compute_D2y(~, ~, y, Dy)
-%          value = -2*y.*Dy;
-%       end
    end
 end
 

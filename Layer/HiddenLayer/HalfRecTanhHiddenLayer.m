@@ -1,8 +1,8 @@
 classdef HalfRecTanhHiddenLayer < StandardLayer & HiddenLayer
+   % Nonlinearity is max(0, tanh(z))
    
    properties
-      Dy
-      % isLocallyLinear = false
+      dydz
    end
    
    methods
@@ -19,15 +19,15 @@ classdef HalfRecTanhHiddenLayer < StandardLayer & HiddenLayer
          y = max(0, u - 1);         
          
          if nargin == 3 && isSave
-            obj.Dy = v.*u.*u;
-            obj.Dy(y == 0) = 0;
-            obj.Dy(isnan(obj.Dy)) = 0;
+            obj.dydz = v.*u.*u;
+            obj.dydz(y == 0) = 0;
+            obj.dydz(isnan(obj.dydz)) = 0;
          end
       end
       
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
-         dLdz = obj.Dy.*dLdy;
-         obj.Dy = [];
+         dLdz = obj.dydz.*dLdy;
+         obj.dydz = [];
          [grad, dLdx] = obj.grad_from_dLdz(x, dLdz);
       end
    end
