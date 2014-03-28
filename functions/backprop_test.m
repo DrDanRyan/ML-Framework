@@ -1,5 +1,15 @@
 function [grad_errors, sens_error] = backprop_test(layer, x, sensSampleSize)
-eps = 1e-4;
+% Tests a HiddenLayer object to see if its backprop function returns accurate
+% values. 
+%
+% layer = HiddenLayer object
+%
+% x = input data (can be single feature vec or batch)
+%
+% sensSampleSize (optional) = integer inidicating sample size for computing dLdx
+% accuracy
+
+eps = 1e-4; % small value used for finite difference quotients
 
 % Use backprop method
 y = layer.feed_forward(x, true);

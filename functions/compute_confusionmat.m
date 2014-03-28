@@ -1,4 +1,6 @@
 function [TP, FP, TN, FN, precision, recall] = compute_confusionmat(y, t)
+% Computes values for binary prediction confusion matrix.
+% Also returns precision and recall.
 
 if any(t < 0) % svm targets
    threshold = 0;
