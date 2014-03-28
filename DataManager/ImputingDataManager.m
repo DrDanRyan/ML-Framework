@@ -1,9 +1,12 @@
 classdef ImputingDataManager < DataManager
+   % Keeps track of NaN values in trainingData as well as most recently
+   % estimated values imputed by model during training.   
    
    properties
-      isNaN       % logical array same size as trainingData indicating
-                  % where trainingData had NaN values originally
-      stopIdx  % stopIdx used to generate last mini-batch
+      % Logical array same size as trainingData indicating
+      % where trainingData had NaN values originally
+      isNaN       
+      stopIdx  % stopIdx used to generate previous mini-batch
    end
    
    methods
@@ -14,18 +17,24 @@ classdef ImputingDataManager < DataManager
       end
       
       function batch = next_batch(obj)
+         % Passes logical isNaN array along with training data batch.
+         
          if isempty(obj.batchSize) % full batch
             batch = obj.trainingData;
             batch{end+1} = obj.isNaN;
          else % mini-batch
-            obj.stopIdx = min(obj.trainingSize, obj.batchIdx + obj.batchSize - 1);
-            batch = cellfun(@(v) v(:,obj.batchIdx:obj.stopIdx,:,:), obj.trainingData, ...
-                              'UniformOutput', false);
+            obj.stopIdx = min(obj.trainingSize, ...
+                              obj.batchIdx + obj.batchSize - 1);
+            batch = cellfun(@(v) v(:,obj.batchIdx:obj.stopIdx,:,:), ...
+                              obj.trainingData, 'UniformOutput', false);
             batch{end+1} = obj.isNaN(:,obj.batchIdx:obj.stopIdx,:,:);
          end  
       end
       
       function update_imputed_data(obj, xNew)
+         % Overwrites NaN (or previously imputed values) with newly imputed
+         % values from last model update.
+         
          if isempty(obj.batchSize) % full batch
             obj.trainingData{1}(obj.isNaN) = xNew;
          else % mini-batch
@@ -41,16 +50,21 @@ classdef ImputingDataManager < DataManager
       end
       
       function shuffle_training_data(obj)
+         % Shuffles isNaN matrix along with trainingData.
+         
          permvec = randperm(obj.trainingSize);
          obj.trainingData = cellfun(@(v) v(:,permvec,:,:), obj.trainingData, ...
                                                       'UniformOutput', false);
-         if ~isempty(obj.isNaN) % need to avoid this line during DataManager initialize
+                                  
+         if ~isempty(obj.isNaN) 
             obj.isNaN = obj.isNaN(:,permvec,:,:);
          end
          obj.batchIdx = 1;
       end
       
       function reset(obj)
+         % Sets all NaN values to zero during reset.
+         
          reset@DataManager(obj);
          obj.trainingData{1}(obj.isNaN) = 0;
       end
