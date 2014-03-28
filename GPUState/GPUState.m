@@ -1,6 +1,7 @@
 classdef GPUState
-   % A state object that handles array creation depending on the status of
-   % the isGPU flag
+   % A state object that handles array creation and random number generation
+   % depending on the status of the isGPU flag. All GPU numerical arrays will be
+   % single precision.
    
    properties
       isGPU % boolean flag indicating whether GPU is being used
@@ -8,6 +9,9 @@ classdef GPUState
    
    methods
       function obj = GPUState(isGPU)
+         % If no parameters given, flag is set based on whether a GPU is
+         % detected by MATLAB.
+         
          if nargin == 1 && ~isempty(isGPU)
             obj.isGPU = isGPU;
          else
