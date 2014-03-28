@@ -1,4 +1,35 @@
 function [xT, transform] = elastic_normalize_transform(x, varargin)
+% Computes a monotone normalization function and applies it to the data.
+% 
+% Tie adjusted ranks for the data are computed and anchor points are determined.
+% These anchor points are then mapped so that the CDF of the empirical
+% distribution of the data matches the CDF of the normal distribution at these
+% points. Then interpolation (pchip by default) is used to map intermediate
+% points. An optional nonlinear transformation (sqrt or log) can be applied
+% first. The transformation that is considered "best" is the one that results in
+% the smallest max value of the 2nd derivative of the final transform.
+% 
+% x = unnormalized data
+%
+% xT = transformed data
+%
+% transform = function handle of the transform
+% 
+% Options:
+% 'setPts': a 1D array specifying points where the CDF will be pinned to the
+% normal distribution CDF. Some points may be removed if there is insufficient
+% unique ranks in the data for uniqueness of these pinned points. Actual pinning
+% points are based on tie adjusted rank of the data and ranks that are closest
+% to the setPts are used.
+%
+% 'interpType': the type of interpolation to use between setPts. Default =
+% 'pchip'.
+%
+% 'isPinEnds': boolean indicating whether to use min(x) and max(x) as additional
+% setPts. Default = true.
+%
+% 'isTestTransforms': boolean indicating to test if sqrt or log transform
+% results in "smoother" (more constant first derivative) final transformation.
 
 p = inputParser();
 p.addParamValue('setPts', [5, 25, 50, 75, 95]);
