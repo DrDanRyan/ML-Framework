@@ -1,4 +1,5 @@
 function y = softmax(z)
+% Fairly robust softmax activation function.
 
 z = bsxfun(@minus, z, max(z, [], 1)); % rescale incoming activations so max is 0
 yHat = exp(z);

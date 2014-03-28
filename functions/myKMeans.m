@@ -1,4 +1,6 @@
 function centers = myKMeans(data, nCenters, batchSize, maxIters)
+% A GPU friendly niave KMeans implementation. 
+
 [D, N] = size(data);
 gpuState = GPUState(isa(data, 'gpuArray'));
 centers = permute(data(:,randperm(N, nCenters)), [1, 3, 2]); % D x 1 x nCenters

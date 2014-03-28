@@ -1,4 +1,4 @@
-function [xNorm, transforms, xL, xU] = normalize_transform(x, isClipping)
+function [xNorm, transforms, xL, xU] = three_param_normalize(x, isClipping)
 % Uses a GLM with predictors [1, x, log(x)] and probit link function to fit
 % the empirical cdf of data. Data is then transformed according to the fit
 % GLM parameters so that normed_data is roughly normal. This is equivalent

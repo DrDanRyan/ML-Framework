@@ -1,4 +1,10 @@
 function sample = multinomial_sample(probArray, dim)
+% A GPU friendly function to draw multinomial samples.
+% 
+% probArray = Ndim matrix with sum(probArray, dim) = 1.
+% dim = dimension that sums to one (i.e. probabilities are aligned on this axis)
+% sample = numerical matrix of multinomial samples
+
    if nargin < 2
       dim = 1;
    end
