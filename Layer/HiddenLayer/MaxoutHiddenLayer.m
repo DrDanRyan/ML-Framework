@@ -1,4 +1,5 @@
-classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & RegularizationFunctions & matlab.mixin.Copyable
+classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & ...
+                             RegularizationFunctions & matlab.mixin.Copyable
    % A Maxout hidden layer as described in Goodfellow 2013.
    
    properties
