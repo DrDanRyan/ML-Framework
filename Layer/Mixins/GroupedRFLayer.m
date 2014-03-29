@@ -91,7 +91,7 @@ classdef GroupedRFLayer < handle
             obj.connectionTable(i,randsample(obj.nChannels, obj.receptiveField)) = true;            
          end
       end
-      
+
    end
 end
 

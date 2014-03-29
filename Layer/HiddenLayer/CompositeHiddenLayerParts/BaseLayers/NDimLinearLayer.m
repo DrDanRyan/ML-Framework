@@ -1,10 +1,18 @@
-classdef NDimLinearLayer < ParamsFunctions & matlab.mixin.Copyable & RegularizationFunctions
+classdef NDimLinearLayer < CompositeBaseLayer & ParamsFunctions & ...
+                           matlab.mixin.Copyable & RegularizationFunctions
+   % A layer that works like multiple linear layers all applied to the same
+   % input resulting in a 3D output with dimensions: outputSize x batchSize x D.
+   % This is like a maxout layer but with no nonlinearity applied to the
+   % resulting groups of units (i.e. maxout would then take max(output, [], 3)).
    
    properties
       % params = {W, b} where W and b are 3-dimensional arrays
       inputSize
       outputSize
-      D % number of linear units per maxout unit (size of 3rd dimension of W and b)
+      
+      % number of linear units per hidden unit grouping
+      % (i.e. size of 3rd dimension of W and b)
+      D  
    end
    
    methods
@@ -20,8 +28,8 @@ classdef NDimLinearLayer < ParamsFunctions & matlab.mixin.Copyable & Regularizat
       function init_params(obj)
          obj.params{2} = obj.gpuState.zeros(obj.outputSize, 1, obj.D);
          for idx = 1:obj.D
-            obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, obj.inputSize, obj.initType, ...
-                                                      obj.initScale, obj.gpuState);
+            obj.params{1}(:,:,idx) = matrix_init(obj.outputSize, ...
+               obj.inputSize, obj.initType, obj.initScale, obj.gpuState);
          end
       end
       
@@ -31,7 +39,8 @@ classdef NDimLinearLayer < ParamsFunctions & matlab.mixin.Copyable & Regularizat
       
       function [grad, dLdx] = backprop(obj, x, dLdy)
          N = size(x, 2);         
-         dLdx = sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdy), 3);
+         dLdx = ...
+            sum(pagefun(@mtimes, permute(obj.params{1}, [2, 1, 3]), dLdy), 3);
          grad{1} = pagefun(@mtimes, dLdy, x')/N; % L2 x L1 x D
          grad{2} = mean(dLdy, 2); % L2 x 1 x D
          

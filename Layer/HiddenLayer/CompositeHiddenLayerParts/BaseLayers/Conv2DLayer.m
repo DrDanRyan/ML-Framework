@@ -1,5 +1,8 @@
-classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
-   % A convolution layer for multiple channels of 2D signals.
+classdef Conv2DLayer < CompositeBaseLayer & ParamsFunctions & ...
+                       matlab.mixin.Copyable
+   % A convolution layer for multiple channels of 2D signals. Inputs should have
+   % dimension: nChannels x batchSize x inputRows x inputCols (or C x N x iR x
+   % iC in the program comments).
    
    properties
       % params = {W, b} with W ~ nF x C x 1 x fR x fC and b ~ nF x 1
@@ -9,12 +12,15 @@ classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
       nChannels % (C) number of input channels
       filterRows % (fR)
       filterCols % (fC)
-      filterMax % max L2norm allowed for filters; if filter exceeds max project back to max
+      
+      % max L2norm allowed for filters; 
+      % if filter exceeds max project back to max
+      filterMax 
    end
    
    methods
-      function obj = Conv2DLayer(inputRows, inputCols, nChannels, filterRows, ...
-                                    filterCols, nFilters, varargin)
+      function obj = Conv2DLayer(inputRows, inputCols, nChannels, ...
+                                 filterRows, filterCols, nFilters, varargin)
          obj = obj@ParamsFunctions(varargin{:});
          p = inputParser();
          p.KeepUnmatched = true;
@@ -35,8 +41,10 @@ classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
          if isempty(obj.initScale)
             obj.initScale = 1/(obj.filterRows*obj.filterCols*obj.nChannels);
          end
-         obj.params{1} = 2*obj.initScale*obj.gpuState.rand(obj.nFilters, obj.nChannels, 1, ...
-                              obj.filterRows, obj.filterCols) - obj.initScale;
+         
+         obj.params{1} = 2*obj.initScale*obj.gpuState.rand(obj.nFilters, ...
+            obj.nChannels, 1, obj.filterRows, obj.filterCols) - obj.initScale;
+         
          if strcmp(obj.initType, 'relu')
             obj.params{2} = obj.initScale*obj.gpuState.ones(obj.nFilters, 1);
          else
@@ -62,11 +70,16 @@ classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
          
          for i = 1:yRows
             for j = 1:yCols
-               xSample = shiftdim(x(:,:,i:i+obj.filterRows-1, j:j+obj.filterCols-1), -1); % 1 X C x N x fR x fC
-               Wx(:,:,:,i,j) = sum(sum(sum(bsxfun(@times, xSample, obj.params{1}), 5), 4), 2);
+               xSample = shiftdim(x(:,:,i:i+obj.filterRows-1, ...
+                                        j:j+obj.filterCols-1), -1); 
+               % xSample ~ 1 X C x N x fR x fC
+               Wx(:,:,:,i,j) = sum(sum(sum(bsxfun(@times, xSample, ...
+                                                  obj.params{1}), 5), 4), 2);
             end
          end
-         Wx = permute(Wx, [1, 3, 4, 5, 2]); % remove channel dimension by shifting it to end
+         
+         % remove channel dimension by shifting it to end
+         Wx = permute(Wx, [1, 3, 4, 5, 2]); 
       end
       
       function [grad, dLdx] = backprop(obj, x, dLdy)
@@ -74,27 +87,34 @@ classdef Conv2DLayer < ParamsFunctions & matlab.mixin.Copyable
          % dLdx ~ C x N x iR x iC
          [nF, N, yRows, yCols] = size(dLdy);
          grad{2} = mean(sum(sum(dLdy, 4), 3), 2);
-         grad{1} = obj.gpuState.zeros(size(obj.params{1})); % nF x C x 1 x fR x fC
+         grad{1} = obj.gpuState.zeros(size(obj.params{1})); 
+         % grad{1} ~ nF x C x 1 x fR x fC
          dLdy = permute(dLdy, [1, 5, 2, 3, 4]); % nF x 1 x N x yR x yC
          for i = 1:obj.filterRows
             for j = 1:obj.filterCols
-               xSample = shiftdim(x(:,:,i:i+yRows-1, j:j+yCols-1), -1); % 1 x C x N x yR x yC
-               grad{1}(:,:,1,i,j) = mean(sum(sum(bsxfun(@times, xSample, dLdy), 5), 4), 3); % nF x C
+               xSample = shiftdim(x(:,:,i:i+yRows-1, j:j+yCols-1), -1); 
+               % xSample ~ 1 x C x N x yR x yC
+               grad{1}(:,:,1,i,j) = mean(sum(sum(bsxfun(@times, xSample, ...
+                                                    dLdy), 5), 4), 3); % nF x C
             end
          end
          clear xSample
          
-         dLdx = obj.gpuState.zeros(1, obj.nChannels, N, obj.inputRows, obj.inputCols); % 1 x C x N x iR x iC 
-         dLdyPadded = obj.gpuState.zeros(nF, 1, N, obj.inputRows+obj.filterRows-1, ...
-                                             obj.inputCols+obj.filterCols-1);
-         dLdyPadded(:,:,:,obj.filterRows:obj.inputRows, obj.filterCols:obj.inputCols) = dLdy;
+         dLdx = obj.gpuState.zeros(1, obj.nChannels, N, obj.inputRows, ...
+                                   obj.inputCols); % 1 x C x N x iR x iC 
+         dLdyPadded = obj.gpuState.zeros(nF, 1, N, ...
+            obj.inputRows+obj.filterRows-1, obj.inputCols+obj.filterCols-1);
+         dLdyPadded(:,:,:,obj.filterRows:obj.inputRows, ...
+                          obj.filterCols:obj.inputCols) = dLdy;
          clear dLdy
          
          WFlipped = flip(flip(obj.params{1}, 5), 4);
          for i = 1:obj.inputRows
             for j = 1:obj.inputCols
-               dLdySeg = dLdyPadded(:,:,:,i:i+obj.filterRows-1, j:j+obj.filterCols-1); % nF x 1 x N x fR x fC
-               dLdx(:,:,:,i,j) = sum(sum(sum(bsxfun(@times, dLdySeg, WFlipped), 5), 4), 1); % 1 x C x N
+               dLdySeg = dLdyPadded(:,:,:,i:i+obj.filterRows-1, ...
+                                   j:j+obj.filterCols-1); % nF x 1 x N x fR x fC
+               dLdx(:,:,:,i,j) = sum(sum(sum(bsxfun(@times, dLdySeg, ...
+                                              WFlipped), 5), 4), 1); % 1 x C x N
             end
          end
          dLdx = shiftdim(dLdx, 1);

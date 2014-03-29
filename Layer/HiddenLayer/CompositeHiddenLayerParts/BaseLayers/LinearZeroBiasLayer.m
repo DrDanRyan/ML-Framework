@@ -1,4 +1,6 @@
-classdef LinearZeroBiasLayer < matlab.mixin.Copyable & ParamsFunctions
+classdef LinearZeroBiasLayer < CompositeBaseLayer & matlab.mixin.Copyable & ...
+                               ParamsFunctions
+   % A standard linear layer but with no bias term.
    
    properties
       inputSize

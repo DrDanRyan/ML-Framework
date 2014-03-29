@@ -1,4 +1,11 @@
-classdef Conv2DGroupedRFLayer < GroupedRFLayer
+classdef Conv2DGroupedRFLayer < CompositeBaseLayer & GroupedRFLayer
+   % A 2D Convolution layer where filters are assigned into equal sized groups
+   % and each group is randomly assigned channels to its receptive field.
+   %
+   % nGroups: number of distinct filter groups
+   % receptiveField: number of channels assigned to each filter group
+   % groupSize: number of filters per group
+   % nFilters = nGroups*groupSize
    
    properties
       inputRows % (iR) width of the 2D input signal
@@ -10,9 +17,11 @@ classdef Conv2DGroupedRFLayer < GroupedRFLayer
    end
    
    methods
-      function obj = Conv2DGroupedRFLayer(inputRows, inputCols, nChannels, filterRows, ...
-                                             filterCols, nGroups, groupSize, receptiveField, varargin)
-         obj = obj@GroupedRFLayer(nGroups, groupSize, receptiveField, nChannels, varargin{:});
+      function obj = Conv2DGroupedRFLayer(inputRows, inputCols, nChannels, ...
+                                          filterRows, filterCols, nGroups, ...
+                                          groupSize, receptiveField, varargin)
+         obj = obj@GroupedRFLayer(nGroups, groupSize, receptiveField, ...
+                                  nChannels, varargin{:});
          obj.inputRows = inputRows;
          obj.inputCols = inputCols;
          obj.filterRows = filterRows;
@@ -22,15 +31,17 @@ classdef Conv2DGroupedRFLayer < GroupedRFLayer
          
          obj.convGroups = cell(1, obj.nGroups);
          for i = 1:obj.nGroups
-            obj.convGroups{i} = Conv2DLayer(inputRows, inputCols, receptiveField, ...
-                                               filterRows, filterCols, groupSize, varargin{:});
+            obj.convGroups{i} = Conv2DLayer(inputRows, inputCols, ...
+                                            receptiveField, filterRows, ...
+                                            filterCols, groupSize, varargin{:});
          end
       end     
             
       function objCopy = copy(obj)
-         objCopy = Conv2DGroupedRFLayer(obj.inputRows, obj.inputCols, obj.nChannels, ...
-                     obj.filterRows, obj.filterCols, obj.nGroups, obj.groupSize, ...
-                     obj.receptiveField);
+         objCopy = Conv2DGroupedRFLayer(obj.inputRows, obj.inputCols, ...
+                                        obj.nChannels, obj.filterRows, ...
+                                        obj.filterCols, obj.nGroups, ...
+                                        obj.groupSize, obj.receptiveField);
          
          objCopy.gpuState = obj.gpuState;
          objCopy.connectionTable = obj.connectionTable;
