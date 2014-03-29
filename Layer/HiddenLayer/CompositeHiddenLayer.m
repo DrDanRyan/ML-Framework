@@ -1,4 +1,18 @@
 classdef CompositeHiddenLayer < HiddenLayer
+   % A CompositeHiddenLayer functions as a standard HiddenLayer but is made up
+   % of multiple intermediate layers.
+   %
+   % layers: a cell array of CompositeBaseLayer and CompositeHigherLayer
+   % objects. layers{1} can be either type, but all indicies greater than 1 need
+   % to be instances of CompositeHigherLayer.
+   %
+   % nestedGradShape and flatGradLength are automatically generated upon first
+   % call to backprop.
+   % 
+   % CompositeHigherLayer objects may or may not have parameters. If they do not
+   % have parameters, they will not return a gradient during backprop (only
+   % input sensitivities). To test if a layer has parameters a call to
+   % ismethod(obj, 'increment_params') is used.
    
    properties
       layers
@@ -29,25 +43,36 @@ classdef CompositeHiddenLayer < HiddenLayer
       function [grad, dLdx] = backprop(obj, x, ~, dLdy)
          nLayers = length(obj.layers);
          grad = cell(1, nLayers);
-         if ismethod(obj.layers{end}, 'increment_params')
-            [grad{end}, dLdx] = obj.layers{end}.backprop(dLdy);
-         else
-            dLdx = obj.layers{end}.backprop(dLdy);
-         end
          
-         for i = nLayers-1:-1:2
-            if ismethod(obj.layers{i}, 'increment_params')
-               [grad{i}, dLdx] = obj.layers{i}.backprop(dLdx);
+         % All layers with idx > 1 must be class CompositeHigherLayer
+         if nLayers > 1
+            if ismethod(obj.layers{end}, 'increment_params')
+               [grad{end}, dLdx] = obj.layers{end}.backprop(dLdy);
             else
-               dLdx = obj.layers{i}.backprop(dLdx);
+               dLdx = obj.layers{end}.backprop(dLdy);
+            end
+
+            for i = nLayers-1:-1:2
+               if ismethod(obj.layers{i}, 'increment_params')
+                  [grad{i}, dLdx] = obj.layers{i}.backprop(dLdx);
+               else
+                  dLdx = obj.layers{i}.backprop(dLdx);
+               end
             end
          end
          
-         if ismethod(obj.layers{1}, 'increment_params')
+         % layers{1} can be either CompositeBaseLayer or CompositeHigherLayer.
+         % Call signatures for backprop are different for these two classes.
+         if isa(obj.layers{1}, 'CompositeBaseLayer')
             [grad{1}, dLdx] = obj.layers{1}.backprop(x, dLdx);
-         else
-            dLdx = obj.layers{1}.backprop(x, dLdx);
+         else % assume layers{1} is a CompositeHigherLayer
+            if ismethod(obj.layers{1}, 'increment_params')
+               [grad{1}, dLdx] = obj.layers{1}.backprop(dLdx);
+            else
+               dLdx = obj.layers{1}.backprop(dLdx);
+            end
          end
+         
          grad = obj.unroll_gradient(grad);
       end
       
