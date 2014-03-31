@@ -29,9 +29,9 @@ classdef CAE < AutoEncoder
          xTarget = batch{1};
          xIn = batch{1};
          xIn(isnan(xIn)) = 0;
-         [xCode, ffExtras] = obj.encodeLayer.feed_forward(xIn);
+         xCode = obj.encodeLayer.feed_forward(xIn, true);
          [decodeGrad, dLdxCode, xRecon] = obj.decodeLayer.backprop(xCode, xTarget);
-         [encodeGrad, ~, Dy] = obj.encodeLayer.backprop(xIn, xCode, ffExtras, dLdxCode);
+         [encodeGrad, ~, Dy] = obj.encodeLayer.backprop(xIn, xCode, dLdxCode);
          penalty = obj.compute_contraction_penalty_gradient(xIn, xCode, ffExtras, Dy);
          encodeGrad = cellfun(@(grad, pen) grad + pen, encodeGrad, penalty, ...
                                  'UniformOutput', false);
