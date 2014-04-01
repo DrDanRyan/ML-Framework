@@ -1,10 +1,6 @@
 classdef LinearOutputLayer < StandardOutputLayer
-   % A linear layer with MeanSquaredError loss function
-   
-   properties
-      isLocallyLinear = true
-      isDiagonalDy = true
-   end
+   % A linear layer with MeanSquaredError loss function. This ignores NaN values
+   % in targets (useful for AutoEncoders when there are missing values).
    
    methods
       function obj = LinearOutputLayer(inputSize, outputSize, varargin)

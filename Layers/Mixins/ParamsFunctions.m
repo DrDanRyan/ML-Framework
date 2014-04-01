@@ -1,11 +1,12 @@
 classdef ParamsFunctions < handle
-   % A class to mixin with HiddenLayer or OutputLayer for layers that have parameters
+   % A class to mixin with HiddenLayer or OutputLayer for layers that 
+   % have parameters.
   
    properties
-      initType
-      initScale
-      gpuState
-      params
+      initType % determines the type of random initialization for parameters
+      initScale % a scale coefficient for random initialization
+      gpuState % a state object to help with array creation
+      params % a cell array storing all learnable parameters for the layer
    end
    
    methods
@@ -22,17 +23,20 @@ classdef ParamsFunctions < handle
       end
       
       function gather(obj)
-         obj.params = cellfun(@(p) gather(p), obj.params, 'UniformOutput', false);
+         obj.params = cellfun(@(p) gather(p), obj.params, ...
+                              'UniformOutput', false);
          obj.gpuState.isGPU = false;
       end
       
       function push_to_GPU(obj)
-         obj.params = cellfun(@(p) single(gpuArray(p)), obj.params, 'UniformOutput', false);
+         obj.params = cellfun(@(p) single(gpuArray(p)), obj.params, ...
+                              'UniformOutput', false);
          obj.gpuState.isGPU = true;
       end
       
       function increment_params(obj, delta)
-         obj.params = cellfun(@plus, obj.params, delta, 'UniformOutput', false);
+         obj.params = cellfun(@plus, obj.params, delta, ...
+                              'UniformOutput', false);
       end
    end
 end

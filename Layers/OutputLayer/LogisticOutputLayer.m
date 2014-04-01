@@ -1,9 +1,7 @@
 classdef LogisticOutputLayer < StandardOutputLayer
-   
-   properties
-      isLocallyLinear = false
-      isDiagonalDy = true
-   end
+   % A logistic layer with binomial cross-entropy loss function. This layer
+   % ignores NaN values in the targets (useful for AutoEncoders when there
+   % missing values).
    
    methods
       function obj = LogisticOutputLayer(inputSize, outputSize, varargin)
