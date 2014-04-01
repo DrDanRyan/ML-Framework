@@ -1,5 +1,6 @@
 classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & ...
-                             RegularizationFunctions & matlab.mixin.Copyable
+                             WeightDecayPenalty & MaxFanInConstraint ...
+                             & matlab.mixin.Copyable
    % A Maxout hidden layer as described in Goodfellow 2013.
    
    properties
@@ -16,7 +17,8 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & ...
    methods
       function obj = MaxoutHiddenLayer(inputSize, outputSize, D, varargin)
          obj = obj@ParamsFunctions(varargin{:});
-         obj = obj@RegularizationFunctions(varargin{:});
+         obj = obj@WeightDecayPenalty(varargin{:});
+         obj = obj@MaxFanInConstraint(varargin{:});
          obj.inputSize = inputSize;
          obj.outputSize = outputSize;
          obj.D = D;   
@@ -62,10 +64,8 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & ...
          
          grad{2} = mean(dLdz, 2); % L2 x 1 x D
          
-         if obj.isPenalty
-            penalties = obj.compute_penalties();
-            grad{1} = grad{1} + penalties{1};
-            grad{2} = grad{2} + penalties{2};
+         if obj.isWeightDecayPenalty
+            grad{1} = grad{1} + obj.compute_weight_decay_penalty();
          end
       end
       
@@ -80,6 +80,13 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & ...
                value(:,:,i) = bsxfun(@plus, obj.params{1}(:,:,i)*x, ...
                                        obj.params{2}(:,:,i));
             end
+         end
+      end
+      
+      function increment_params(obj, delta)
+         increment_params@ParamsFunctions(obj, delta);
+         if obj.isMaxFanIn
+            obj.impose_fanin_constraint();
          end
       end
       
