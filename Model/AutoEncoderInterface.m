@@ -1,4 +1,4 @@
-classdef AutoEncoderInterface < SupervisedModel
+classdef AutoEncoderInterface < Model
    % Autoencoders must have same interface as SupervisedModel and the
    % additional method ``encode'' which is useful for layerwise pretraining
    

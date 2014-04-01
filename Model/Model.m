@@ -1,4 +1,4 @@
-classdef SupervisedModel < handle
+classdef Model < handle
    % This defines the Model interface
    
    methods (Abstract)

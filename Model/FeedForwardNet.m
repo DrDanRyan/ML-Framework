@@ -1,4 +1,4 @@
-classdef FeedForwardNet < SupervisedModel
+classdef FeedForwardNet < Model
 % A concrete implementation of the Abstract SupervisedModel class.
 % A general base class for a feed-forward neural network that can utilize
 % dropout and gpu training. 
