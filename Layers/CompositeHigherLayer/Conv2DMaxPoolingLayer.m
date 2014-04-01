@@ -1,4 +1,6 @@
-classdef Conv2DMaxPoolingLayer < matlab.mixin.Copyable
+classdef Conv2DMaxPoolingLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Performs max pooling of nonoverlapping square regions for each channel in
+   % a multi-channel 2D input signal.
    
    properties
       inputRows
@@ -56,7 +58,8 @@ classdef Conv2DMaxPoolingLayer < matlab.mixin.Copyable
                colStart = (j-1)*obj.poolCols + 1;
                colEnd = min(colStart + obj.poolCols - 1, obj.inputCols);
                dLdx(:,:,rowStart:rowEnd, colStart:colEnd) = ...
-                  bsxfun(@times, dLdy(:,:,i,j), obj.winners(:,:,rowStart:rowEnd,colStart:colEnd));
+                  bsxfun(@times, dLdy(:,:,i,j), ...
+                  obj.winners(:,:,rowStart:rowEnd,colStart:colEnd));
             end
          end
          obj.winners = [];

@@ -1,5 +1,7 @@
-classdef Conv1DStochasticPoolingLayer < matlab.mixin.Copyable
-   % requires input (x) to be nonnegative values
+classdef Conv1DStochasticPoolingLayer < CompositeHigherLayer & ...
+                                        matlab.mixin.Copyable
+   % Applies stochastic pooling to nonoverlapping regions of every channel of a
+   % 1D input signal. Requires that the signal only takes nonnegative values.
    
    properties
       poolSize
@@ -19,7 +21,8 @@ classdef Conv1DStochasticPoolingLayer < matlab.mixin.Copyable
          remainder = mod(obj.inputSize, obj.poolSize);
          if remainder > 0
             if isa(x, 'gpuArray')
-               padding = gpuArray.zeros([nF, N, obj.poolSize - remainder], 'single');
+               padding = ...
+                  gpuArray.zeros([nF, N, obj.poolSize - remainder], 'single');
             else
                padding = zeros([nF, N, obj.poolSize - remainder]);
             end

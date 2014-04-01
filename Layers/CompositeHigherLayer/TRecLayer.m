@@ -1,4 +1,6 @@
-classdef TRecLayer < matlab.mixin.Copyable
+classdef TRecLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies an elementwise truncated relu to the input. Any input with value
+   % less than theta is mapped to zero.
    
    properties
       theta % cutoff value

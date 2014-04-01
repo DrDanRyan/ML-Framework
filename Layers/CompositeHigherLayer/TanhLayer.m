@@ -1,4 +1,5 @@
-classdef TanhLayer < matlab.mixin.Copyable
+classdef TanhLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies an elementwise tanh to the input.
    
    properties
       dydx

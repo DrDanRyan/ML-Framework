@@ -1,4 +1,5 @@
-classdef LogisticLayer < matlab.mixin.Copyable
+classdef LogisticLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies an elementwise logistic function to the input.
    
    properties
       dydx

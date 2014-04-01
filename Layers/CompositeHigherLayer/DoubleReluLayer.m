@@ -1,4 +1,4 @@
-classdef DoubleReluLayer < matlab.mixin.Copyable
+classdef DoubleReluLayer < CompositeHigherLayer & matlab.mixin.Copyable
    % A double rectified linear unit (rectified at x = 0 and x = 1)
    
    properties

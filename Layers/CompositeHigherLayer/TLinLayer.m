@@ -1,4 +1,6 @@
-classdef TLinLayer < matlab.mixin.Copyable
+classdef TLinLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies an elementwise truncated linear function to the input. Any input
+   % with abs val < theta is mapped to zero.
    
    properties
       theta % cutoff value

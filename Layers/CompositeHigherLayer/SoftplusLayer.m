@@ -1,7 +1,9 @@
-classdef SoftplusLayer < matlab.mixin.Copyable
+classdef SoftplusLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies an elementwise softplus to the input
    
    properties
-      C   % y = log(1 + exp(C*x))/C ~ max(0, x) (larger C leads to closer approx)
+      % y = log(1 + exp(C*x))/C ~ max(0, x) (larger C leads to closer approx)
+      C   
       dydx
    end
    

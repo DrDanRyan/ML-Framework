@@ -1,5 +1,6 @@
 classdef NDimLinearLayer < CompositeBaseLayer & ParamsFunctions & ...
-                           matlab.mixin.Copyable & RegularizationFunctions
+                           matlab.mixin.Copyable & WeightDecayPenalty & ...
+                           MaxFanInConstraint
    % A layer that works like multiple linear layers all applied to the same
    % input resulting in a 3D output with dimensions: outputSize x batchSize x D.
    % This is like a maxout layer but with no nonlinearity applied to the
@@ -18,7 +19,8 @@ classdef NDimLinearLayer < CompositeBaseLayer & ParamsFunctions & ...
    methods
       function obj = NDimLinearLayer(inputSize, outputSize, D, varargin)
          obj = obj@ParamsFunctions(varargin{:});
-         obj = obj@RegularizationFunctions(varargin{:});
+         obj = obj@WeightDecayPenalty(varargin{:});
+         obj = obj@MaxFanInConstraint(varargin{:});
          obj.inputSize = inputSize;
          obj.outputSize = outputSize;
          obj.D = D;   
@@ -44,10 +46,8 @@ classdef NDimLinearLayer < CompositeBaseLayer & ParamsFunctions & ...
          grad{1} = pagefun(@mtimes, dLdy, x')/N; % L2 x L1 x D
          grad{2} = mean(dLdy, 2); % L2 x 1 x D
          
-         if obj.isPenalty
-            penalties = obj.compute_penalties();
-            grad{1} = grad{1} + penalties{1};
-            grad{2} = grad{2} + penalties{2};
+         if obj.isWeightDecay
+            grad{1} = grad{1} + obj.compute_weight_decay_penalty();
          end
       end
       
@@ -55,6 +55,13 @@ classdef NDimLinearLayer < CompositeBaseLayer & ParamsFunctions & ...
          % z has dimensions L2 x N x D
          value = pagefun(@mtimes, obj.params{1}, x);
          value = bsxfun(@plus, value, obj.params{2});
+      end
+      
+      function increment_params(obj, delta)
+         increment_params@ParamsFunctions(obj, delta);
+         if obj.isMaxFanIn
+            obj.impose_fanin_constraint();
+         end
       end
       
    end

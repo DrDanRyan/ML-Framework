@@ -1,4 +1,5 @@
-classdef SoftabsLayer < matlab.mixin.Copyable
+classdef SoftabsLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies an elementwise soft absolute value to the input.
    
    properties
       dydx

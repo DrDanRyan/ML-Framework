@@ -1,4 +1,5 @@
-classdef L2NormalizeLayer < matlab.mixin.Copyable
+classdef L2NormalizeLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % This layer normalizes the input to have L2 norm == 1 along first dimension.
    
    properties
       xNorm

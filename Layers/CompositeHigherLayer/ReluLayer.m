@@ -1,4 +1,5 @@
-classdef ReluLayer < matlab.mixin.Copyable
+classdef ReluLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies an elementwise rectified linear function to the input.
    
    properties
       dydx

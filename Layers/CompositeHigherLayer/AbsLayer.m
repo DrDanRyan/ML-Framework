@@ -1,4 +1,5 @@
-classdef AbsLayer < matlab.mixin.Copyable
+classdef AbsLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % This layer applies an elementwise absolute value function to the input.
    
    properties
       dydx

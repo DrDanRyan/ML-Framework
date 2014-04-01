@@ -1,5 +1,6 @@
-classdef Conv2DSubtractiveNormalization < matlab.mixin.Copyable
-   % Performs subtractive and divisive contrast normalization over Gaussian
+classdef Conv2DSubtractiveNormalization < CompositeHigherLayer & ...
+                                          matlab.mixin.Copyable
+   % Performs subtractive contrast normalization over Gaussian
    % window and accross feature maps (see LeCun2010 "Convolutional networks
    % and applications in vision")
    
@@ -38,8 +39,9 @@ classdef Conv2DSubtractiveNormalization < matlab.mixin.Copyable
 
          for i = 1:rows
             for j = 1:cols
-               if i < radius+1 || i > rows-radius || ... % Edge effects, need to truncate
-                     j < radius+1 || j > cols-radius     % filter window
+               % Test for edge effects; truncate filter window if necessary
+               if i < radius+1 || i > rows-radius || ... 
+                     j < radius+1 || j > cols-radius     
                   samp = x(:,:,max(1,i-radius):min(rows,i+radius), ...
                                max(1,j-radius):min(cols,j+radius));
                   topRoom = min(radius, i-1);
@@ -56,7 +58,8 @@ classdef Conv2DSubtractiveNormalization < matlab.mixin.Copyable
                      truncW/obj.edgeFactor(:,:,i,j), samp), 4), 3), 1);
                else   % Interior, can use full filter
                   samp = x(:,:,i-radius:i+radius, j-radius:j+radius);
-                  convTerm(:,:,i,j) = sum(sum(sum(bsxfun(@times, obj.W, samp), 4), 3), 1);
+                  convTerm(:,:,i,j) = sum(sum(sum(bsxfun(@times, obj.W, ...
+                                                         samp), 4), 3), 1);
                end
             end
          end
@@ -70,8 +73,9 @@ classdef Conv2DSubtractiveNormalization < matlab.mixin.Copyable
          
          for i = 1:rows
             for j = 1:cols
-               if i < radius+1 || i > rows-radius || ... % Edge effects, need to truncate
-                     j < radius+1 || j > cols-radius     % filter window
+               % Test for edge effects; truncate filter window if necessary
+               if i < radius+1 || i > rows-radius || ...
+                     j < radius+1 || j > cols-radius     
                   rS = max(1,i-radius); % rowStart
                   rE = min(rows, i+radius); % rowEnd
                   cS = max(1, j-radius); % colStart
@@ -85,15 +89,18 @@ classdef Conv2DSubtractiveNormalization < matlab.mixin.Copyable
                   center = radius+1;
                   truncW = obj.W(1,1,center-topRoom:center+bottomRoom, ...
                                      center-leftRoom:center+rightRoom);
-                  convTerm(:,:,i,j) = sum(sum(bsxfun(@times, truncW, samp), 4), 3);
-               else   % Interior, can use full filter (still need to account for edgeFactors)
+                  convTerm(:,:,i,j) = sum(sum(bsxfun(@times, truncW, samp), ...
+                                                                    4), 3);
+               else   % Interior, can use full filter 
+                      % (still need to account for edgeFactors)
                   rS = i-radius;
                   rE = i+radius;
                   cS = j-radius;
                   cE = j+radius;
                   samp = bsxfun(@rdivide, sum(dLdy(:,:,rS:rE, cS:cE), 1), ...
                                           obj.edgeFactor(:,:,rS:rE,cS:cE));
-                  convTerm(:,:,i,j) = sum(sum(bsxfun(@times, obj.W, samp), 4), 3);
+                  convTerm(:,:,i,j) = sum(sum(bsxfun(@times, obj.W, samp), ...
+                                                                   4), 3);
                end
             end
          end
@@ -104,7 +111,7 @@ classdef Conv2DSubtractiveNormalization < matlab.mixin.Copyable
          % Assumes windowSize is odd
          x = obj.gpuState.linspace(-2, 2, obj.windowSize);
          W = exp(-bsxfun(@plus, x.*x, x'.*x')/2)/(2*pi);
-         W = shiftdim(W/(channels*sum(W(:))), -2); % 1 x 1 x windowSize x windowSize
+         W = shiftdim(W/(channels*sum(W(:))), -2); 
       end
       
    end

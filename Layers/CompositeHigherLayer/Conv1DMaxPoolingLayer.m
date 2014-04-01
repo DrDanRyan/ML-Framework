@@ -1,4 +1,6 @@
-classdef Conv1DMaxPoolingLayer < matlab.mixin.Copyable
+classdef Conv1DMaxPoolingLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Applies max pooling to non-overlapping regions of each signal channel in a
+   % 1D signal.
    
    properties
       inputSize
@@ -16,7 +18,8 @@ classdef Conv1DMaxPoolingLayer < matlab.mixin.Copyable
          remainder = mod(obj.inputSize, obj.poolSize);
          if remainder > 0
             if isa(x, 'gpuArray')
-               padding = gpuArray.nan([nF, N, obj.poolSize - remainder], 'single');
+               padding = ...
+                  gpuArray.nan([nF, N, obj.poolSize - remainder], 'single');
             else
                padding = nan([nF, N, obj.poolSize - remainder]);
             end

@@ -1,4 +1,4 @@
-classdef AdditionLayer < matlab.mixin.Copyable
+classdef AdditionLayer < CompositeHigherLayer & matlab.mixin.Copyable
    % Adds a constant value to the input. Useful to fudge nonnegative values
    % to be strictly positive (which is particularly useful for sparse
    % filtering)

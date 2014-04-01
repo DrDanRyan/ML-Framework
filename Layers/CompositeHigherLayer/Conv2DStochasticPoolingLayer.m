@@ -1,4 +1,8 @@
-classdef Conv2DStochasticPoolingLayer < matlab.mixin.Copyable
+classdef Conv2DStochasticPoolingLayer < CompositeHigherLayer & ...
+                                        matlab.mixin.Copyable
+   % Performs stochastic pooling of nonoverlapping square regions for each 
+   % channel in a multi-channel 2D input signal. Signal can only have
+   % nonnegative values.
    
    properties
       inputRows

@@ -1,4 +1,4 @@
-classdef Conv2DMaxMaskingLayer < matlab.mixin.Copyable
+classdef Conv2DMaxMaskingLayer < CompositeHigherLayer & matlab.mixin.Copyable
    % Like Conv2DMaxPooling except that it just zeros out non-winners in
    % each group instead of actually pooling. Useful for implementing a 
    % convolutional autoencoder.
@@ -41,7 +41,8 @@ classdef Conv2DMaxMaskingLayer < matlab.mixin.Copyable
                winners = obj.gpuState.false(size(samp));
                for s = 1:obj.poolCols
                   for r = 1:obj.poolRows
-                     winners(:,:,rowStart+r-1, colStart+s-1) = colIdx(:,:,r)==s & rowIdx==r;  %#ok<*PROP>
+                     winners(:,:,rowStart+r-1, colStart+s-1) = ...
+                        colIdx(:,:,r)==s & rowIdx==r;  %#ok<*PROP>
                   end
                end
                y(:,:,rowStart:rowEnd,colStart:colEnd) = samp.*winners;
@@ -63,7 +64,7 @@ classdef Conv2DMaxMaskingLayer < matlab.mixin.Copyable
                colEnd = min(colStart + obj.poolCols - 1, obj.inputCols);
                dLdx(:,:,rowStart:rowEnd, colStart:colEnd) = ...
                   bsxfun(@times, dLdy(:,:,rowStart:rowEnd,colStart:colEnd), ...
-                                 obj.winners(:,:,rowStart:rowEnd,colStart:colEnd));
+                         obj.winners(:,:,rowStart:rowEnd,colStart:colEnd));
             end
          end
          obj.winners = [];

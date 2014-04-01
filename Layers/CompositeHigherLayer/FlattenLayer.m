@@ -1,5 +1,7 @@
-classdef FlattenLayer < matlab.mixin.Copyable
-   % Takes multiple dimension input and flattens to a single dimension
+classdef FlattenLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Takes multiple dimension input and flattens to a single dimension,
+   % essentially removing all topological information from input. Useful at the
+   % top of a convolutional network just prior to the fully connected layer.
    
    properties
       D

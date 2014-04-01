@@ -1,4 +1,5 @@
-classdef MaxPoolingLayer < matlab.mixin.Copyable
+classdef MaxPoolingLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Performs max pooling across 3rd dimension of input.
    
    properties
       dydx

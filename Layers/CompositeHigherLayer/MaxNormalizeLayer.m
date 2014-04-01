@@ -1,4 +1,4 @@
-classdef MaxNormalizeLayer < matlab.mixin.Copyable
+classdef MaxNormalizeLayer < CompositeHigherLayer & matlab.mixin.Copyable
    % divides all features by max of absolute value of features
    
    properties

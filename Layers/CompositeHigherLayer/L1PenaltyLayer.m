@@ -1,4 +1,6 @@
-classdef L1PenaltyLayer < matlab.mixin.Copyable
+classdef L1PenaltyLayer < CompositeHigherLayer & matlab.mixin.Copyable
+   % Adds a L1 penalty to the output activations of the layer that feeds into 
+   % this layer. Can be used to encourage sparse activations.
    
    properties
       C
