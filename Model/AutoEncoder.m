@@ -4,10 +4,11 @@ classdef AutoEncoder < AutoEncoderInterface
    properties
       encodeLayer % a HiddenLayer object that functions as the encoding layer
       decodeLayer % a OutputLayer object that functions as the decoding layer 
-                  % and loss function
-      isTiedWeights % a boolean indicating if the params in encodeLayer and 
-                    % decodeLayer are shared; assumes encodeLayer.params = {W, b} 
-                    % when isTiedWeights is true
+      
+      % a boolean indicating if the params in encodeLayer and decodeLayer are 
+      % shared; assumes encodeLayer.params = {W, b} when isTiedWeights is true
+      isTiedWeights 
+      
       gpuState
       encodeGradSize % size of cell array returned by enocdeLayer.backprop
    end
@@ -79,7 +80,8 @@ classdef AutoEncoder < AutoEncoderInterface
          obj.encodeLayer.increment_params(delta(1:obj.encodeGradSize));
          
          if length(delta) > 1
-            obj.decodeLayer.increment_params([0, delta(obj.encodeGradSize+1:end)]);
+            obj.decodeLayer.increment_params([0, ...
+                                              delta(obj.encodeGradSize+1:end)]);
          end
          
          if obj.isTiedWeights
