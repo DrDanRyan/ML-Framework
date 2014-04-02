@@ -67,7 +67,8 @@ classdef ComboOutputLayer < OutputLayer
       end
       
       function objCopy = copy(obj)
-         objCopy = ComboOutputLayer(obj.hiddenLayer.copy(), obj.lossFunction.copy());
+         objCopy = ComboOutputLayer(obj.hiddenLayer.copy(), ...
+                                    obj.lossFunction.copy());
       end
    end
    

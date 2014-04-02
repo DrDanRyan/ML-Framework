@@ -1,11 +1,7 @@
 classdef SoftmaxOutputLayer < StandardOutputLayer
    % TODO: improve robustness using "Tricks of the Trade" 2nd ed Ch 11
    % tricks
-   properties 
-      isLocallyLinear = false
-      isDiagonalDy = false
-   end
-   
+
    methods
       function obj = SoftmaxOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});
@@ -30,8 +26,10 @@ classdef SoftmaxOutputLayer < StandardOutputLayer
          % completely symmetric in all C dimensions)
          [C, N] = size(y);
          diagTerm = bsxfun(@times, shiftdim(Dy, -1), eye(C));
-         Dy_yT_term = bsxfun(@times, shiftdim(Dy, -1), reshape(y, [C, 1, N, 1]));
-         y_Dy_term = bsxfun(@times, reshape(Dy, [C, 1, N, C]), reshape(y, [1, C, N, 1]));
+         Dy_yT_term = bsxfun(@times, shiftdim(Dy, -1), ...
+                                     reshape(y, [C, 1, N, 1]));
+         y_Dy_term = bsxfun(@times, reshape(Dy, [C, 1, N, C]), ...
+                                    reshape(y, [1, C, N, 1]));
          D2y = diagTerm - Dy_yT_term - y_Dy_term; % C x C x N x C 
       end
       

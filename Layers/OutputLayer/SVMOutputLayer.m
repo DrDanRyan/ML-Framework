@@ -7,8 +7,6 @@ classdef SVMOutputLayer < StandardOutputLayer
    properties
       costRatio % multiplies the loss for misclassifying positive examples
       lossExponent % exponent of the hinge loss function (>= 1)
-      isLocallyLinear = true
-      isDiagonalDy = true
    end
    
    methods
@@ -31,7 +29,7 @@ classdef SVMOutputLayer < StandardOutputLayer
          y = obj.feed_forward(x);
          if obj.costRatio == 1
             dLdz = -obj.lossExponent*t.*(max(1 - y.*t, 0).^(obj.lossExponent-1));
-         else % obj.costRatio ~= 1 (costRatio should not be used if outputSize > 1)
+         else % obj.costRatio~= 1 (costRatio should not be used if outputSize>1)
             posIdx = t==1;
             negIdx = t~=1;
             tPos = t(posIdx);
@@ -40,8 +38,9 @@ classdef SVMOutputLayer < StandardOutputLayer
             yNeg = y(negIdx);
             dLdz = obj.gpuState.zeros(size(y));
             dLdz(:,posIdx) = -obj.lossExponent*obj.costRatio*...
-                                 tPos.*(max(1 - yPos.*tPos, 0).^(obj.lossExponent-1));
-            dLdz(:,negIdx) = -obj.lossExponent*tNeg.*(max(1 - yNeg.*tNeg, 0).^(obj.lossExponent-1));
+                          tPos.*(max(1 - yPos.*tPos, 0).^(obj.lossExponent-1));
+            dLdz(:,negIdx) = -obj.lossExponent*tNeg.*...
+                             (max(1 - yNeg.*tNeg, 0).^(obj.lossExponent-1));
          end
       end
       
