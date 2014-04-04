@@ -1,11 +1,11 @@
-classdef ProportionSubsampler < Sampler
+classdef ProportionSampler < Sampler
    
    properties
       proportion
    end
    
    methods
-      function obj = ProportionSubsampler(proportion)
+      function obj = ProportionSampler(proportion)
          obj.proportion = proportion;
       end
       
