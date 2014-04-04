@@ -1,4 +1,9 @@
 classdef SparseFilteringLoss < LossFunction
+   % A "sparse filtering" LossFunction. Nothing is assumed about the sign of the
+   % output values, but if model is able to consistently output zero values this
+   % will probably break (because of division by rowNorms). Works best with
+   % something like SoftAbs activation function (that is always strictly
+   % positive).
    
    methods      
       function dLdy = dLdy(~, y, ~)

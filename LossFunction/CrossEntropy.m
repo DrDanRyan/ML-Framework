@@ -1,16 +1,15 @@
 classdef CrossEntropy < LossFunction
-   % Binary cross entropy loss function
+   % Binomial cross-entropy loss function. This object will fail if y == 0 or y
+   % == 1 (in which case cancellation with dydz in the output layer should be
+   % ocurring for logistic units).
    
    methods
-      function dLdy = dLdy(obj, y, t)
+      function dLdy = dLdy(~, y, t)
          dLdy = (y-t)./(y.*(1 - y));
       end
       
-      function loss = compute_loss(obj, y, t)
-         % loss = mean(-t.*log(y) - (1-t).*log(1-y))
-         % This implementation is more robust to NaN from 0*(-Inf) when 
-         % t == y == 0 or t == y == 1
-         loss = (sum(-log(y(t==1))) + sum(-log(1-y(t==0))))/length(t); 
+      function loss = compute_loss(~, y, t)
+         loss = mean(-t.*log(y) - (1-t).*log(1-y));
       end
    end
    

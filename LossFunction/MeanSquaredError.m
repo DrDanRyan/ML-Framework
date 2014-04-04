@@ -1,12 +1,14 @@
 classdef MeanSquaredError < LossFunction
+   % A LossFunction for mean squared error. Works for output with an arbitrary
+   % number of dimensions.
    
    methods
-      function dLdy = dLdy(obj, y, t)
-         dLdy = y - t;
+      function dLdy = dLdy(~, y, t)
+         dLdy = 2*(y - t);
       end
       
-      function loss = compute_loss(obj, y, t)
-         loss = .5*mean((y(:) - t(:)).^2);
+      function loss = compute_loss(~, y, t)
+         loss = mean((y(:) - t(:)).^2);
       end
    end
    

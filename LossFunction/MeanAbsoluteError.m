@@ -1,4 +1,6 @@
 classdef MeanAbsoluteError < LossFunction
+   % A LossFunction for mean absolute error. Works for outputs that are
+   % arbitrary dimension.
    
    methods
       function dLdy = dLdy(~, y, t)
