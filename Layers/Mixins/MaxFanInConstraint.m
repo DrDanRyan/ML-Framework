@@ -21,7 +21,7 @@ classdef MaxFanInConstraint < handle
          p = inputParser();
          p.KeepUnmatched = true;
          p.addParamValue('maxFanIn', []);
-         parse(p, varargin);
+         parse(p, varargin{:});
          
          obj.maxFanIn = p.Results.maxFanIn;
       end
