@@ -8,7 +8,7 @@ classdef MeanSquaredError < LossFunction
       end
       
       function loss = compute_loss(~, y, t)
-         loss = mean((y(:) - t(:)).^2);
+         loss = sum((y(:) - t(:)).^2)/size(y, 2);
       end
    end
    

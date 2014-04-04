@@ -9,7 +9,7 @@ classdef CrossEntropy < LossFunction
       end
       
       function loss = compute_loss(~, y, t)
-         loss = mean(-t.*log(y) - (1-t).*log(1-y));
+         loss = sum(-t(:).*log(y(:)) - (1-t(:)).*log(1-y(:)))/size(y, 2);
       end
    end
    

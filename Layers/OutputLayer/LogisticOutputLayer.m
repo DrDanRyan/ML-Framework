@@ -1,12 +1,7 @@
 classdef LogisticOutputLayer < StandardOutputLayer
-<<<<<<< HEAD
    % A logistic layer with binomial cross-entropy loss function. This layer
    % ignores NaN values in the targets (useful for AutoEncoders when there
    % missing values).
-=======
-   % A logistic layer with binomial cross-entropy loss function. NaN values for 
-   % targets are ignored and not included in gradient or loss calculations.
->>>>>>> e540396056d196ecb0b1b604eb014cdcccd43daf
    
    methods
       function obj = LogisticOutputLayer(inputSize, outputSize, varargin)
@@ -29,7 +24,7 @@ classdef LogisticOutputLayer < StandardOutputLayer
       end
 
       function loss = compute_loss(~, y, t)       
-         loss = mean(nansum(-t.*log(y) - (1 - t).*log(1 - y), 1), 2);
+         loss = nansum(-t(:).*log(y(:)) - (1 - t(:)).*log(1 - y(:)))/size(y,2);
       end
    end
    

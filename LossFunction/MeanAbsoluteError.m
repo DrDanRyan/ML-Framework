@@ -8,7 +8,7 @@ classdef MeanAbsoluteError < LossFunction
       end
       
       function loss = compute_loss(~, y, t)
-         loss = mean(abs((y(:) - t(:))));
+         loss = sum(abs((y(:) - t(:))))/size(y, 2);
       end
    end
    

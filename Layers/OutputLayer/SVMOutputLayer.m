@@ -6,7 +6,7 @@ classdef SVMOutputLayer < StandardOutputLayer
    
    properties
       costRatio % multiplies the loss for misclassifying positive examples
-      lossExponent % exponent of the hinge loss function (>= 1)
+      lossExponent % exponent of the hinge loss function (> 1)
    end
    
    methods
@@ -44,17 +44,13 @@ classdef SVMOutputLayer < StandardOutputLayer
          end
       end
       
-      function value = compute_Dy(obj, ~, y)
-         value = obj.gpuState.ones(size(y));
-      end
-      
       function y = feed_forward(obj, x)
          y = obj.compute_z(x);
       end
       
       function loss = compute_loss(obj, y, t)
          if obj.costRatio == 1
-            loss = mean(sum(max(1 - y.*t, 0).^obj.lossExponent, 1));
+            loss = sum(max(1 - y(:).*t(:), 0).^obj.lossExponent)/size(y, 2);
          else % costRatio ~= 1 (costRatio should not be used if outputSize > 1)
             posIdx = t==1;
             negIdx = t~=1;

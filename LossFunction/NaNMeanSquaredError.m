@@ -13,7 +13,7 @@ classdef NaNMeanSquaredError < LossFunction
       end
       
       function loss = compute_loss(~, y, t)
-         loss = nanmean((y(:) - t(:)).^2);
+         loss = nansum((y(:) - t(:)).^2)/size(y, 2);
       end
    end
    
