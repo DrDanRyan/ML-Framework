@@ -15,14 +15,14 @@ targetSize = 10;
 batchSize = 128;
 
 % ParameterSchedule
-lr = .05;
-momentum = .70;
+lr = .10;
+momentum = .80;
 
 % ProgressMonitor
 validationInterval = 200;
 
 % Training
-nUpdates = 2e4;
+nUpdates = 4e4;
 
 %% Prepare for training
 trainer = Trainer();
@@ -66,7 +66,7 @@ trainer.stepCalculator = NesterovMomentum();
 trainer.parameterSchedule = MomentumSchedule(lr, momentum);
 
 % Create and attach ProgressMonitor
-trainer.progressMonitor = BasicMonitor('validationInterval', 100);
+trainer.progressMonitor = BasicMonitor('validationInterval', validationInterval);
 
 %% Perform training
 trainer.train(nUpdates);
