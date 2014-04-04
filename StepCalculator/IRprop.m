@@ -4,7 +4,7 @@ classdef IRprop < StepCalculator
    %
    % Like Rprop except when a 'bad step' has been taken (gradient switched
    % signs and overall batch error has increased) weights are reset to
-   % previous values
+   % previous values. No ParameterSchedule is required.
    
    properties
       lr0

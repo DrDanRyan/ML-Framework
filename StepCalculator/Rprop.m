@@ -1,8 +1,6 @@
 classdef Rprop < StepCalculator
    % Basic resilient backprop (Rprop). Should only be used in full batch
-   % mode (for mini-batches use RMSprop). Method automatically adapts
-   % learning rates at each connection so params from TrainingSchedule are
-   % ignored.
+   % mode (for mini-batches use RMSprop). No ParameterSchedule is required.
    % 
    % Formula used for step:
    % step = learnRate*sign(gradient) 
