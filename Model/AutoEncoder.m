@@ -1,16 +1,23 @@
 classdef AutoEncoder < Model
-   % Basic AutoEncoder
+   % A basic one hidden layer autoencoder. Sparse autoencoders and contractive
+   % autoencoders can be built by applying the appropriate penalty terms in the
+   % decodeLayer object (type HiddenLayer).
    
    properties
       encodeLayer % a HiddenLayer object that functions as the encoding layer
       decodeLayer % a OutputLayer object that functions as the decoding layer 
       
-      % a boolean indicating if the params in encodeLayer and decodeLayer are 
-      % shared; assumes encodeLayer.params = {W, b} when isTiedWeights is true
+      % a boolean indicating if params{1} in encodeLayer and decodeLayer 
+      % are constrained to be the transpose of each other
       isTiedWeights 
       
       gpuState
-      encodeGradSize % size of cell array returned by enocdeLayer.backprop
+   end
+   
+   properties (SetAccess = private)
+      % size of cell array returned by enocdeLayer.backprop; this value is set
+      % each time gradient is called
+      encodeGradSize
    end
    
    methods
@@ -26,7 +33,7 @@ classdef AutoEncoder < Model
       end
       
       function set.decodeLayer(obj, decodeLayer)
-         % Ties the weights of the decodeLayer to the encodeLayer if
+         % Ties the weights (params{1}) of the decodeLayer to the encodeLayer if
          % isTiedWeights is true.
          obj.decodeLayer = decodeLayer;
          if obj.isTiedWeights %#ok<MCSUP>

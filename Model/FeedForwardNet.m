@@ -1,15 +1,27 @@
 classdef FeedForwardNet < Model
-   % A general base class for a feed-forward neural network that can utilize
-   % dropout and gpu training. 
+   % A feed-forward neural network that can utilize dropout and gpu training. 
 
    properties
       hiddenLayers % cell array of HiddenLayer objects (possibly empty)
       outputLayer % a single OutputLayer object
-      gpuState % gpuState object used for array creation dependent on isGPU flag in object
-      hiddenDropout % proportion of hidden units that are replaced with zero (in [0, 1])
-      inputDropout % proportion of inputs that are replaced with zero (in [0, 1])
-      nestedGradShape % a row vector of integer values describing the nested gradient shape
-      flatGradLength % the length of the flattened gradient
+      gpuState % gpuState object used for array creation
+      
+      % proportion of inputs that are replaced with 0
+      inputDropout 
+      
+      % An array of dropout probabilities for the hiddenLayers; should have same
+      % length as hiddenLayers or be a single scalar (in which case the same 
+      % value is used for all hiddenLayers); values are probability that 
+      % hidden unit activation is replaced by 0
+      hiddenDropout 
+      
+      % a row vector of integer values describing the nested gradient shape;
+      % this value is computed on the first backprop pass
+      nestedGradShape 
+      
+      % the length of the flattened gradient; computed on the first 
+      % backprop pass
+      flatGradLength 
    end
    
    methods
@@ -41,28 +53,28 @@ classdef FeedForwardNet < Model
          obj.gpuState.isGPU = true;
       end      
       
-      function increment_params(obj, delta_params)
-         % delta_params is a flat cell array; it must be rolled into proper
-         % shape (as originally produced during the layer by layer gradient
-         % computation) before updating each layer params.
-         
+      function increment_params(obj, delta_params)         
          if isempty(obj.hiddenLayers)
             obj.outputLayer.increment_params(delta_params);
-            return;
+         else
+            % delta_params is a flat cell array; it must be rolled into proper
+            % nested shape (as originally produced during the layer by layer 
+            % gradient computation) before updating each layer 
+            % params.delta_params = obj.roll_gradient(delta_params);
+            
+            for i = 1:length(obj.hiddenLayers)
+               obj.hiddenLayers{i}.increment_params(delta_params{i});
+            end
+            obj.outputLayer.increment_params(delta_params{end});
          end
-         
-         delta_params = obj.roll_gradient(delta_params);
-         for i = 1:length(obj.hiddenLayers)
-            obj.hiddenLayers{i}.increment_params(delta_params{i});
-         end
-         obj.outputLayer.increment_params(delta_params{end});
       end
       
       function [grad, output, dLdx] = gradient(obj, batch)
-         % Computes the gradient for batch input x and target t for all parameters in
-         % each hiddenLayer and outputLayer.
+         % batch = {x, t} where x is input and t is target. Computes the 
+         % gradient for mean loss on batch with respect to parameters in each 
+         % hiddenLayer and outputLayer.
          x = batch{1};
-         t = batch{end};
+         t = batch{2};
  
          % feed_forward through hiddenLayers
          [y, mask] = obj.feed_forward(x);
@@ -74,12 +86,18 @@ classdef FeedForwardNet < Model
       function [y, mask] = feed_forward(obj, x)
          % Expand obj.hiddenDropout if it is a scalar       
          if isscalar(obj.hiddenDropout)
-            obj.hiddenDropout = obj.hiddenDropout*ones(1, length(obj.hiddenLayers));
+            obj.hiddenDropout = ...
+               obj.hiddenDropout*ones(1, length(obj.hiddenLayers));
          end
 
          nHiddenLayers = length(obj.hiddenLayers);
-         y = cell(1, nHiddenLayers+1); % output from each hiddenLayer (and y{1} = input)
-         mask = cell(1, nHiddenLayers+1); % dropout mask for each layer (including input)
+         
+         % output from each hiddenLayer (and y{1} = input)
+         y = cell(1, nHiddenLayers+1); 
+         
+         % dropout mask for each layer (including input)
+         mask = cell(1, nHiddenLayers+1); 
+         
          if obj.inputDropout > 0
             mask{1} = obj.compute_dropout_mask(size(x), 1);
             y{1} = x.*mask{1};
@@ -99,7 +117,9 @@ classdef FeedForwardNet < Model
       
       function [grad, output, dLdx] = backprop(obj, y, t, mask)
          nHiddenLayers = length(obj.hiddenLayers);
-         grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and outputLayer (last idx)
+         grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and 
+                                          % outputLayer (nested shape)
+                                          
          [grad{end}, dLdx, output] = obj.outputLayer.backprop(y{end}, t);
          if ~isempty(mask{end})
             dLdx = dLdx.*mask{end};
@@ -144,7 +164,7 @@ classdef FeedForwardNet < Model
       
       function loss = compute_loss(obj, batch)
          y = obj.output(batch{1});
-         t = batch{end};
+         t = batch{2};
          loss = obj.compute_loss_from_output(y, t);
       end
       
@@ -178,6 +198,8 @@ classdef FeedForwardNet < Model
             obj.hiddenLayers{i}.init_params();
          end
          obj.outputLayer.init_params();
+         obj.nestedGradShape = [];
+         obj.flatGradLength = [];
       end
       
       function flatGrad = unroll_gradient(obj, nestedGrad)
