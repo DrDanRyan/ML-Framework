@@ -1,4 +1,7 @@
 classdef ConsoleReporter < Reporter
+   % Basic text based console reporter that prints training loss and validation
+   % loss to screen. It is common to add this reporter as an extra property to a
+   % more advanced reporter if desired.
    
    methods
       function report(~, progressMonitor, ~)

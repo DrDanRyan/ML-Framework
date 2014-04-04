@@ -1,11 +1,11 @@
 classdef MNISTReporter < Reporter
    % A reporter class for visualizing MNIST filters (not convolutional
-   % filters) during training
+   % filters) during training.
    
    properties
       consoleReporter
-      rows
-      cols
+      rows % number of rows in vizualization
+      cols % number of columns in vizualization
    end
    
    methods
@@ -49,6 +49,8 @@ classdef MNISTReporter < Reporter
             end
          end
          drawnow;
+         
+         % Call console reporter to print loss values to screen
          obj.consoleReporter.report(progressMonitor, model);
       end
       

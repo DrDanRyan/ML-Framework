@@ -1,5 +1,5 @@
 classdef Cifar10Reporter < Reporter
-   % A reporter class for visualizing MNIST filters (not convolutional
+   % A reporter class for visualizing Cifar10 filters (not convolutional
    % filters) during training
    
    properties
