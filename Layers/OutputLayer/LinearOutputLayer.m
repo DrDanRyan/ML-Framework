@@ -1,7 +1,13 @@
 classdef LinearOutputLayer < StandardOutputLayer
+<<<<<<< HEAD
    % A linear layer with MeanSquaredError loss function. This ignores NaN values
    % in targets (useful for AutoEncoders when there are missing values).
    
+=======
+   % A linear layer with MeanSquaredError loss function. NaN values for targets
+   % are ignored and not included in gradient or loss calculations.
+
+>>>>>>> e540396056d196ecb0b1b604eb014cdcccd43daf
    methods
       function obj = LinearOutputLayer(inputSize, outputSize, varargin)
          obj = obj@StandardOutputLayer(inputSize, outputSize, varargin{:});

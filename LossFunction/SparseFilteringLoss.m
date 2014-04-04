@@ -10,9 +10,11 @@ classdef SparseFilteringLoss < LossFunction
          % Backprop
          dLdy = sign(F);         
          dLdy = bsxfun(@rdivide, dLdy, colNorms) ...
-                     - bsxfun(@times, F, sum(dLdy.*yRowNormed, 1)./(colNorms.*colNorms));       
+                     - bsxfun(@times, F, sum(dLdy.*yRowNormed, 1)./...
+                     (colNorms.*colNorms));       
          dLdy = bsxfun(@rdivide, dLdy, rowNorms) ...
-                     - bsxfun(@times, yRowNormed, sum(dLdy.*y, 2)./(rowNorms.*rowNorms));
+                     - bsxfun(@times, yRowNormed, sum(dLdy.*y, 2)./...
+                     (rowNorms.*rowNorms));
       end
       
       function loss = compute_loss(~, y, ~)

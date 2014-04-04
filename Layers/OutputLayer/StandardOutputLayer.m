@@ -1,4 +1,6 @@
 classdef StandardOutputLayer < OutputLayer & StandardLayer
+   % A base class provide standard functionality for an OutputLayer with normal
+   % linear layer followed by elementwise nonlinearity structure.
    
    methods
       function obj = StandardOutputLayer(inputSize, outputSize, varargin)
