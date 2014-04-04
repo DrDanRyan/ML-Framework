@@ -1,23 +1,37 @@
 classdef BasicMonitor < ProgressMonitor
-   % Provides core functionality of ProgressMonitor. Should subclass and 
+   % Provides core functionality of ProgressMonitor. Should subclass as needed.
    
    properties
-      validationInterval % number of updates between computing validation error scores
+      % number of updates between computing validation error scores
+      % (default:100)
+      validationInterval     
       validLossFunction % function handle for validation error computation
-      isComputeTrainLoss % whether or not to compute training error when validation error is computed
+
+      % boolean indicating whether or not to compute training error when 
+      % validation error is computed (default is true)
+      isComputeTrainLoss 
       trainLossFunction % function handle for training error computation
-      validLoss = [] 
-      trainLoss = []
       
-      isReport % boolean indicating whether to call report function after losses are computed
+      % boolean indicating whether to call report function after losses 
+      % are computed (default is true)
+      isReport 
       reporter % instance of the Reporter class
       
-      isStoreModels % whether or not to store copies of model at each validation point: {'all', 'best', false}
-      models = {} % cell array of stored models if isStoreModels is 'all', or only best model if 'best'
-      
+      % whether or not to store copies of model at each validation point: 
+      % {'all', 'best', false} (default is 'best')
+      isStoreModels 
+   end
+   
+   properties (SetAccess = protected)
+      validLoss = [] % stores history of validation loss values
+      trainLoss = [] % stores history of training loss values
       bestUpdate = 0 % update where best validationLoss was achieved
       bestValidLoss = Inf % value of best validationLoss
       nUpdates = 0 % number of updates performed thus far
+      
+      % cell array of stored models if isStoreModels is 'all', 
+      % or only best model if 'best'
+      models = {}
    end
    
    methods
@@ -37,7 +51,9 @@ classdef BasicMonitor < ProgressMonitor
          obj.trainLossFunction = p.Results.trainLossFunction;
          obj.isStoreModels = p.Results.isStoreModels;
          obj.isReport = p.Results.isReport;
-         if obj.isReport % if isReport give a basic ConsoleReporter as default reporter
+         
+         % if isReport give a basic ConsoleReporter as default reporter
+         if obj.isReport 
             obj.reporter = ConsoleReporter();
          end
       end
@@ -47,11 +63,14 @@ classdef BasicMonitor < ProgressMonitor
          if mod(obj.nUpdates, obj.validationInterval) == 0
             obj.compute_loss_values(model, dataManager);
          end
-         isContinue = obj.should_continue(); % useful hook for subclasses to implement 
-                                             % stopping criteria
+         
+         % useful hook for subclasses to implement stopping criteria
+         isContinue = obj.should_continue(); 
       end
       
       function isContinue = should_continue(~)
+         % Subclasses can implement own stopping criteria by redefining this
+         % function.
          isContinue = true;
       end
       
@@ -68,10 +87,14 @@ classdef BasicMonitor < ProgressMonitor
                else
                   y = model.output(batch{1});
                   t = batch{end};
-                  tempLoss = tempLoss + batchSize*obj.validLossFunction(y, t); % have to 'unaverage' losses
+                  
+                  % have to 'unaverage' losses
+                  tempLoss = tempLoss + batchSize*obj.validLossFunction(y, t); 
                end
             end
-            obj.validLoss = [obj.validLoss, tempLoss/dataManager.validationSize]; % 'reaverage' losses
+            
+            % 'reaverage' losses
+            obj.validLoss = [obj.validLoss, tempLoss/dataManager.validationSize]; 
 
             if obj.validLoss(end) < obj.bestValidLoss
                obj.bestValidLoss = obj.validLoss(end);
@@ -80,16 +103,16 @@ classdef BasicMonitor < ProgressMonitor
             
             % Store model if appropriate
             switch obj.isStoreModels
-               case 'all' % store all model snapshots for each validationInterval
+               case 'all' % store model snapshot for every validationInterval
                   obj.models = [obj.models, model.copy()];
-               case 'best' % only store the best model so far (overwrite previous best)
+               case 'best' % only store the best model so far 
                   if obj.bestUpdate == obj.nUpdates
                      obj.models{1} = model.copy();
                   end
             end
          end
          
-         % Compute training loss if desired
+         % Compute training loss if isComputeTrainLoss
          if obj.isComputeTrainLoss
             isContinue = true;
             tempLoss = 0;
@@ -113,38 +136,19 @@ classdef BasicMonitor < ProgressMonitor
          if obj.isReport
             obj.reporter.report(obj, model);
          end
-      end
-      
-      function report(obj)
-         if isempty(obj.trainLoss)
-            fprintf('\nupdate %d:  valid: %.4f', obj.nUpdates, obj.validLoss(end));
-         else
-            fprintf('\nupdate %d:  train: %.4f  valid: %.4f', obj.nUpdates, ...
-                     obj.trainLoss(end), obj.validLoss(end));
-         end
-      end
-      
-      function plot_training_curves(obj)
-         x = obj.validationInterval:obj.validationInterval:obj.nUpdates;
-         figure()
-         plot(x, obj.validLoss, 'b')
-         hold on
-         YLim = get(gca, 'YLim');
-         plot([obj.bestUpdate, obj.bestUpdate], YLim, 'g-')
-         if ~isempty(obj.trainLoss)
-            plot(x, obj.trainLoss, 'r')
-         end
-         hold off
-      end      
+      end    
       
       function reset(obj)
          obj.nUpdates = 0;
          obj.models = {};
          obj.bestUpdate = 0;
          obj.bestValidLoss = Inf;
-         obj.reporter.reset();
          obj.validLoss = [];
          obj.trainLoss = [];
+         
+         if ~isempty(obj.reporter)
+            obj.reporter.reset();
+         end
       end
    end
    
