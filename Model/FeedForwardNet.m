@@ -59,8 +59,9 @@ classdef FeedForwardNet < Model
          else
             % delta_params is a flat cell array; it must be rolled into proper
             % nested shape (as originally produced during the layer by layer 
-            % gradient computation) before updating each layer 
-            % params.delta_params = obj.roll_gradient(delta_params);
+            % gradient computation) before updating each layer params.
+            
+            delta_params = obj.roll_gradient(delta_params);
             
             for i = 1:length(obj.hiddenLayers)
                obj.hiddenLayers{i}.increment_params(delta_params{i});
