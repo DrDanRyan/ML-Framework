@@ -1,3 +1,4 @@
+clear all
 load MNIST_train
 
 %% Declare parameters
@@ -18,10 +19,10 @@ lr = .05;
 momentum = .70;
 
 % ProgressMonitor
-validationInterval = 100;
+validationInterval = 200;
 
 % Training
-nUpdates = 1e4;
+nUpdates = 2e4;
 
 %% Prepare for training
 trainer = Trainer();
@@ -37,7 +38,7 @@ validInputs = inputs(:,validIdx);
 validTargets = targets(:,validIdx);
 
 % Clear old variables to save memory (probably not really necessary)
-clear inputs, targets
+clear inputs targets
 
 % Create and attach DataManager
 trainer.dataManager = DataManager({trainInputs, trainTargets}, ...
@@ -53,7 +54,7 @@ outputLayer = SoftmaxOutputLayer(layer2Size, targetSize);
 
 % Create the Model object and attach the HiddenLayers as a cell array
 % and the OutputLayer directly. Then attach the Model to the Trainer.
-model = FeedForwardNetwork();
+model = FeedForwardNet();
 model.hiddenLayers = {layer1, layer2};
 model.outputLayer = outputLayer;
 trainer.model = model;
