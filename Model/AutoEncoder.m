@@ -1,4 +1,4 @@
-classdef AutoEncoder < AutoEncoderInterface
+classdef AutoEncoder < Model
    % Basic AutoEncoder
    
    properties

@@ -1,15 +1,19 @@
-classdef DAE < AutoEncoder
-   % Denoising AutoEncoder
+classdef DenoisingAutoEncoder < AutoEncoder
+   % Extends AutoEncoder by injecting noise into the inputs before the feed
+   % forward pass begins. Currently, dropout, 'salt and pepper', and Gaussian 
+   % noise are supported.
    
    properties     
-      noiseType % string indicating type of input noise to use: 
-                % 'none', 'dropout', 'Gaussian'
-      noiseLevel % a scalar indicating the level of noise 
-                 % (i.e. dropout prob, or std_dev)
+      % string indicating type of input noise to use: 
+      % 'none', 'dropout', 'salt and pepper', or 'Gaussian'
+      noiseType 
+      
+      % a scalar indicating the level of noise (i.e. dropout prob, or std_dev)
+      noiseLevel 
    end
    
    methods
-      function obj = DAE(varargin)
+      function obj = DenoisingAutoEncoder(varargin)
          obj = obj@AutoEncoder(varargin{:});
          p = inputParser;
          p.KeepUnmatched = true;
@@ -36,23 +40,23 @@ classdef DAE < AutoEncoder
          end
       end
       
-      function x = inject_noise(obj, x)
+      function xNoisy = inject_noise(obj, x)
          switch obj.noiseType
-            case 'none'
-               % do nothing
             case 'dropout'
-               x = x.*obj.gpuState.binary_mask(size(x), obj.noiseLevel);
+               xNoisy = x.*obj.gpuState.binary_mask(size(x), obj.noiseLevel);
             case 'salt and pepper'
                noiseIdx = obj.gpuState.binary_mask(size(x), 1-obj.noiseLevel);
                noiseVals = obj.gpuState.binary_mask([sum(noiseIdx(:)), 1], .5);
-               x(logical(noiseIdx)) = noiseVals;
+               xNoisy(logical(noiseIdx)) = noiseVals;
             case 'Gaussian'
-               x = x + obj.noiseLevel*obj.gpuState.randn(size(x));
+               xNoisy = x + obj.noiseLevel*obj.gpuState.randn(size(x));
+            otherwise
+               % do nothing
          end
       end
       
       function objCopy = copy(obj)
-         objCopy = DAE();
+         objCopy = DenoisingAutoEncoder();
          
          % Handle properties
          objCopy.encodeLayer = obj.encodeLayer.copy();
