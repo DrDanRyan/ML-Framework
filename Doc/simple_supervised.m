@@ -41,9 +41,10 @@ validTargets = targets(:,validIdx);
 clear inputs targets
 
 % Create and attach DataManager
-trainer.dataManager = DataManager({trainInputs, trainTargets}, ...
-                                  {validInputs, validTargets}, ...
-                                  'batchSize', batchSize);
+dataManager = DataManager({trainInputs, trainTargets}, ...
+                          {validInputs, validTargets}, ...
+                          'batchSize', batchSize);
+trainer.dataManager = dataManager;
                                
 % Create the HiddenLayer objects
 layer1 = LogisticHiddenLayer(inputSize, layer1Size);
@@ -60,17 +61,24 @@ model.outputLayer = outputLayer;
 trainer.model = model;
 
 % Create and attach StepCalculator
-trainer.stepCalculator = NesterovMomentum();
+stepCalculator = NesterovMomentum();
+trainer.stepCalculator = stepCalculator;
 
 % Create and attach ParameterSchedule
-trainer.parameterSchedule = MomentumSchedule(lr, momentum);
+parameterSchedule = MomentumSchedule(lr, momentum);
+trainer.parameterSchedule = parameterSchedule;
 
 % Create and attach ProgressMonitor
-trainer.progressMonitor = BasicMonitor('validationInterval', validationInterval);
+progressMonitor = BasicMonitor('validationInterval', validationInterval);
+trainer.progressMonitor = progressMonitor;
 
 %% Perform training
 trainer.train(nUpdates);
 
-
+%% Plot training and validation loss curves
+trainLoss = trainer.progressMonitor.trainLoss;
+validLoss = trainer.progressMonitor.validLoss;
+t = validationInterval*(1:length(trainLoss));
+plot(t, trainLoss, 'r', t, validLoss, 'g');
 
 
