@@ -27,7 +27,7 @@ classdef SparseFilteringLayer < CompositeHigherLayer & matlab.mixin.Copyable
             penaltyCoeff = 1;
          end
          
-         obj.L1Penalty = penaltyCoeff;
+         obj.penaltyCoeff = penaltyCoeff;
       end
       
       function y = feed_forward(obj, x, isSave)
@@ -51,7 +51,7 @@ classdef SparseFilteringLayer < CompositeHigherLayer & matlab.mixin.Copyable
       function dLdx = backprop(obj, dLdy)
          
          % Add in penalty from L1 output norm
-         dLdx = dLdy + obj.penaltyValue*sign(obj.y);
+         dLdx = dLdy + obj.penaltyCoeff*sign(obj.y);
          
          % compute normalized x (because it wasn't stored)
          xRowNormed = bsxfun(@rdivide, obj.x, obj.rowNorms);
