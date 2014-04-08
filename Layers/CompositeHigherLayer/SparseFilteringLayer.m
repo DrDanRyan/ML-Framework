@@ -1,4 +1,4 @@
-classdef SparseFilteringLayer < CompositeHigherLayer & matlab.mixin.copyable
+classdef SparseFilteringLayer < CompositeHigherLayer & matlab.mixin.Copyable
    % A "sparse filtering" layer, see Ngiam2011 "Sparse Filtering". 
    %
    % First, each feature activation across examples is L2 normalized (rows have
