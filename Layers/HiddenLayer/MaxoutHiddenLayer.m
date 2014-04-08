@@ -64,7 +64,7 @@ classdef MaxoutHiddenLayer < HiddenLayer & ParamsFunctions & ...
          
          grad{2} = mean(dLdz, 2); % L2 x 1 x D
          
-         if obj.isWeightDecayPenalty
+         if obj.isWeightDecay
             grad{1} = grad{1} + obj.compute_weight_decay_penalty();
          end
       end
