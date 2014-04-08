@@ -36,11 +36,10 @@ classdef Conv2DFilterReporter < Reporter
          for i = 1:obj.rows
             for j = 1:obj.cols
                idx = obj.cols*(i-1) + j;
-               subtightplot(obj.rows, obj.cols, idx, [.005, .005]);
+               subtightplot(obj.rows, obj.cols, idx, [.01, .01]);
                f = squeeze(obj.convLayer.params{1}(idx,:,:,:,:));
-               M = gather(max(abs(f(:))));
+               f = f/sqrt(sum(f(:).*f(:)));
                image(f, 'CDataMapping', 'scaled');
-               set(gca, 'CLim', [-M-.02, M+.02]);
                axis off tight
             end
          end
