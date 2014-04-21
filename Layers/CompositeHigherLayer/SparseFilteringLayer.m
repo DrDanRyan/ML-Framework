@@ -59,12 +59,12 @@ classdef SparseFilteringLayer < CompositeHigherLayer & matlab.mixin.Copyable
          % Backprop through column normalization
          dLdx = bsxfun(@rdivide, dLdx, obj.colNorms) ...
                      - bsxfun(@times, obj.y, sum(dLdx.*xRowNormed, 1)./...
-                     (obj.colNorms.*obj.colNorms));       
+                                             (obj.colNorms.*obj.colNorms));       
                   
          % Backprop through row normalization
          dLdx = bsxfun(@rdivide, dLdx, obj.rowNorms) ...
                      - bsxfun(@times, xRowNormed, sum(dLdx.*obj.x, 2)./...
-                     (obj.rowNorms.*obj.rowNorms));
+                                                  (obj.rowNorms.*obj.rowNorms));
       end
      
    end
