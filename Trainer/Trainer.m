@@ -52,11 +52,17 @@ classdef Trainer < handle
          end
       end
       
+      
       function isContinue = update(obj)
          % Tells stepCalculator to request batch statistics from model and 
          % update model parameters accordingly. If there is a progressMonitor, 
          % it is told to update as well.
-         batch = obj.dataManager.next_batch();
+         
+         if isempty(obj.dataManager)
+            batch = [];
+         else
+            batch = obj.dataManager.next_batch();
+         end
          
          if isempty(obj.parameterSchedule)
             params = [];
@@ -73,6 +79,7 @@ classdef Trainer < handle
             isContinue = true;
          end
       end
+      
       
       function reset(obj)
          % Calls reset() on all properties of the GradientTrainer object

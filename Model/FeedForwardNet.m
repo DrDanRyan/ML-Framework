@@ -37,6 +37,7 @@ classdef FeedForwardNet < Model
          obj.gpuState = GPUState(p.Results.gpu);
       end
       
+      
       function gather(obj)
          for i = 1:length(obj.hiddenLayers);
             obj.hiddenLayers{i}.gather();
@@ -45,6 +46,7 @@ classdef FeedForwardNet < Model
          obj.gpuState.isGPU = false;
       end
       
+      
       function push_to_GPU(obj)
          for i = 1:length(obj.hiddenLayers)
             obj.hiddenLayers{i}.push_to_GPU();
@@ -52,6 +54,7 @@ classdef FeedForwardNet < Model
          obj.outputLayer.push_to_GPU();
          obj.gpuState.isGPU = true;
       end      
+      
       
       function increment_params(obj, delta_params)         
          if isempty(obj.hiddenLayers)
@@ -70,6 +73,7 @@ classdef FeedForwardNet < Model
          end
       end
       
+      
       function [grad, output, dLdx] = gradient(obj, batch)
          % batch = {x, t} where x is input and t is target. Computes the 
          % gradient for mean loss on batch with respect to parameters in each 
@@ -83,6 +87,7 @@ classdef FeedForwardNet < Model
          % get outputLayer output and backpropagate loss
          [grad, output, dLdx] = obj.backprop(y, t, mask);
       end
+      
       
       function [y, mask] = feed_forward(obj, x)
          % Expand obj.hiddenDropout if it is a scalar       
@@ -116,6 +121,7 @@ classdef FeedForwardNet < Model
          end
       end
       
+      
       function [grad, output, dLdx] = backprop(obj, y, t, mask)
          nHiddenLayers = length(obj.hiddenLayers);
          grad = cell(1, nHiddenLayers+1); % gradient of hiddenLayers and 
@@ -136,6 +142,7 @@ classdef FeedForwardNet < Model
          grad = obj.unroll_gradient(grad);
       end
       
+      
       function mask = compute_dropout_mask(obj, sizeVec, idx)   
          % Computes a binary (0, 1) mask  of specified size for a specific
          % layer index (idx = 1 is input layer)
@@ -146,6 +153,7 @@ classdef FeedForwardNet < Model
             mask = obj.gpuState.binary_mask(sizeVec, obj.hiddenDropout(idx-1));
          end
       end
+      
       
       function y = output(obj, x)
          if obj.inputDropout > 0
@@ -163,15 +171,18 @@ classdef FeedForwardNet < Model
          y = obj.outputLayer.feed_forward(y);
       end
       
+      
       function loss = compute_loss(obj, batch)
          y = obj.output(batch{1});
          t = batch{2};
          loss = obj.compute_loss_from_output(y, t);
       end
       
+      
       function loss = compute_loss_from_output(obj, y, t)
          loss = obj.outputLayer.compute_loss(y, t);
       end
+      
       
       function objCopy = copy(obj)
          objCopy = FeedForwardNet();
@@ -194,6 +205,7 @@ classdef FeedForwardNet < Model
          objCopy.flatGradLength = obj.flatGradLength;
       end
       
+      
       function reset(obj)
          for i = 1:length(obj.hiddenLayers)
             obj.hiddenLayers{i}.init_params();
@@ -202,6 +214,7 @@ classdef FeedForwardNet < Model
          obj.nestedGradShape = [];
          obj.flatGradLength = [];
       end
+      
       
       function flatGrad = unroll_gradient(obj, nestedGrad)
          if isempty(obj.nestedGradShape)
@@ -217,6 +230,7 @@ classdef FeedForwardNet < Model
          end
       end
       
+      
       function nestedGrad = roll_gradient(obj, flatGrad)
          startIdx = 1;
          nestedLength = length(obj.nestedGradShape);
@@ -228,6 +242,7 @@ classdef FeedForwardNet < Model
          end
       end
       
+      
       function compute_gradient_shapes(obj, nestedGrad)
          flatLength = 0;
          nestedShape = zeros(1, length(nestedGrad));
@@ -238,6 +253,7 @@ classdef FeedForwardNet < Model
          obj.nestedGradShape = nestedShape;
          obj.flatGradLength = flatLength;
       end
+      
    end
 end
 
