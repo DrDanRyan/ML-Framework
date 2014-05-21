@@ -14,6 +14,7 @@ classdef FFNInspector < Model
             obj.ffn.outputLayer = [];
             obj.ffn.inputDropout = 0;
             obj.ffn.hiddenDropout = 0;
+            obj.ffn.nestedGradShape = [];
             obj.inputSize = inputSize;
          end
       end
@@ -56,6 +57,7 @@ classdef FFNInspector < Model
       
       function increment_params(obj, delta)
          obj.xMax = obj.xMax + delta{1};
+         obj.xMax = obj.xMax/max(1, sqrt(sum(obj.xMax(:).^2)));
       end
       
       

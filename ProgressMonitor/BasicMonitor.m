@@ -60,7 +60,7 @@ classdef BasicMonitor < ProgressMonitor
       
       function isContinue = update(obj, model, dataManager)
          obj.nUpdates = obj.nUpdates + 1;
-         if mod(obj.nUpdates, obj.validationInterval) == 0
+         if mod(obj.nUpdates, obj.validationInterval) == 0 && ~isempty(dataManager)
             obj.compute_loss_values(model, dataManager);
          end
          
