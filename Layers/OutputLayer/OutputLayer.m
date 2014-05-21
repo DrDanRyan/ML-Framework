@@ -2,7 +2,7 @@ classdef OutputLayer < handle
    % Defines the OutputLayer interface.
 
    methods (Abstract)
-      y = feed_forward(x)
+      y = feed_forward(obj, x)
       [grad, dLdx, y] = backprop(obj, x, t)
       loss = compute_loss(obj, y, t)
       init_params(obj)
