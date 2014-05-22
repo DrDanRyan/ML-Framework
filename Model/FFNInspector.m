@@ -12,8 +12,6 @@ classdef FFNInspector < Model
             obj.ffn = ffn.copy();
             obj.ffn.hiddenLayers = obj.ffn.hiddenLayers(1:layerIdx);
             obj.ffn.outputLayer = [];
-            obj.ffn.inputDropout = 0;
-            obj.ffn.hiddenDropout = 0;
             obj.ffn.nestedGradShape = [];
             obj.inputSize = inputSize;
          end
@@ -35,7 +33,8 @@ classdef FFNInspector < Model
       
       
       function [grad, output] = gradient(obj, ~)
-         [~, output, dLdx] = obj.ffn.gradient({obj.xMax, []});
+         isSample = false; % use rescaled wegiths instead of dropping hidden units
+         [~, output, dLdx] = obj.ffn.gradient({obj.xMax, []}, isSample);
          grad = {dLdx};
       end
       

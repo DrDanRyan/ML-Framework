@@ -4,10 +4,10 @@ close all
 load trained_ffn2 % loads ffn and inputSize
 
 %% 
-layerIdx = 1;
+layerIdx = 2;
 lr = .1;
 rho = .95;
-focusIdx = 67;
+focusIdx = 2;
 
 inspector = FFNInspector(ffn, layerIdx, inputSize);
 inspector.focus(focusIdx);

@@ -74,22 +74,29 @@ classdef FeedForwardNet < Model
       end
       
       
-      function [grad, output, dLdx] = gradient(obj, batch)
+      function [grad, output, dLdx] = gradient(obj, batch, isSample)
          % batch = {x, t} where x is input and t is target. Computes the 
          % gradient for mean loss on batch with respect to parameters in each 
-         % hiddenLayer and outputLayer.
+         % hiddenLayer and outputLayer. isSample is a boolean flag where true
+         % means that hidden units will randomly be dropped out, and false means
+         % all hidden units are kept but rescaled by (1 - dropoutProb).
+         
+         if nargin < 3
+            isSample = true;
+         end
+         
          x = batch{1};
          t = batch{2};
  
          % feed_forward through hiddenLayers
-         [y, mask] = obj.feed_forward(x);
+         [y, mask] = obj.feed_forward(x, isSample);
          
          % get outputLayer output and backpropagate loss
          [grad, output, dLdx] = obj.backprop(y, t, mask);
       end
       
       
-      function [y, mask] = feed_forward(obj, x)
+      function [y, mask] = feed_forward(obj, x, isSample)
          % Expand obj.hiddenDropout if it is a scalar       
          if isscalar(obj.hiddenDropout)
             obj.hiddenDropout = ...
@@ -105,8 +112,12 @@ classdef FeedForwardNet < Model
          mask = cell(1, nHiddenLayers+1); 
          
          if obj.inputDropout > 0
-            mask{1} = obj.compute_dropout_mask(size(x), 1);
-            y{1} = x.*mask{1};
+            if isSample
+               mask{1} = obj.compute_dropout_mask(size(x), 1);
+               y{1} = x.*mask{1};
+            else
+               y{1} = (1 - obj.inputDropout)*x;
+            end
          else
             y{1} = x;
          end
@@ -115,8 +126,12 @@ classdef FeedForwardNet < Model
          for i = 1:nHiddenLayers
             y{i+1} = obj.hiddenLayers{i}.feed_forward(y{i}, true);
             if obj.hiddenDropout(i) > 0
-               mask{i+1} = obj.compute_dropout_mask(size(y{i+1}), i+1);
-               y{i+1} = y{i+1}.*mask{i+1};
+               if isSample
+                  mask{i+1} = obj.compute_dropout_mask(size(y{i+1}), i+1);
+                  y{i+1} = y{i+1}.*mask{i+1};
+               else
+                  y{i+1} = (1-obj.hiddenDropout(i))*y{i+1};
+               end
             end
          end
       end
